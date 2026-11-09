@@ -301,7 +301,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 <section class="panel method-compact" id="methodPanel"><div class="panelhead"><h2>02. 상속방법 선택</h2><small>선택 결과에 따라 필요한 입력 화면이 자동으로 열립니다.</small></div><div class="body"><div class="segmented"><label><input type="radio" name="method" value="statute"> 법정상속</label><label><input type="radio" name="method" value="agreement"> 협의분할상속</label></div><p class="note" id="methodHint"></p></div></section>
 <section class="panel hidden" id="decedentHiddenPanel"><div class="panelhead"><h2>02. 피상속인 인적사항</h2><small>협의서 작성에 필요한 성명·등록번호·주소를 입력합니다.</small></div><div class="body"><div class="row"><div class="field"><label>피상속인 성명</label><input id="decedentName" placeholder="예: 홍길동" autocomplete="off"></div><div class="field"><label>등록번호 (주민등록번호 등)</label><input id="decedentIdent" placeholder="피상속인 등록번호" autocomplete="off"></div><div class="field"><label>사망년월일 <span style="color:#cf3d3d">*</span></label><input id="decedentDeath" type="date"></div></div><div class="row control-row"><div class="field"><label>피상속인 주소</label><input id="decedentAddress" placeholder="주소 (협의서 기재용)" autocomplete="off"></div></div></div></section>
 
-<section class="panel people-compact"><div class="panelhead"><h2>03. 피상속인 · 상속인 관계 트리 <span id="heirCount" class="tag"></span></h2></div><div class="body"><div id="heirsView"></div><p class="note">상속인을 선택한 뒤 <b>[피대습자로 선택]</b>을 누르면 대습상속인 추가가 가능합니다. <b>1차 대습상속인을 선택하면 2차 피대습자로 변경</b>할 수 있습니다. 관계인을 선택하면 성명·등록번호·주소·관계를 수정하거나 삭제할 수 있습니다.</p></div></section>
+<section class="panel people-compact"><div class="panelhead"><h2>03. 피상속인 · 상속인 관계 트리 <span id="heirCount" class="tag"></span></h2></div><div class="body"><div id="proxyChronologyWarning" aria-live="polite"></div><div id="heirsView"></div><p class="note">상속인을 선택한 뒤 <b>[피대습자로 선택]</b>을 누르면 대습상속인 추가가 가능합니다. <b>1차 대습상속인을 선택하면 2차 피대습자로 변경</b>할 수 있습니다. 관계인을 선택하면 성명·등록번호·주소·관계를 수정하거나 삭제할 수 있습니다.</p></div></section>
 </div>
 <div class="stage-screen" data-stage="shares"><details class="era-details"><summary>⚠ 1900년 이후 구법·다단계 대습 계산 시 유의사항 보기</summary><div><strong>1900년부터 사망일 입력 가능 · 시대별 적용법 구분</strong> — <b>1900~1959년 구관습법</b>, <b>1960~1978년 구민법</b>, <b>1979~1990년 개정 구민법</b>, <b>1991년 이후 현행 계열</b>을 구분합니다. <b>구관습법은 호주상속/유산상속 구별이 필수</b>이고, 구민법은 호주승계·여성의 가적·피상속인 성별 확인이 추가로 필요합니다. 이 조건이 불분명하거나 구법 대습/재전상속 등 예외 사건에서는 자동지분을 확정하지 않고 <b>법무사 확인 지분 입력</b>을 지원합니다. 다단계 대습의 인정 범위 및 사망 순서, 상속인 누락, 실종선고·부칙 등 예외는 반드시 별도로 검토해야 합니다.</div></details>
 <section class="panel law-choice-panel" id="lawChoicePanel"><div class="panelhead"><h2>적용 상속법 확인 <span id="lawEraSummary" class="tag"></span></h2><small>기본은 사망일 자동판정 · 예외가 있으면 전문가 선택</small></div><div class="body" id="lawChoiceView"></div></section>
@@ -682,6 +682,19 @@ let treeMini=true;
 let activeStage='property';
 function renderHeirs(){
  const target=document.querySelector('#heirsView');
+ // 입력 단계에서 피상속인보다 늦게 사망한 사람을 피대습자로 지정한 오류를 즉시 안내.
+ const chronology=document.getElementById('proxyChronologyWarning');
+ if(chronology){
+  const conflicts=[];
+  if(todayCheck(state.decedent.death)){
+   traverseNodes(state.heirs,(n)=>{
+    if(n.proxy&&todayCheck(n.death)&&n.death>=state.decedent.death)
+     conflicts.push({name:n.name||'(성명 미입력)',death:n.death});
+   });
+  }
+  chronology.innerHTML=conflicts.length?
+   '<div class="errorbox" role="alert" style="margin:4px 0 14px;background:#fff5ed;border-color:#e6b78f;color:#7c3a14"><strong>⚠ 대습상속 사망일 순서 확인</strong><p style="margin:6px 0">피상속인 사망일 <b>'+esc(state.decedent.death.replaceAll('-','.'))+'</b>보다 다음 관계인의 사망일이 늦거나 같습니다: <b>'+conflicts.map(x=>esc(x.name)+' ('+esc(x.death.replaceAll('-','.'))+')').join(', ')+'</b>.</p><p style="margin:5px 0 0">사망을 원인으로 하는 대습상속은 피상속인보다 먼저 사망한 경우가 전제입니다. 이후 사망한 상속인은 <b>상속인</b>으로 두고, 다음 사망에 따른 상속은 <b>재전상속(순차상속)</b>으로 별도 검토해야 합니다. 사망일이 잘못 입력된 경우에는 수정하세요.</p></div>':'';
+ }
  const count=(()=>{let x=0;traverseNodes(state.heirs,()=>x++);return x})();
  document.querySelector('#heirCount').textContent=`관계 ${count}명 · 실제 취득자 ${numberOfRecipients()}명`;
  let firstNode=state.heirs[0];
