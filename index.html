@@ -1316,6 +1316,134 @@ function updateDocGuideDatePart(part,value){
  renderDocGuide();
 }
 
+
+/* C7 폼픽 공통 서식 초안: 상속지분 계산과 독립적으로 상속인/직접입력 정보를 재사용합니다.
+   법정 양식은 서식 번호가 있으므로 최신 별지 원본과 필수 항목을 반드시 대조해야 합니다. */
+const FORM_TEMPLATES=[
+ {id:'registration',name:'상속등기 위임장',category:'등기',note:'상속등기 위임문서 작성 초안'},
+ {id:'resident_extract',name:'주민등록표 초본 교부신청 위임장',category:'주민등록',note:'주민등록법 시행규칙 별지 제9호서식 확인 필요'},
+ {id:'resident_copy',name:'주민등록표 등본 교부신청 위임장',category:'주민등록',note:'주민등록법 시행규칙 별지 제9호서식 확인 필요'},
+ {id:'family_cert',name:'가족관계증명서 교부 위임장',category:'가족관계',note:'가족관계등록 관련 별지 제12호 위임장 확인 필요'},
+ {id:'basic_cert',name:'기본증명서 교부 위임장',category:'가족관계',note:'가족관계등록 관련 별지 제12호 위임장 확인 필요'},
+ {id:'marriage_cert',name:'혼인관계증명서 교부 위임장',category:'가족관계',note:'가족관계등록 관련 별지 제12호 위임장 확인 필요'},
+ {id:'removed_register',name:'제적등본 교부 위임장',category:'가족관계',note:'가족관계등록 관련 별지 제12호 위임장 확인 필요'}
+];
+function formSettings(){return state.formSettings||{}}
+function formAvailablePeople(){
+ const list=[],dedupe=new Set();
+ traverseNodes(state.heirs,n=>{
+  if(n.proxy||n.postDeath||!String(n.name||'').trim()||dedupe.has(n.id))return;
+  dedupe.add(n.id);const d=state.details?.[n.id]||{};
+  list.push({id:n.id,name:String(n.name||'').trim(),ident:d.ident||'',address:d.address||'',nationality:n.nationality||'내국인'});
+ });
+ const f=formSettings();
+ if(String(f.manualName||'').trim())list.push({id:'__form_manual__',name:String(f.manualName||'').trim(),ident:f.manualIdent||'',address:f.manualAddress||'',nationality:'수기 입력'});
+ return list;
+}
+function formSelectedIds(){
+ const f=formSettings(),available=formAvailablePeople();
+ return Array.isArray(f.selectedPeople)?f.selectedPeople.filter(x=>available.some(p=>p.id===x)):available.map(x=>x.id);
+}
+function renderFormMaker(){
+ const f=formSettings(),group=document.getElementById('formMakerPanel');
+ if(!group)return;
+ for(const key of ['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress']){
+  const input=group.querySelector('[data-form-info="'+key+'"]');
+  if(input&&input!==document.activeElement)input.value=f[key]||'';
+ }
+ const available=formAvailablePeople(),selected=new Set(formSelectedIds());
+ const list=document.getElementById('formPeopleList');
+ list.innerHTML=available.length?'<div class="form-check-grid">'+available.map(p=>
+  '<label class="form-check-row"><input type="checkbox" data-form-person="'+attr(p.id)+'" '+(selected.has(p.id)?'checked':'')+'><span><b>'+esc(p.name)+'</b><br><small>'+esc(p.nationality)+(p.ident?' · '+esc(p.ident):' · 등록번호 미입력')+'</small></span></label>'
+ ).join('')+'</div>':'<div class="empty">상속관계에 성명을 입력하거나 아래 간편 위임인 정보를 입력하세요. 지분 계산은 필요하지 않습니다.</div>';
+ document.getElementById('formTemplateList').innerHTML='<div class="form-check-grid">'+FORM_TEMPLATES.map(t=>
+ '<label class="form-check-row"><input type="checkbox" data-form-doc="'+attr(t.id)+'" '+((f.selectedDocs||[]).includes(t.id)?'checked':'')+'><span><b>'+esc(t.name)+'</b><br><small>'+esc(t.note)+'</small></span></label>'
+ ).join('')+'</div>';
+ const count=(f.selectedDocs||[]).length*selected.size;
+ document.getElementById('formMakerSummary').innerHTML='<b>작성 대상 '+selected.size+'명 · 선택 서식 '+(f.selectedDocs||[]).length+'종 · 생성 예정 '+count+'부</b><br>서식은 선택 대상자마다 개별 작성됩니다. 입력되지 않은 정보는 공란으로 표시하여 확인할 수 있습니다.';
+}
+function formMakerFeedback(msg,bad=false){
+ const el=document.getElementById('formMakerStatus');
+ if(el){el.textContent=msg;el.style.color=bad?'#a62929':'#15704a'}
+}
+function formDocRow(label,value){
+ const v=String(value||'').trim();
+ return '<tr><th>'+esc(label)+'</th><td>'+esc(v||'　　　　　　　　　')+'</td></tr>';
+}
+function formDateText(s){return /^\d{4}-\d{2}-\d{2}$/.test(s||'')?s.replaceAll('-','. ')+'.':'　　　　년　　　월　　　일'}
+function formDocSheet(template,person,f){
+ const agentName=f.agentName||'',agentOffice=f.officeName||'';
+ const agentIdent=f.agentIdent||'',agentAddress=f.officeAddress||'';
+ const agentPhone=f.officePhone||'',date=formDateText(f.issueDate);
+ const principal='<table class="form-doc-table"><tbody>'
+  +formDocRow('위임인 / 신청인',person.name)
+  +formDocRow('위임인 등록번호',person.ident)
+  +formDocRow('위임인 주소',person.address)
+  +'</tbody></table>';
+ const agent='<table class="form-doc-table"><tbody>'
+  +formDocRow('수임인 / 대리인',agentName)
+  +formDocRow('법무사 사무소',agentOffice)
+  +formDocRow('수임인 등록번호',agentIdent)
+  +formDocRow('수임인 주소',agentAddress)
+  +formDocRow('연락처',agentPhone)
+  +'</tbody></table>';
+ let purpose='',attachment='',note='',issuer='관할 등기소';
+ if(template.id==='registration'){
+  const props=selectedProperties();
+  const real=props.map((p,i)=>(i+1)+'. '+(p.label||'부동산의 표시 미입력')+' (피상속인 소유지분 '+(p.share||'미입력')+')');
+  attachment='<div class="doc-item"><b>부동산의 표시</b><div class="doc-prop">'+esc(real.length?real.join('\n'):'　　　　　　　　　　　　　　')+'</div></div>';
+  purpose='위임사항: 피상속인 '+(state.decedent.name||'　　　　　')+'의 사망으로 인한 위 부동산의 소유권이전등기 신청, 등기신청서의 제출 및 보정, 등기 완료서류의 수령에 관한 행위를 위 대리인에게 위임합니다.';
+  note='상속등기 관련 위임범위, 신청인·등기유형·부동산 표시 및 날인 요건은 실제 등기신청 전 확인하십시오.';
+ }else if(template.id==='resident_extract'||template.id==='resident_copy'){
+  issuer='시·군·구 또는 읍·면·동 주민등록 담당 민원창구';
+  const type=template.id==='resident_extract'?'초본':'등본';
+  purpose='위 위임인은 상속등기 및 관련 사실 확인을 위하여 위임인의 주민등록표 '+type+' 교부신청 업무를 위 대리인에게 위임합니다.';
+  attachment='<p>교부 대상: '+esc(person.name||'　　　　　　　　')+' / 서류 종류: 주민등록표 '+type+' / 사용목적: 상속등기 업무</p>';
+  note='주민등록법 시행규칙 별지 제9호 「주민등록표 열람 또는 등·초본 교부신청 위임장」을 대조·사용해야 합니다. 대리인의 방문 신청과 위임인·대리인 신분증 관련 요건을 확인하십시오. 온라인 대리신청은 지원되지 않습니다.';
+ }else{
+  issuer='시·구·읍·면 가족관계등록 담당 민원창구';
+  const category=template.id==='family_cert'?'가족관계증명서':template.id==='basic_cert'?'기본증명서':template.id==='marriage_cert'?'혼인관계증명서':'제적등본';
+  purpose='위 위임인은 상속등기 업무에 필요한 '+category+'의 교부신청과 수령을 위 대리인에게 위임합니다.';
+  attachment='<p>교부 대상: '+esc(person.name||'　　　　　　　　')+' / 증명서: '+esc(category)+' (상세·기재범위는 발급 전 확인)</p>';
+  note='가족관계등록부 등 증명서 교부 위임은 관련 별지 제12호 공식 위임장 및 별지 제11호 신청서와 대조하십시오. 신청자격·신분증·위임서류 요건을 발급기관에 확인해야 합니다.';
+ }
+ return '<section class="doc-sheet" style="padding:12mm 13mm">'
+ +'<div class="doc-individual-header">C7 자동작성 검토용 초안 · 발급기관 서식 대조 필요</div>'
+ +'<h1 class="form-doc-title">'+esc(template.name)+'</h1>'
+ +'<p class="form-doc-paragraph">아래와 같이 위임합니다.</p>'
+ +'<h3 style="font-size:12pt;margin:14px 0 7px">1. 위임인</h3>'+principal
+ +'<h3 style="font-size:12pt;margin:14px 0 7px">2. 수임인</h3>'+agent
+ +'<h3 style="font-size:12pt;margin:14px 0 7px">3. 위임사항</h3>'
+ +'<p class="form-doc-paragraph">'+esc(purpose)+'</p>'+attachment
+ +'<p style="margin:24px 0 10px">위임일자: '+esc(date)+'</p>'
+ +'<p style="margin:12px 0 20px;text-align:right">위임인: <b>'+esc(person.name||'　　　　　　　　')+'</b>　(서명 또는 인)</p>'
+ +'<p style="margin:10px 0">수신: '+esc(issuer)+' 귀중</p>'
+ +'<div class="form-doc-printnotes"><b>서식 검토:</b> '+esc(note)+'<br>위임인 본인의 적법한 의사 확인과 신분증 등 첨부서류가 필요하며, 공란은 제출 전에 보완해야 합니다.</div>'
+ +'</section>';
+}
+function formGeneratedHTML(){
+ const f=formSettings(),docs=FORM_TEMPLATES.filter(t=>(f.selectedDocs||[]).includes(t.id));
+ const selected=new Set(formSelectedIds()),people=formAvailablePeople().filter(p=>selected.has(p.id));
+ if(!docs.length)throw Error('작성할 서식을 한 개 이상 선택하세요.');
+ if(!people.length)throw Error('위임할 상속인을 선택하거나 간편 위임인의 성명을 입력하세요.');
+ const body=docs.map(t=>people.map(p=>formDocSheet(t,p,f)).join('')).join('');
+ return {html:body,count:docs.length*people.length};
+}
+function formPrintSelected(toFile){
+ try{
+  const forms=formGeneratedHTML();
+  if(!toFile){
+   document.querySelector('#printRoot').innerHTML=forms.html;
+   window.print();
+  }else{
+   const css=document.querySelector('style').textContent;
+   const html='<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>상속 서류 일괄 작성</title><style>'+css+'\nbody{background:#fff}#printRoot{display:block!important;max-width:210mm;margin:0 auto}@media screen{.doc-sheet{padding:14mm;box-shadow:0 3px 15px #9993;margin:15px}}@media print{.doc-sheet{padding:0}}</style></head><body><div id="printRoot">'+forms.html+'</div></body></html>';
+   download(new Blob(['\ufeff',html],{type:'text/html;charset=utf-8'}),'상속위임장_일괄작성_'+(state.decedent.name||'사건').replace(/[\\/:*?"<>|]/g,'_')+'.html');
+  }
+  formMakerFeedback(forms.count+'부의 문서를 생성했습니다. 법정 서식과 날인 요건을 확인해 주세요.');
+ }catch(e){formMakerFeedback(e.message,true);alert(e.message)}
+}
+
 function applyActiveStage(){
  if(activeStage==='agreement')activeStage='forms';
  document.querySelectorAll('.stage-screen').forEach(el=>el.classList.toggle('is-active',el.dataset.stage===activeStage));
@@ -1523,6 +1651,34 @@ document.addEventListener('click',e=>{
  const mini=e.target.closest('[data-tree-mini]');if(mini){treeMini=!treeMini;renderHeirs();return}
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
+
+document.addEventListener('input',e=>{
+ const field=e.target.closest('[data-form-info]');if(!field)return;
+ const key=field.dataset.formInfo;
+ if(!['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress'].includes(key))return;
+ state.formSettings[key]=field.value;
+ save();
+});
+document.addEventListener('change',e=>{
+ const field=e.target.closest('[data-form-info]');
+ if(field){state.formSettings[field.dataset.formInfo]=field.value;save();renderFormMaker();return;}
+ const doc=e.target.closest('[data-form-doc]');
+ if(doc){
+  const id=doc.dataset.formDoc;if(!FORM_TEMPLATES.some(t=>t.id===id))return;
+  const set=new Set(state.formSettings.selectedDocs||[]);
+  doc.checked?set.add(id):set.delete(id);
+  state.formSettings.selectedDocs=[...set];save();renderFormMaker();return;
+ }
+ const person=e.target.closest('[data-form-person]');
+ if(person){
+  const chosen=new Set(formSelectedIds());
+  person.checked?chosen.add(person.dataset.formPerson):chosen.delete(person.dataset.formPerson);
+  state.formSettings.selectedPeople=[...chosen];save();renderFormMaker();
+ }
+});
+document.querySelector('#formPrintSelected').addEventListener('click',()=>formPrintSelected(false));
+document.querySelector('#formSaveSelected').addEventListener('click',()=>formPrintSelected(true));
+
 
 document.querySelector('#docGuideName').addEventListener('input',e=>{docGuide.name=e.target.value;renderDocGuide()});
 document.querySelector('#docGuideMethod').addEventListener('change',e=>{docGuide.method=e.target.value;renderDocGuide()});
