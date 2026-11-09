@@ -401,6 +401,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 @media(max-width:800px){.total-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.total-main-nav button{padding:9px 6px;font-size:12px;min-height:48px;line-height:1.3}.total-main-nav .nav-upcoming{display:block;margin:3px auto 0;width:max-content}}
 
+
+.case-stage-badge{display:inline-block;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:750;width:max-content;margin-top:2px}
+.case-stage-badge.draft{background:#fff3dc;color:#875c1b}
+.case-stage-badge.completed{background:#e6f5ed;color:#177348}
+.case-list-actions button:disabled{color:#7e8994;background:#f3f5f8;cursor:not-allowed;border-style:dashed}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -551,15 +556,15 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="body">
  <div class="case-list-toolbar">
   <div class="case-current"><b>현재 작업 사건</b> <span id="caseActiveLabel">새 사건</span></div>
-  <div class="actionbar"><button type="button" class="primary" id="caseSaveToList">현재 사건 목록에 저장</button><button type="button" class="outline" id="caseNewItem">＋ 새 사건</button></div>
+  <div class="actionbar"><button type="button" class="primary" id="caseSaveToList">현재 사건 임시저장</button><button type="button" class="outline" id="caseNewItem">＋ 새 사건</button></div>
  </div>
  <div id="caseListView"></div>
- <p class="note">각 상속사건에서 [서류작성] 또는 [준비서류]를 바로 실행할 수 있습니다. 해당 사건의 인적사항·부동산·서류작성 설정을 불러오고 변경사항을 사건별로 저장합니다.</p>
+ <p class="note">임시저장 상태에서도 [지분계산]·[서류작성]·[준비서류]를 바로 실행할 수 있습니다. 비용계산도 동일한 사건에서 실행하도록 연결할 예정입니다. 입력된 정보는 재사용하고 없는 정보만 해당 업무에서 추가합니다.</p>
  <hr class="divider">
  <b>사건파일 백업·불러오기</b>
  <div class="actionbar"><button class="light" id="saveJson">사건파일(JSON) 다운로드</button><button class="light" id="loadJson">사건파일(JSON) 불러오기</button><button class="danger" id="reset">새 사건으로 초기화</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div>
  <div class="status" id="status"></div>
- <p class="note">사건리스트는 <b>현재 브라우저의 기기 저장공간</b>에 보관됩니다. 인터넷으로 전송되지 않으며 다른 기기·브라우저나 새로 다운로드한 HTML에서는 목록이 이어지지 않을 수 있습니다. 중요한 사건은 반드시 JSON 파일로 별도 백업하세요.</p>
+ <p class="note">임시저장 사건도 사건리스트에 표시됩니다. 비용계산 엔진은 아직 미구현입니다. 사건리스트는 <b>현재 브라우저의 기기 저장공간</b>에 보관됩니다. 인터넷으로 전송되지 않으며 다른 기기·브라우저나 새로 다운로드한 HTML에서는 목록이 이어지지 않을 수 있습니다. 중요한 사건은 반드시 JSON 파일로 별도 백업하세요.</p>
 </div></section>
 </div>
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
@@ -574,7 +579,7 @@ const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Dat
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
-const fresh=()=>({version:3,caseId:null,decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
+const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -599,24 +604,45 @@ function caseWriteList(list){
  try{localStorage.setItem(CASE_LIST_KEY,JSON.stringify(list));return true}
  catch(e){showStatus('사건 목록 저장 실패: 기기 저장공간을 확인하고 JSON 백업을 이용해 주세요.',true);return false}
 }
+// 사건리스트는 상속지분 미완성 상태에서도 이용할 수 있습니다.
+function caseHasEnteredData(st){
+ const d=st.decedent||{};
+ if([d.name,d.death,d.ident,d.address].some(v=>String(v||'').trim()))return true;
+ if((st.properties||[]).some(p=>String(p.label||'').trim()))return true;
+ const visit=nodes=>(nodes||[]).some(n=>String(n.name||'').trim()||visit(n.sub||[]));
+ if(visit(st.heirs))return true;
+ return !!String(st.formSettings?.manualName||'').trim();
+}
+function caseShareSignature(st){
+ return JSON.stringify({
+  decedent:st.decedent,
+  heirs:st.heirs,
+  properties:(st.properties||[]).map(p=>({id:p.id,label:p.label,share:p.share,selected:p.selected})),
+  method:st.method,eraMode:st.eraMode,eraOverride:st.eraOverride,
+  legacyHoju:st.legacyHoju,historicalType:st.historicalType,
+  manualShares:st.manualShares,verifiedManual:st.verifiedManual
+ });
+}
+function caseStageText(st){return st?.shareCompletedFor&&st.shareCompletedFor===caseShareSignature(st)?'지분산출 확인':'임시저장'}
 function caseMeta(snapshot){return {
  name:String(snapshot.decedent?.name||'').trim()||'피상속인 미입력',
  death:snapshot.decedent?.death||'',
  method:snapshot.method==='agreement'?'협의분할상속':'법정상속',
- count:(snapshot.properties||[]).filter(p=>p.selected!==false).length
+ count:(snapshot.properties||[]).filter(p=>p.selected!==false).length,
+ status:caseStageText(snapshot)
 }}
 function caseSnapshot(){return JSON.parse(JSON.stringify(state))}
+// 피상속인·상속인·부동산 등의 정보를 하나라도 입력하면 사건리스트에 자동 임시저장
 const save=()=>{
  try{
+  if(!state.caseId&&caseHasEnteredData(state))state.caseId='case_'+ID();
   localStorage.setItem(KEY,JSON.stringify(state));
   if(state.caseId){
    const list=caseReadList();
    const index=list.findIndex(item=>item.id===state.caseId);
-   if(index>=0){
-    const updated={...list[index],state:caseSnapshot(),updatedAt:new Date().toISOString()};
-    list[index]=updated;
-    caseWriteList(list);
-   }
+   const item={id:state.caseId,state:caseSnapshot(),updatedAt:new Date().toISOString()};
+   if(index>=0)list[index]=item;else list.unshift(item);
+   caseWriteList(list);
   }
  }catch(e){showStatus('브라우저 저장에 실패했습니다. JSON 파일로 저장하세요.',true)}
 };
@@ -638,8 +664,8 @@ function renderCaseList(){
  const panel=document.getElementById('caseListView');if(!panel)return;
  const list=caseReadList().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
  document.getElementById('caseListCount').textContent=list.length+'건';
- document.getElementById('caseActiveLabel').textContent=caseMeta(state).name+(state.caseId?' · 목록에 저장됨':' · 목록 미저장');
- if(!list.length){panel.innerHTML='<div class="empty">저장된 상속사건이 없습니다.<br>현재 사건의 피상속인 정보를 입력한 뒤 [현재 사건 목록에 저장]을 눌러주세요.</div>';return}
+ document.getElementById('caseActiveLabel').textContent=caseMeta(state).name+(state.caseId?' · '+caseStageText(state):' · 새 사건');
+ if(!list.length){panel.innerHTML='<div class="empty">저장된 상속사건이 없습니다.<br>피상속인·상속인·부동산 등 실제 정보를 입력하면 임시저장 사건이 자동 생성됩니다.</div>';return}
  panel.innerHTML='<div class="case-list-container">'+list.map((row,i)=>{
   const m=caseMeta(row.state),active=state.caseId===row.id;
   const when=String(row.updatedAt||'').replace('T',' ').slice(0,16);
@@ -647,8 +673,11 @@ function renderCaseList(){
   +'<div class="case-list-no">'+(i+1)+'</div>'
   +'<div class="case-list-detail"><strong>'+esc(m.name)+' 상속사건</strong>'
   +'<small>사망일 '+esc(m.death?m.death.replaceAll('-','.'):'미입력')+' · '+esc(m.method)+' · 부동산 '+m.count+'건</small>'
-  +'<small>최근 저장 '+esc(when)+(active?' · 현재 작업 중':'')+'</small></div>'
-  +'<div class="case-list-actions"><button type="button" class="outline" data-case-open="'+attr(row.id)+'">열기</button>'
+  +'<small>최근 저장 '+esc(when)+(active?' · 현재 작업 중':'')+'</small>'
+  +'<small class="case-stage-badge '+(m.status==='임시저장'?'draft':'completed')+'">'+esc(m.status)+'</small></div>'
+  +'<div class="case-list-actions"><button type="button" class="outline" data-case-open="'+attr(row.id)+'">이어서 입력</button>'
+  +'<button type="button" class="outline" data-case-shares="'+attr(row.id)+'">지분계산</button>'
+  +'<button type="button" class="outline" data-case-cost="'+attr(row.id)+'" disabled title="C7 비용계산 연동 예정">비용계산(예정)</button>'
   +'<button type="button" class="outline case-write-btn" data-case-forms="'+attr(row.id)+'">서류작성</button>'
   +'<button type="button" class="outline" data-case-guide="'+attr(row.id)+'">준비서류</button>'
   +'<button type="button" class="danger" data-case-delete="'+attr(row.id)+'">삭제</button></div>'
@@ -672,6 +701,7 @@ function caseOpenSaved(id,mode='open'){
    docGuide.method=state.method||'unknown';
    activeStage='documents';
   }else if(mode==='forms')activeStage='forms';
+  else if(mode==='shares')activeStage='shares';
   else activeStage='people';
   const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
   renderAll();
@@ -695,7 +725,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.caseId??=null;state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
+ state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -1724,7 +1754,7 @@ function renderResults(){
   const staged=c.sequential?(c.stages||[]).map((x,i)=>`<div class="propertycard" style="margin:8px 0"><div class="mini-title">후속상속 ${i+1} · 망 ${esc(x.decedent)} (${esc(x.date)})</div><p class="note">이 사건으로 승계된 지분: <strong>${esc(x.baseShare)}</strong> · 적용법: 1991년 이후 민법 기준 · <strong>${esc(x.rank)}</strong></p><div class="note">이번 상속에서 취득: ${esc(x.included.join(', ')||'없음')}</div>${x.excluded.length?`<div class="note" style="color:#a15612"><strong>후순위로 지분 제외:</strong> ${esc(x.excluded.map(n=>n.name+' ('+n.relation+')').join(', '))}</div>`:''}</div>`).join(''):'';
   const review=c.sequential?`<div class="warnbox" style="margin:12px 0"><strong>상속등기 전 검토 필수</strong><p class="note" style="margin:7px 0">상속등기 미완료 상태에서 상속인이 다시 사망한 경우, 각 사망을 별개의 상속개시로 계산합니다. 첫 번째 상속지분과 후속상속지분을 곱해 최종 취득분을 산출했습니다. 상속인 누락·가족관계·재산분할협의 당사자와 중간 등기 필요 여부는 별도 확인해야 합니다.</p><label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><input type="checkbox" id="successionReviewed" ${isSuccessionReviewed()?'checked':''} style="width:18px;height:18px"> <b>각 단계의 상속관계·순위 및 서류를 확인했습니다.</b></label></div>`:'';
   const table=`<details class="shares-table-toggle"><summary>상속지분 표로도 보기</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>구분</th><th>성명</th><th>망자와의 관계</th><th>대습 연결</th><th>법정상속지분</th></tr></thead><tbody>${c.recipients.map((r,i)=>{const info=recipientParents.get(r.id)||{},parent=info.parent,level=info.level||0,base=parent?.name?.trim()||state.decedent.name?.trim()||'피상속인';return `<tr><td><span class="result-role ${level>0?'sub':''}">${esc(stageRole({proxy:false},level,parent))}</span></td><td><b>${esc(r.name||`취득자 ${i+1}`)}</b></td><td>${esc(`망 ${base}의 ${r.relation}`)}</td><td>${esc(r.via||'—')}</td><td><strong>${r.share.str()}</strong></td></tr>`}).join('')}</tbody></table></div></details>`;
-  el.innerHTML=`<div class="results"><div class="choice-info"><b>적용 기준:</b> ${esc(eraText(c.era))}${state.eraMode==='choose'?' (사용자 확인·선택)':' (사망일 기준)'}${c.manual?' · <b>법무사 확인 지분 입력</b>':' · 자동 산출 (개별 법률 요건 확인 필요)'}</div>${nestedProxy?'<div class="warnbox" style="margin-bottom:10px"><b>2차 이상 대습 검토 필요:</b> 차수는 입력 관계를 구분하기 위한 표시입니다. 실제 다단계 대습 인정 여부·사망 순서·배우자의 상속권·적용법은 실무 검증 후 확정하세요.</div>':''}${summary}${review}${staged}${renderShareTree(c)}${table}</div>`;
+  el.innerHTML=`<div class="results"><div class="choice-info"><b>적용 기준:</b> ${esc(eraText(c.era))}${state.eraMode==='choose'?' (사용자 확인·선택)':' (사망일 기준)'}${c.manual?' · <b>법무사 확인 지분 입력</b>':' · 자동 산출 (개별 법률 요건 확인 필요)'}</div>${nestedProxy?'<div class="warnbox" style="margin-bottom:10px"><b>2차 이상 대습 검토 필요:</b> 차수는 입력 관계를 구분하기 위한 표시입니다. 실제 다단계 대습 인정 여부·사망 순서·배우자의 상속권·적용법은 실무 검증 후 확정하세요.</div>':''}${summary}${review}${staged}${renderShareTree(c)}${table}<div class="actionbar"><button type="button" class="primary" data-action="confirmCaseShares">지분산출 확인 · 사건리스트 저장</button><button type="button" class="outline" data-go-stage="files">사건리스트</button></div></div>`;
  }catch(e){
   const oldProxy=['civil60','civil79','custom'].includes(effectiveEra(state.decedent.death))&&state.heirs.some(h=>h.proxy);
   const shortcut=oldProxy?'<div style="margin-top:12px"><button type="button" class="outline" data-action="enableManualShares" style="white-space:normal">법무사 확인 지분 직접 입력하기</button></div>':'';
@@ -1963,6 +1993,17 @@ document.addEventListener('change',e=>{let t=e.target;
 });
 document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(!btn)return;let act=btn.dataset.action,i=Number(btn.dataset.i),j=Number(btn.dataset.j);
  if(act==='changePersonRole'){setProxyRole(btn.dataset.node,btn.dataset.asProxy==='true');return}
+ if(act==='confirmCaseShares'){
+   try{
+    const c=fullValidate();
+    if(!String(state.decedent.name||'').trim())throw Error('피상속인 성명을 입력해 주세요.');
+    if(c.recipients.some(x=>!String(x.name||'').trim()))throw Error('실제 지분취득자 성명을 모두 입력해 주세요.');
+    if(hasSequentialSuccession()&&!isSuccessionReviewed())throw Error('재전상속 사건은 사망 단계별 순위와 서류 검토 확인이 필요합니다.');
+    state.shareCompletedFor=caseShareSignature(state);
+    if(caseSaveCurrent())navigateStage('files');
+   }catch(e){alert('지분산출 확인 전 입력사항을 검토해 주세요: '+e.message)}
+   return;
+ }
  if(act==='goPeopleStage'){navigateStage('people');return}
  if(act==='goHistoryStage'){document.getElementById('historyPanel')?.scrollIntoView({block:'start',behavior:'smooth'});return}
  if(act==='enableManualShares'){
@@ -1991,6 +2032,8 @@ document.querySelector('#caseSaveToList').addEventListener('click',caseSaveCurre
 document.addEventListener('click',e=>{
  const open=e.target.closest('[data-case-open]');
  if(open){caseOpenSaved(open.dataset.caseOpen);return;}
+ const shares=e.target.closest('[data-case-shares]');
+ if(shares){caseOpenSaved(shares.dataset.caseShares,'shares');return;}
  const forms=e.target.closest('[data-case-forms]');
  if(forms){caseOpenSaved(forms.dataset.caseForms,'forms');return;}
  const guide=e.target.closest('[data-case-guide]');
