@@ -609,7 +609,7 @@ const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Dat
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
-const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
+const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:'',heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -1360,7 +1360,7 @@ function minorRepresentativeMarkup(n){
  const age=ageAtAgreement(state.details[n.id]?.ident||'',state.agreementDate,state.details[n.id]?.birthDate||'');
  if(age.status==='unknown')return '<div class="minor-review"><b>미성년 여부 확인 대기</b><p class="note">'+esc(age.reason)+' 협의년월일과 등록번호를 입력하면 자동 판정합니다. 해외 여권 등으로 7번째 숫자가 없는 경우 증빙서류상의 생년월일을 직접 입력할 수 있습니다.</p><label>증빙서류 기준 생년월일 (등록번호로 판정 불가 시)<input class="cell-input" type="date" data-minor-birth="'+attr(n.id)+'" value="'+attr(state.details[n.id]?.birthDate||'')+'"></label></div>';
  if(age.status==='invalid')return '<div class="minor-review warnbox"><b>협의일·등록번호 오류</b><p class="note">'+esc(age.reason)+'</p></div>';
- if(age.status==='adult')return '<div class="minor-review adult"><b>협의일 기준 성년 · 만 '+age.age+'세</b></div>';
+ if(age.status==='adult')return '<div class="minor-review adult"><b>협의일 기준 성년 · 만 '+age.age+'세</b>'+(n.nationality==='외국인'?'<p class="note">외국국적 상속인은 본국법상 법률행위능력 및 국내 협의분할 대리 요건을 별도로 확인해야 합니다.</p>':'')+'</div>';
  const rep=ensureRepresentativeData(n.id),id=attr(n.id);
  const opts=(val,name)=>'<option value="'+val+'"'+(rep.mode===val?' selected':'')+'>'+name+'</option>';
  const field=(label,key,placeholder)=>'<label>'+label+'<input class="cell-input" data-rep-id="'+id+'" data-rep-field="'+key+'" value="'+attr(rep[key]||'')+'" placeholder="'+attr(placeholder)+'" autocomplete="off"></label>';
@@ -2106,7 +2106,20 @@ function agreementRepresentativeFor(id){
 }
 function validateAgreementRepresentatives(c){
  if(!todayCheck(state.agreementDate))throw Error('협의년월일을 입력해 주세요.');
- for(const r of c.recipients)agreementRepresentativeFor(r.id);
+ const participants=c.recipients.map(r=>({id:r.id,name:String(r.name||'').trim(),ident:String(state.details[r.id]?.ident||'').replace(/[\s-]/g,'')}));
+ const special=[];
+ for(const r of c.recipients){
+  const rep=agreementRepresentativeFor(r.id);
+  if(!rep||rep.kind==='성년의제 확인')continue;
+  const ident=String(rep.ident||'').replace(/[\s-]/g,''),name=String(rep.name||'').trim();
+  if(participants.some(x=>x.id!==r.id&&((ident&&x.ident===ident)||(name&&x.name===name))))
+   throw Error((r.name||'미성년 상속인')+'의 '+rep.kind+' '+name+'은(는) 다른 공동상속인으로 입력되어 있습니다. 분할협의 이해상반 여부와 대리인 자격을 다시 검토하세요.');
+  if(rep.kind==='특별대리인')special.push({id:r.id,name,ident});
+ }
+ for(let i=0;i<special.length;i++)for(let j=i+1;j<special.length;j++){
+  if((special[i].ident&&special[i].ident===special[j].ident)||special[i].name===special[j].name)
+   throw Error('복수 미성년 상속인에게 동일한 특별대리인이 입력되었습니다. 미성년자별 특별대리인 선임 여부와 법원 결정문을 확인하세요.');
+ }
 }
 function buildDocument(c){
  if(!state.decedent.name?.trim())throw Error('피상속인 성명을 입력하세요.');
