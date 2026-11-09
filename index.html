@@ -368,6 +368,31 @@ button.danger{background:#f5f5f5;color:#434b55}
 .form-case-nav button{font-size:12px;min-height:36px}
 .case-list-actions .case-write-btn{background:#eaf2ff;border-color:#b9d0f4;color:#2455a3;font-weight:750}
 @media(max-width:700px){.case-list-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding-left:0}.case-list-actions button{min-width:0}.form-case-nav button{flex:1}}
+
+/* C7 AI 상속 토탈: 상위메뉴와 사건별 업무메뉴를 두 단계로 분리 */
+.total-main-nav{display:flex;gap:8px;align-items:center;border-bottom:1px solid #dbe4ef;padding:8px 0 12px;margin-bottom:7px}
+.total-main-nav button{border:1px solid #d7e0ec;border-radius:10px;padding:11px 17px;background:#fff;color:#45617e;font-weight:750;font-size:14px;min-height:43px}
+.total-main-nav button.active{background:#364252;color:#fff;border-color:#364252}
+.total-main-nav button:focus-visible,.total-hub-links button:focus-visible{outline:2px solid #255ddd;outline-offset:2px}
+.stage-nav{margin-top:4px}
+.stage-nav.stage-nav-hidden{display:none}
+.total-hub{margin-top:12px}
+.total-hub-head>div{display:flex;flex-direction:column;gap:4px}
+.total-hub-head>div>strong{font-size:19px;letter-spacing:-.4px;color:#1a355b}
+.total-hub-links button:first-child{background:#ecf3ff;border-color:#aec8f1}
+.total-hub-links button:first-child b{color:#174fa0}
+.total-hub-bottom{margin-top:14px;padding-top:14px;border-top:1px solid #e1e8f3;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.total-hub-bottom>span{font-size:12px;color:#6b7f95;flex:1 1 230px}
+.total-hub-bottom button{font-size:12px;min-height:38px}
+@media(max-width:600px){
+ .total-main-nav button{flex:1 1 0;font-size:13px}
+ .total-hub-head{display:flex;align-items:flex-start}
+ .total-hub-head>small{font-size:11px}
+ .total-hub-bottom{display:grid;grid-template-columns:1fr 1fr}
+ .total-hub-bottom>span{grid-column:1/-1}
+ .total-hub-bottom button{min-width:0;font-size:11px;padding:9px 6px}
+}
+
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -381,24 +406,34 @@ button.danger{background:#f5f5f5;color:#434b55}
 <noscript><div class="errorbox" style="margin-bottom:14px"><b>스크립트가 실행되지 않고 있습니다.</b> 파일 미리보기에서는 버튼이 작동하지 않을 수 있습니다. HTML 파일을 다운로드하여 Chrome 또는 Edge 브라우저로 열어 주세요.</div></noscript>
 
 
-<nav class="stage-nav" id="stageNav" aria-label="AI 상속 토탈 업무 메뉴">
- <button type="button" data-go-stage="property">① 부동산 선택</button>
- <button type="button" data-go-stage="people">② 상속관계 입력</button>
- <button type="button" data-go-stage="shares">③ 지분 계산</button>
- <button type="button" data-go-stage="cost">④ 상속비용 산출 <span class="nav-upcoming">연동 예정</span></button>
- <button type="button" data-go-stage="forms">⑤ 서류 자동작성·출력</button>
- <button type="button" data-go-stage="documents">상속 준비서류</button>
+<nav class="total-main-nav" id="totalMainNav" aria-label="상속 토탈 상위 메뉴">
+ <button type="button" data-go-stage="home">상속 토탈 홈</button>
  <button type="button" data-go-stage="files">사건리스트</button>
 </nav>
-<section class="total-hub" aria-label="상속 토탈 핵심업무">
- <div class="total-hub-head"><strong>상속업무 한 곳에서</strong><small>필요한 업무를 바로 선택 · 입력한 사건정보 재사용</small></div>
+<nav class="stage-nav" id="stageNav" aria-label="사건별 상세 업무 메뉴">
+ <button type="button" data-go-stage="property">① 부동산 선택</button>
+ <button type="button" data-go-stage="people">② 상속관계 입력</button>
+ <button type="button" data-go-stage="cost">③ AI 상속비용 산출 <span class="nav-upcoming">연동 예정</span></button>
+ <button type="button" data-go-stage="shares">④ AI 상속지분 계산</button>
+ <button type="button" data-go-stage="forms">⑤ 서류 자동작성·출력</button>
+ <button type="button" data-go-stage="documents">상속 준비서류</button>
+</nav>
+<div class="stage-screen" data-stage="home">
+<section class="total-hub" aria-label="상속 토탈 홈 핵심업무">
+ <div class="total-hub-head"><div><strong>AI 상속 토탈</strong><small>비용산출 · 지분계산 · 서류작성</small></div><small>필요한 업무를 선택하면 바로 해당 화면으로 이동합니다.</small></div>
  <div class="total-hub-links">
-  <button type="button" data-go-stage="shares"><b>AI 상속지분 계산</b><small>법정·대습·재전상속</small></button>
   <button type="button" data-go-stage="cost"><b>AI 상속비용 산출</b><small>C7 비용계산 연동 예정</small></button>
-  <button type="button" data-go-stage="forms"><b>서류 자동작성·출력</b><small>위임장·협의분할서</small></button>
-  <button type="button" data-go-stage="documents"><b>고객 준비서류</b><small>사망 시기별 발급처</small></button>
+  <button type="button" data-go-stage="shares"><b>AI 상속지분 계산</b><small>법정·대습·재전상속</small></button>
+  <button type="button" data-go-stage="forms"><b>서류 자동작성·출력</b><small>사건별 위임장·협의분할서</small></button>
+  <button type="button" data-go-stage="documents"><b>상속 준비서류</b><small>사망 시기별 발급처·안내문</small></button>
+ </div>
+ <div class="total-hub-bottom">
+  <span>사건을 선택한 후 비용·지분·서류 업무에 같은 정보를 활용합니다.</span>
+  <button type="button" class="outline" data-go-stage="files">사건리스트에서 시작 →</button>
+  <button type="button" class="outline" data-go-stage="property">새 상속사건 입력 →</button>
  </div>
 </section>
+</div>
 <div class="stage-screen" data-stage="property">
 <section class="panel"><div class="panelhead"><h2>01. 부동산 선택 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
 <div class="choice-info"><b>C7 연동 시 공통 부동산 리스트에서 선택한 부동산을 가져오는 화면입니다.</b><br>현재 오프라인 시제품에서는 부동산을 직접 등록하고 체크해 선택합니다. 여러 부동산을 선택할 수 있으며, 선택된 부동산의 피상속인 소유지분만 계산·협의서에 반영됩니다.</div>
@@ -1187,7 +1222,7 @@ function clearProxyDeathDrafts(){proxyDeathDrafts=Object.create(null)}
 let selectedPersonId='__decedent__';
 let treeEditorOpen=false;
 let treeMini=true;
-let activeStage='property';
+let activeStage='home';
 function proxyDeathOrderWarning(){
  if(!todayCheck(state.decedent.death))return '';
  let msgs=[];
@@ -1603,12 +1638,21 @@ function formPrintSelected(toFile){
 
 function applyActiveStage(){
  if(activeStage==='agreement')activeStage='forms';
+ const mainStage=activeStage==='files'||activeStage==='home';
  document.querySelectorAll('.stage-screen').forEach(el=>el.classList.toggle('is-active',el.dataset.stage===activeStage));
- document.querySelectorAll('[data-go-stage]').forEach(btn=>{btn.classList.toggle('active',btn.dataset.goStage===activeStage);btn.disabled=false;});
+ document.querySelectorAll('[data-go-stage]').forEach(btn=>{
+  const isHome=btn.dataset.goStage===activeStage;
+  const inTopMenu=!!btn.closest('#totalMainNav');
+  btn.classList.toggle('active',inTopMenu?(mainStage&&isHome):(!mainStage&&isHome));
+  btn.disabled=false;
+ });
+ document.getElementById('stageNav')?.classList.toggle('stage-nav-hidden',mainStage);
 }
 function navigateStage(name){
  if(name==='agreement')name='forms';
- activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();document.getElementById('stageNav')?.scrollIntoView({block:'start',behavior:'instant'});
+ activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
+ const rootMenu=name==='home'||name==='files';
+ document.getElementById(rootMenu?'totalMainNav':'stageNav')?.scrollIntoView({block:'start',behavior:'instant'});
 }
 // 1차 일반 상속인과 1차·2차 대습상속인을 모두 선택 후 다음 차수의 피대습자로 변경할 수 있습니다.
 function setPersonRole(id,role){
