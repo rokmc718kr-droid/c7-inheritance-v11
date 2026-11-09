@@ -424,6 +424,24 @@ button.danger{background:#f5f5f5;color:#434b55}
  .stage-nav button{font-size:12px;padding:10px 12px}
 }
 
+
+/* 협의년월일 기준 미성년자 검토 */
+.agreement-date-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:10px}
+.agreement-date-row label{font-size:12px;font-weight:700;display:flex;flex-direction:column;gap:5px;min-width:210px}
+.agreement-date-row p{flex:1;min-width:180px}
+.minor-summary{border:1px solid #e8bb80;background:#fff7e6;padding:12px;border-radius:10px;font-size:12px;line-height:1.8;color:#794b19}
+.minor-review{border:1px solid #ecd1a5;background:#fff9ef;border-radius:10px;padding:12px;margin:12px 0}
+.minor-review strong{color:#8a431a;font-size:13px}
+.minor-review.adult{border-color:#cae0cb;background:#f2f8f3;color:#2c6b45}
+.minor-review.adult b{color:#2c6b45}
+.minor-rep-mode{display:block;font-size:12px;font-weight:700;color:#445971}
+.minor-rep-mode select{margin-top:5px}
+.minor-rep-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:11px}
+.minor-rep-fields label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#52657d}
+.minor-rep-fields input{min-width:0}
+.minor-legal-check{grid-column:1/-1;display:flex!important;flex-direction:row!important;align-items:start;gap:8px;font-weight:600}
+.minor-legal-check input{min-width:18px;width:18px;height:18px}
+@media(max-width:490px){.minor-rep-fields{grid-template-columns:1fr}}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -456,6 +474,10 @@ button.danger{background:#f5f5f5;color:#434b55}
 </div>
 <div class="stage-screen" data-stage="people">
 <section class="panel method-compact" id="methodPanel"><div class="panelhead"><h2>02. 상속방법 선택</h2><small>선택 결과에 따라 필요한 입력 화면이 자동으로 열립니다.</small></div><div class="body"><div class="segmented"><label><input type="radio" name="method" value="statute"> 법정상속</label><label><input type="radio" name="method" value="agreement"> 협의분할상속</label></div><p class="note" id="methodHint"></p></div></section>
+<section class="panel" id="agreementDatePanel">
+ <div class="panelhead"><h2>협의분할 연월일</h2><span class="tag">미성년자 판단 기준일</span></div>
+ <div class="body"><div class="agreement-date-row"><label>협의년월일 <input type="date" class="cell-input" id="agreementDatePeople"></label><p class="note">이 날짜를 기준으로 상속인 등록번호에서 미성년 여부를 확인합니다. 협의일을 바꾸면 미성년 여부도 다시 계산됩니다. 2013. 7. 1. 이전은 민법상 성년 20세, 이후는 19세가 기준입니다.</p></div><div id="minorPeopleSummary"></div></div>
+</section>
 <section class="panel hidden" id="decedentHiddenPanel"><div class="panelhead"><h2>02. 피상속인 인적사항</h2><small>협의서 작성에 필요한 성명·등록번호·주소를 입력합니다.</small></div><div class="body"><div class="row"><div class="field"><label>피상속인 성명</label><input id="decedentName" placeholder="예: 홍길동" autocomplete="off"></div><div class="field"><label>등록번호 (주민등록번호 등)</label><input id="decedentIdent" placeholder="피상속인 등록번호" autocomplete="off"></div><div class="field"><label>사망년월일 <span style="color:#cf3d3d">*</span></label><input id="decedentDeath" type="date"></div></div><div class="row control-row"><div class="field"><label>피상속인 주소</label><input id="decedentAddress" placeholder="주소 (협의서 기재용)" autocomplete="off"></div></div></div></section>
 
 <section class="panel people-compact"><div class="panelhead"><h2>03. 피상속인 · 상속인 관계 트리 <span id="heirCount" class="tag"></span></h2></div><div class="body"><div id="proxyChronologyWarning" aria-live="polite"></div><div id="heirsView"></div><p class="note">상속인을 선택한 뒤 <b>[피대습자로 선택]</b>을 누르면 대습상속인 추가가 가능합니다. <b>1차 대습상속인을 선택하면 2차 피대습자로 변경</b>할 수 있습니다. 관계인을 선택하면 성명·등록번호·주소·관계를 수정하거나 삭제할 수 있습니다.</p></div></section>
@@ -579,7 +601,7 @@ const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Dat
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
-const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
+const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -725,7 +747,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
+ state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??=now();state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -1278,6 +1300,84 @@ function countrySelectMarkup(node){
  return '<div class="field wide"><label>외국인 국가명</label><select class="cell-input" data-node-id="'+attr(node.id)+'" data-country-select="1" aria-label="외국인 국가명 선택">'+options+'</select></div>'+manual;
 }
 
+
+/* 협의일 기준 미성년 판정: 주민번호 앞 6자리 및 뒷자리 첫 번호로 출생연도 확인.
+   2013.7.1 이전 성년 20세 / 이후 성년 19세; 혼인 성년의제·외국법 예외는 수동 검증. */
+function birthDateFromIdentity(raw){
+ const id=String(raw||'').replace(/[\s-]/g,'');
+ if(!/^\d{7,13}$/.test(id))return {valid:false,reason:'주민등록번호·외국인등록번호 7번째 숫자까지 입력해야 확인됩니다.'};
+ const century={'9':1800,'0':1800,'1':1900,'2':1900,'3':2000,'4':2000,'5':1900,'6':1900,'7':2000,'8':2000}[id[6]];
+ if(!century)return {valid:false,reason:'등록번호의 출생 세기를 자동판정할 수 없습니다. 생년월일을 별도로 확인하세요.'};
+ const born=String(century+Number(id.slice(0,2)))+'-'+id.slice(2,4)+'-'+id.slice(4,6);
+ if(!todayCheck(born))return {valid:false,reason:'등록번호에 기재된 생년월일을 확인하세요.'};
+ return {valid:true,born};
+}
+function ageAtAgreement(id,date){
+ if(!todayCheck(date))return {status:'unknown',reason:'협의년월일을 입력하세요.'};
+ const birth=birthDateFromIdentity(id);
+ if(!birth.valid)return {status:'unknown',reason:birth.reason};
+ if(birth.born>date)return {status:'invalid',reason:'협의년월일이 출생일보다 빠릅니다.'};
+ const threshold=date<'2013-07-01'?20:19;
+ const y=Number(date.slice(0,4))-Number(birth.born.slice(0,4));
+ const age=y-(date.slice(5)<birth.born.slice(5)?1:0);
+ return {status:age<threshold?'minor':'adult',age,threshold,born:birth.born};
+}
+function ensureRepresentativeData(personId){
+ state.details[personId]??={};
+ const detail=state.details[personId];
+ detail.representative??={mode:'review',name:'',ident:'',address:'',relationship:'',court:'',caseNumber:'',exceptionReason:'',legalConflictCleared:false};
+ return detail.representative;
+}
+function minorPeople(){
+ const arr=[];
+ if(state.method!=='agreement')return arr;
+ traverseNodes(state.heirs,n=>{
+  if(n.proxy||n.postDeath)return;
+  const identity=state.details[n.id]?.ident||'';
+  const age=ageAtAgreement(identity,state.agreementDate);
+  if(age.status==='minor')arr.push({node:n,age,rep:ensureRepresentativeData(n.id)});
+ });
+ return arr;
+}
+function minorityReviewSummary(){
+ if(state.method!=='agreement')return '';
+ const minors=minorPeople();
+ if(!minors.length)return '<p class="note">협의일 기준 미성년자로 확인된 상속인은 없습니다. 등록번호 미입력자·외국인·혼인 성년의제 등은 별도 확인하세요.</p>';
+ return '<div class="minor-summary"><b>⚠ 협의일 기준 미성년 상속인 '+minors.length+'명</b><br>'
+ +minors.map(p=>esc((p.node.name||'성명 미입력')+' (만 '+p.age.age+'세)')).join(' · ')
+ +'<br>상속관계 트리에서 해당 상속인을 선택하여 법정대리인/특별대리인을 확인하세요. 친권자와 공동상속인이거나 미성년자끼리 이해상반하는 경우 특별대리인 선임 검토가 필요합니다.</div>';
+}
+function minorRepresentativeMarkup(n){
+ if(state.method!=='agreement'||n.proxy||n.postDeath)return '';
+ const age=ageAtAgreement(state.details[n.id]?.ident||'',state.agreementDate);
+ if(age.status==='unknown')return '<div class="minor-review"><b>미성년 여부 확인 대기</b><p class="note">'+esc(age.reason)+' 협의년월일과 등록번호를 입력하면 자동 판정합니다.</p></div>';
+ if(age.status==='invalid')return '<div class="minor-review warnbox"><b>협의일·등록번호 오류</b><p class="note">'+esc(age.reason)+'</p></div>';
+ if(age.status==='adult')return '<div class="minor-review adult"><b>협의일 기준 성년 · 만 '+age.age+'세</b></div>';
+ const rep=ensureRepresentativeData(n.id),id=attr(n.id);
+ const opts=(val,name)=>'<option value="'+val+'"'+(rep.mode===val?' selected':'')+'>'+name+'</option>';
+ const field=(label,key,placeholder)=>'<label>'+label+'<input class="cell-input" data-rep-id="'+id+'" data-rep-field="'+key+'" value="'+attr(rep[key]||'')+'" placeholder="'+attr(placeholder)+'" autocomplete="off"></label>';
+ let details='';
+ if(rep.mode==='special'||rep.mode==='legal'){
+  details='<div class="minor-rep-fields">'+field(rep.mode==='special'?'특별대리인 성명':'법정대리인 성명','name','대리인 성명')
+   +field('대리인 등록번호','ident','주민등록번호 등')
+   +field('대리인과의 관계','relationship','예: 외조부')
+   +field('대리인 주소','address','주소');
+  if(rep.mode==='special')details+=field('선임 가정법원','court','예: 서울가정법원')+field('특별대리인 선임 사건번호','caseNumber','예: 2026느단...');
+  else details+='<label class="minor-legal-check"><input type="checkbox" data-rep-id="'+id+'" data-rep-check="legalConflictCleared" '+(rep.legalConflictCleared?'checked':'')+'> 법정대리인의 공동상속 여부와 이해상반이 없음을 확인했습니다.</label>';
+  details+='</div>';
+ }
+ if(rep.mode==='exception')details='<div class="minor-rep-fields">'+field('성년의제 등 예외 적용 근거','exceptionReason','예: 혼인에 따른 성년의제 확인자료')+'</div>';
+ return '<div class="minor-review"><strong>⚠ 미성년 상속인 · 협의일 만 '+age.age+'세</strong>'
+ +'<p class="note">주민등록번호와 협의년월일로 자동 판정했습니다. 특별대리인 필요 여부는 이해상반관계·친권자·후견인·혼인 성년의제 등을 검토하여 결정합니다.</p>'
+ +'<label class="minor-rep-mode">협의분할 대리 방식<select class="cell-input" data-rep-id="'+id+'" data-rep-field="mode">'
+ +opts('review','선택 필요 · 이해상반관계 검토')
+ +opts('special','가정법원 선임 특별대리인')
+ +opts('legal','법정대리인 (이해상반 없음 확인)')
+ +opts('exception','성년의제 또는 법적 예외 (근거 확인)')
+ +'</select></label>'+details
+ +'<p class="note">민법 제921조: 친권자가 공동상속인이거나 친권에 따르는 수인의 미성년자 사이 이해상반이 있는 경우 각 미성년자별 특별대리인 선임을 검토합니다. 지정 전에는 협의서 확정출력을 제한합니다.</p></div>';
+}
+
 function renderHeirs(){
  const target=document.querySelector('#heirsView');
  // 입력 단계에서 피상속인보다 늦게 사망한 사람을 피대습자로 지정한 오류를 즉시 안내.
@@ -1338,9 +1438,13 @@ function renderHeirs(){
   <div class="field"><label>성명</label><input class="cell-input" data-node-id="${id}" data-node-prop="name" value="${attr(person.name)}" placeholder="성명" autocomplete="off"></div>
   <div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-detail="${id}" data-key="ident" value="${attr(info.ident||'')}" placeholder="등록번호" autocomplete="off"></div>
   <div class="field wide"><label>주소</label><input class="cell-input" data-detail="${id}" data-key="address" value="${attr(info.address||'')}" placeholder="주소" autocomplete="off"></div></div>
+  ${minorRepresentativeMarkup(person)}
   ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (연·월·일 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
- }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form"><div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
+ }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
+ <div class="field nationality-field"><label>피상속인 국적/신분</label><select class="cell-input" data-decedent-edit="nationality"><option value="내국인" ${state.decedent.nationality==='내국인'?'selected':''}>내국인</option><option value="재외국민" ${state.decedent.nationality==='재외국민'?'selected':''}>재외국민</option><option value="외국인" ${state.decedent.nationality==='외국인'?'selected':''}>외국인</option></select></div>
+ ${countrySelectMarkup({...state.decedent,id:'__decedent__'})}
+ <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 재전상속 피상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
  <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
@@ -1828,6 +1932,10 @@ function renderAll(){normalise();
  document.querySelector('#methodHint').textContent=state.method==='agreement'?'협의로 취득할 상속인을 아래에서 체크한 뒤, 필요한 경우 부동산별 지분을 조정하고 협의서를 출력합니다.':'법정상속지분을 자동 계산하여 각 부동산의 피상속인 소유지분에 적용합니다.';
  document.querySelector('#allocPanel').classList.toggle('hidden',state.method!=='agreement');
  document.querySelector('#docPanel').classList.toggle('hidden',state.method!=='agreement');
+ const agreementPanel=document.getElementById('agreementDatePanel');
+ if(agreementPanel)agreementPanel.classList.toggle('hidden',state.method!=='agreement');
+ const agreementInput=document.getElementById('agreementDatePeople');if(agreementInput)agreementInput.value=state.agreementDate||'';
+ const minSum=document.getElementById('minorPeopleSummary');if(minSum)minSum.innerHTML=minorityReviewSummary();
  renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocGuide();applyActiveStage();save();renderCaseList()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
@@ -1940,7 +2048,10 @@ document.addEventListener('change',e=>{let t=e.target;
   state.successionReviewed=false;
   renderAll();return;
  }
-  if(t.matches('[data-decedent-edit]')){state.decedent[t.dataset.decedentEdit]=t.value;renderAll();return}
+  if(t.matches('[data-decedent-edit]')){
+  if(t.dataset.decedentEdit==='nationality'&&!['내국인','재외국민','외국인'].includes(t.value))return;
+  state.decedent[t.dataset.decedentEdit]=t.value;renderAll();return
+ }
 	 if(t.matches('[name="eraMode"]')){state.eraMode=t.value;state.eraVerified=false;renderAll();return}
  if(t.matches('#eraOverride')){state.eraOverride=t.value;state.eraVerified=false;renderAll();return}
  if(t.matches('#eraReasonType')){state.eraReasonType=t.value;renderAll();return}
@@ -1957,13 +2068,17 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-legacy-register]')){let h=state.heirs.find(x=>x.id===t.dataset.legacyRegister);if(h)h.legacyRegister=t.value;renderAll();return}
  if(t.matches('[name="method"]')){state.method=t.value;renderAll();return}
  if(t.matches('[name="docmode"]')){state.docMode=t.value;renderDocs();save();return}
- if(t.matches('#agreementDate')){state.agreementDate=t.value;save();return}
+ if(t.matches('#agreementDate')||t.matches('#agreementDatePeople')){
+  state.agreementDate=t.value;
+  state.successionReviewed=false;
+  renderAll();return;
+ }
  if(t.matches('[data-receive]')){const id=t.dataset.receive;state.agreementSelected=t.checked?[...new Set([...state.agreementSelected,id])]:state.agreementSelected.filter(x=>x!==id);try{autoAllocateSelected(calculate())}catch{}renderAlloc();renderDocs();save();return}
  if(t.matches('[data-role]')){setPersonRole(t.dataset.role,t.dataset.value);return}
  if(t.matches('[data-era-relation]')){const n=findNode(t.dataset.nodeId);if(!n)return;let par=null;traverseNodes(state.heirs,(x,l,p)=>{if(x.id===n.id)par=p});applyRelationVariant(n,t.value,par);renderAll();return}
  if(t.matches('[data-property-selected]')){let p=state.properties.find(p=>p.id===t.dataset.propertySelected);if(p){p.selected=t.checked;renderAll()}return}
  if(t.matches('[data-country-select]')){
-  const n=findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
+  const n=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
   const next=t.value;
   if(next!==''&&next!=='직접입력'&&!FOREIGN_COUNTRIES.includes(next))return;
   n.country=next;
@@ -1971,7 +2086,7 @@ document.addEventListener('change',e=>{let t=e.target;
   renderAll();return;
  }
  if(t.matches('[data-country-other]')){
-  const n=findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
+  const n=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
   n.country='직접입력';n.countryCustom=t.value.trim();
   renderAll();return;
  }
@@ -1989,7 +2104,21 @@ document.addEventListener('change',e=>{let t=e.target;
   setTimeout(renderAll,0);return}
  if(t.matches('[data-alloc]')){let p=state.properties.find(x=>x.id===t.dataset.alloc);if(!p)return;p.allocUserEdited=true;p.alloc[t.dataset.rec]=t.value;refreshAllocationSums((()=>{try{return calculate()}catch{return null}})());save();return}
  if(t.matches('[data-full-owner]')){if(!t.value)return;let p=state.properties.find(x=>x.id===t.dataset.fullOwner);if(!p)return;let c;try{c=calculate()}catch(e){alert(e.message);return}p.allocUserEdited=true;c.recipients.forEach(r=>p.alloc[r.id]=r.id===t.value?'1':'0');renderAlloc();save();return}
- if(t.matches('[data-detail]')){state.details[t.dataset.detail]??={};state.details[t.dataset.detail][t.dataset.key]=t.value;save();if(state.method==='agreement')setTimeout(()=>renderDocs(),0)}
+ if(t.matches('[data-rep-id]')){
+  const id=t.dataset.repId,person=findNode(id);
+  if(!person)return;
+  const rep=ensureRepresentativeData(id);
+  if(t.dataset.repCheck)rep[t.dataset.repCheck]=t.checked;
+  else if(['mode','name','ident','address','relationship','court','caseNumber','exceptionReason'].includes(t.dataset.repField)){
+   rep[t.dataset.repField]=t.value;
+   if(t.dataset.repField==='mode')rep.legalConflictCleared=false;
+  }
+  save();renderHeirs();if(state.method==='agreement')renderDocs();return;
+ }
+ if(t.matches('[data-detail]')){
+  state.details[t.dataset.detail]??={};state.details[t.dataset.detail][t.dataset.key]=t.value;
+  save();if(state.method==='agreement'){renderHeirs();renderDocs()}
+ }
 });
 document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(!btn)return;let act=btn.dataset.action,i=Number(btn.dataset.i),j=Number(btn.dataset.j);
  if(act==='changePersonRole'){setProxyRole(btn.dataset.node,btn.dataset.asProxy==='true');return}
