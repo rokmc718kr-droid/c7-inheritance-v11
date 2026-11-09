@@ -2188,6 +2188,15 @@ document.addEventListener('click',e=>{
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
 
 document.addEventListener('input',e=>{
+ const countryInput=e.target.closest('[data-country-other]');
+ if(countryInput){
+  const person=countryInput.dataset.nodeId==='__decedent__'?state.decedent:findNode(countryInput.dataset.nodeId);
+  if(!person||person.nationality!=='외국인')return;
+  person.country='직접입력';
+  person.countryCustom=countryInput.value.trim();
+  save();
+  return;
+ }
  const field=e.target.closest('[data-form-info]');if(!field)return;
  const key=field.dataset.formInfo;
  if(!['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress'].includes(key))return;
@@ -2298,9 +2307,6 @@ document.addEventListener('change',e=>{let t=e.target;
    applyNationalitySelection(person,t.value);
    renderAll();
   }else if(person.nationality==='외국인'){
-   person.country='직접입력';
-   person.countryCustom=t.value.trim();
-   save();
    if(state.method==='agreement')renderDocs();
    applyActiveStage();
    renderCaseList();
