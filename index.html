@@ -793,6 +793,15 @@ function updateProxyDatePart(nodeId,part,value){
   }else{
    node.death=date;
    delete proxyDeathDrafts[nodeId];
+   if(node.proxy&&todayCheck(state.decedent.death)&&date>state.decedent.death){
+    node.proxy=false;node.postDeath=true;state.oldProxyVerified=false;state.successionReviewed=false;
+    showStatus('최초 피상속인보다 늦게 사망했습니다. 입력된 하위 상속인 정보는 유지하며 재전상속 피상속인으로 자동 구분했습니다.');
+   }else if(node.postDeath&&todayCheck(state.decedent.death)&&date<state.decedent.death){
+    if(['아들','딸','형제','자매'].includes(node.relation)){
+     node.postDeath=false;node.proxy=true;state.successionReviewed=false;
+     showStatus('최초 피상속인보다 먼저 사망했습니다. 피대습자로 자동 구분했습니다.');
+    }else showStatus('선사망 관계인의 대습상속권을 검토하세요.',true);
+   }
   }
  }else{
   node.death='';
@@ -816,7 +825,7 @@ function proxyDeathOrderWarning(){
  return '<div role="alert" class="warnbox" style="margin:10px 0;border-color:#d9a9a9;background:#fff6f6;color:#8e222a;font-size:12px;line-height:1.75">'
  +'<strong>⚠ 대습상속 조건에 맞지 않는 사망일입니다.</strong><br>'
  +msgs.map(esc).join('<br>')
- +'<br>피상속인보다 늦게 사망한 상속인은 피대습자가 아닙니다. 최초 상속지분을 계산한 뒤 그 사람의 사망에 따른 재전상속을 별도로 검토해야 합니다. 현재 V11은 재전상속 자동산출을 지원하지 않습니다.'
+ +'<br>사망일에 따라 "재전상속 피상속인"을 선택해 새로운 상속순위를 다시 판단하세요.'
  +'</div>';
 }
 function renderHeirs(){
@@ -894,19 +903,21 @@ function setPersonRole(id,role){
  const old=n.proxy?'proxy':n.postDeath?'post':'heir';
  if(role===old){renderHeirs();return;}
  if(role==='proxy'&&!(depth===0?['아들','딸','형제','자매']:['아들','딸']).includes(n.relation)){
-  alert('피대습자 지정은 최초 단계의 아들·딸·형제·자매 또는 하위 단계의 아들·딸에서 지원합니다. 관계를 확인하세요.');
-  renderHeirs();return;
+  alert('피대습자 지정은 최초 단계의 아들·딸·형제·자매 또는 하위 단계의 아들·딸에서 지원합니다. 관계를 확인하세요.');renderHeirs();return;
  }
- if(old!=='heir'&&n.sub?.length){
-  let cnt=0;function count(ns){for(const x of ns){cnt++;count(x.sub||[])}}count(n.sub);
-  if(!confirm('상속 구분을 바꾸면 아래에 연결된 관계인 '+cnt+'명의 입력정보가 삭제됩니다. 계속하시겠습니까?')){renderHeirs();return;}
+ const preserve=(old==='proxy'&&role==='post')||(old==='post'&&role==='proxy');
+ if(preserve&&n.sub?.length){
+  if(!confirm('상속 구분 변경 후 기존 하위 가족관계를 그대로 유지합니다. 사망일에 따라 관계와 적용법을 다시 확인해야 합니다. 계속하시겠습니까?')){renderHeirs();return;}
+ }else if(old!=='heir'&&n.sub?.length){
+  let cnt=0;const count=ns=>ns.forEach(x=>{cnt++;count(x.sub||[])});count(n.sub);
+  if(!confirm('상속 구분 변경 시 연결된 하위 관계인 '+cnt+'명의 입력정보가 삭제됩니다. 계속하시겠습니까?')){renderHeirs();return;}
  }
- if(old!=='heir')n.sub=[];
- n.proxy=role==='proxy';n.postDeath=role==='post';n.death='';
- if(n.proxy||n.postDeath)n.sub=[makeSub()];
+ if(!preserve&&old!=='heir')n.sub=[];
+ n.proxy=role==='proxy';n.postDeath=role==='post';
+ if(role==='heir')n.death='';
+ if((n.proxy||n.postDeath)&&!n.sub?.length)n.sub=[makeSub()];
  delete proxyDeathDrafts[n.id];state.oldProxyVerified=false;state.successionReviewed=false;
- renderAll();
- showStatus((n.name||n.relation)+' → '+(role==='proxy'?'피대습자':role==='post'?'재전상속 피상속인':'상속인')+'으로 변경했습니다.');
+ renderAll();showStatus((n.name||n.relation)+' → '+(role==='proxy'?'피대습자':role==='post'?'재전상속 피상속인':'상속인')+'으로 변경했습니다.');
 }
 function setProxyRole(id,wantProxy){setPersonRole(id,wantProxy?'proxy':'heir')}
 function stageRole(n,level){if(n.postDeath)return (level>0?level+'차 대습상속인 · ':'')+'재전상속 피상속인';return n.proxy?`${level+1}차 피대습자`:(level>0?`${level}차 대습상속인`:'상속인')}
