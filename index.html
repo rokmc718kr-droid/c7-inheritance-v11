@@ -359,6 +359,15 @@ button.danger{background:#f5f5f5;color:#434b55}
 .case-list-actions button{font-size:11px;padding:7px 9px;min-height:34px}
 @media(max-width:700px){.case-list-card{align-items:start;flex-wrap:wrap}.case-list-actions{width:100%;padding-left:41px}.case-list-actions button{flex:1}.case-list-toolbar .actionbar{width:100%;margin:0;display:flex;flex-wrap:wrap}.case-list-toolbar .actionbar button{flex:1}}
 
+
+/* 사건별 서류 작성 */
+.form-case-context{display:flex;flex-direction:column;gap:5px;padding:13px 14px;margin-bottom:9px;border:1px solid #cddced;border-radius:11px;background:#eff5fd}
+.form-case-context strong{font-size:14px;color:#244b78}
+.form-case-context small{font-size:12px;color:#56718e;line-height:1.65}
+.form-case-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.form-case-nav button{font-size:12px;min-height:36px}
+.case-list-actions .case-write-btn{background:#eaf2ff;border-color:#b9d0f4;color:#2455a3;font-weight:750}
+@media(max-width:700px){.case-list-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding-left:0}.case-list-actions button{min-width:0}.form-case-nav button{flex:1}}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -428,7 +437,9 @@ button.danger{background:#f5f5f5;color:#434b55}
 <section class="panel" id="formMakerPanel">
  <div class="panelhead"><h2>05. 법무사 서류 자동작성·출력</h2><span class="tag">지분 계산 없이도 위임장 작성 가능</span></div>
  <div class="body">
-  <div class="choice-info"><strong>상속인 인적사항을 재사용하여 선택 서식을 일괄 작성합니다.</strong><br>사건에 입력한 상속인 또는 직접 입력한 대상자를 선택할 수 있습니다. 주민등록표·가족관계등록 서류의 대리발급은 기관별 지정 양식과 위임 요건을 확인해 제출하세요. 이곳에서 생성하는 문서는 <b>작성·날인 전 검토용 초안</b>입니다.</div>
+  <div id="formCaseContext" class="form-case-context"></div>
+  <div class="form-case-nav"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="light" id="formCaseSaveCurrent">현재 사건 저장</button></div>
+  <div class="choice-info"><strong>선택한 사건의 상속인 인적사항을 재사용하여 서식을 일괄 작성합니다.</strong><br>지분계산 없이도 위임장 작성이 가능합니다. 발급기관의 지정 양식과 위임 요건을 확인해 제출하세요. 생성 문서는 <b>작성·날인 전 검토용 초안</b>입니다.</div>
   <div class="form-maker-grid">
    <div class="form-maker-group">
     <h3>① 수임인(대리인) 정보</h3>
@@ -507,14 +518,14 @@ button.danger{background:#f5f5f5;color:#434b55}
  </section>
 </div>
 <div class="stage-screen" data-stage="files">
-<section class="panel"><div class="panelhead"><h2>상속 사건리스트 <span class="tag" id="caseListCount">0건</span></h2><small>피상속인별 사건 목록 · 빠른 업무 이동</small></div>
+<section class="panel"><div class="panelhead"><h2>상속 사건리스트 <span class="tag" id="caseListCount">0건</span></h2><small>피상속인별 지분계산·서류작성·준비서류 바로가기</small></div>
 <div class="body">
  <div class="case-list-toolbar">
   <div class="case-current"><b>현재 작업 사건</b> <span id="caseActiveLabel">새 사건</span></div>
   <div class="actionbar"><button type="button" class="primary" id="caseSaveToList">현재 사건 목록에 저장</button><button type="button" class="outline" id="caseNewItem">＋ 새 사건</button></div>
  </div>
  <div id="caseListView"></div>
- <p class="note">저장한 사건을 [열기]로 다시 불러오거나 [준비서류]에서 해당 사건의 사망일을 자동 적용할 수 있습니다. 저장된 사건의 수정사항은 같은 브라우저에서 자동 반영됩니다.</p>
+ <p class="note">각 상속사건에서 [서류작성] 또는 [준비서류]를 바로 실행할 수 있습니다. 해당 사건의 인적사항·부동산·서류작성 설정을 불러오고 변경사항을 사건별로 저장합니다.</p>
  <hr class="divider">
  <b>사건파일 백업·불러오기</b>
  <div class="actionbar"><button class="light" id="saveJson">사건파일(JSON) 다운로드</button><button class="light" id="loadJson">사건파일(JSON) 불러오기</button><button class="danger" id="reset">새 사건으로 초기화</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div>
@@ -609,6 +620,7 @@ function renderCaseList(){
   +'<small>사망일 '+esc(m.death?m.death.replaceAll('-','.'):'미입력')+' · '+esc(m.method)+' · 부동산 '+m.count+'건</small>'
   +'<small>최근 저장 '+esc(when)+(active?' · 현재 작업 중':'')+'</small></div>'
   +'<div class="case-list-actions"><button type="button" class="outline" data-case-open="'+attr(row.id)+'">열기</button>'
+  +'<button type="button" class="outline case-write-btn" data-case-forms="'+attr(row.id)+'">서류작성</button>'
   +'<button type="button" class="outline" data-case-guide="'+attr(row.id)+'">준비서류</button>'
   +'<button type="button" class="danger" data-case-delete="'+attr(row.id)+'">삭제</button></div>'
   +'</article>'
@@ -630,8 +642,12 @@ function caseOpenSaved(id,mode='open'){
    [docGuide.year,docGuide.month,docGuide.day]=todayCheck(d)?d.split('-'):['','',''];
    docGuide.method=state.method||'unknown';
    activeStage='documents';
-  }else activeStage='people';
-  renderAll();showStatus(caseMeta(state).name+' 사건을 열었습니다.');
+  }else if(mode==='forms')activeStage='forms';
+  else activeStage='people';
+  const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
+  renderAll();
+  if(mode==='forms')formMakerFeedback(caseMeta(state).name+' 사건의 인적사항과 저장된 서식을 불러왔습니다.');
+  showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
 }
 function caseDeleteSaved(id){
@@ -1474,6 +1490,15 @@ function formSelectedIds(){
 function renderFormMaker(){
  const f=formSettings(),group=document.getElementById('formMakerPanel');
  if(!group)return;
+ const context=document.getElementById('formCaseContext');
+ if(context){
+  const meta=caseMeta(state);
+  context.innerHTML=state.caseId
+   ?'<strong>현재 작성 사건 · '+esc(meta.name)+'</strong><small>사망일 '+esc(meta.death?.replaceAll('-','.')||'미입력')+' · '+esc(meta.method)+' · 부동산 '+meta.count+'건 · 사건리스트 저장됨</small>'
+   :'<strong>현재 작성 사건 · '+esc(meta.name)+' (미저장)</strong><small>이 사건을 사건리스트에 저장하면 위임장 설정도 함께 관리됩니다.</small>';
+ }
+ const currentSave=document.getElementById('formCaseSaveCurrent');
+ if(currentSave)currentSave.textContent=state.caseId?'현재 사건 변경사항 저장':'현재 사건 목록에 저장';
  for(const key of ['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress']){
   const input=group.querySelector('[data-form-info="'+key+'"]');
   if(input&&input!==document.activeElement)input.value=f[key]||'';
@@ -1558,6 +1583,11 @@ function formGeneratedHTML(){
 }
 function formPrintSelected(toFile){
  try{
+  if(!state.caseId){
+   if(!String(state.decedent?.name||'').trim())throw Error('서류작성은 상속사건별로 관리합니다. 피상속인 성명을 입력하거나 사건리스트에서 사건을 선택하세요.');
+   if(!confirm('현재 사건이 사건리스트에 없습니다. 목록에 저장한 다음 서류를 출력하시겠습니까?'))return;
+   if(!caseSaveCurrent())return;
+  }
   const forms=formGeneratedHTML();
   if(!toFile){
    document.querySelector('#printRoot').innerHTML=forms.html;
@@ -1804,6 +1834,10 @@ document.addEventListener('change',e=>{
  }
 });
 document.querySelector('#formSwitchAgreement').addEventListener('click',()=>{state.method='agreement';renderAll();navigateStage('forms');showStatus('협의분할상속으로 변경했습니다. 취득자와 지분 배분을 확인한 뒤 협의서를 작성하세요.');});
+document.querySelector('#formCaseSaveCurrent').addEventListener('click',()=>{
+ if(!String(state.decedent?.name||'').trim()){formMakerFeedback('피상속인 성명을 입력한 뒤 사건리스트에 저장해 주세요.',true);return;}
+ if(caseSaveCurrent()){renderFormMaker();formMakerFeedback('현재 상속사건과 서류작성 설정을 저장했습니다.');}
+});
 document.querySelector('#formPrintSelected').addEventListener('click',()=>formPrintSelected(false));
 document.querySelector('#formSaveSelected').addEventListener('click',()=>formPrintSelected(true));
 
@@ -1917,6 +1951,8 @@ document.querySelector('#caseSaveToList').addEventListener('click',caseSaveCurre
 document.addEventListener('click',e=>{
  const open=e.target.closest('[data-case-open]');
  if(open){caseOpenSaved(open.dataset.caseOpen);return;}
+ const forms=e.target.closest('[data-case-forms]');
+ if(forms){caseOpenSaved(forms.dataset.caseForms,'forms');return;}
  const guide=e.target.closest('[data-case-guide]');
  if(guide){caseOpenSaved(guide.dataset.caseGuide,'guide');return;}
  const del=e.target.closest('[data-case-delete]');
