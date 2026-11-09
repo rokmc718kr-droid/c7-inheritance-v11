@@ -1319,9 +1319,10 @@ function birthDateFromIdentity(raw){
  if(!todayCheck(born))return {valid:false,reason:'등록번호에 기재된 생년월일을 확인하세요.'};
  return {valid:true,born};
 }
-function ageAtAgreement(id,date){
+function ageAtAgreement(id,date,manualBirth=''){
  if(!todayCheck(date))return {status:'unknown',reason:'협의년월일을 입력하세요.'};
- const birth=birthDateFromIdentity(id);
+ let birth=birthDateFromIdentity(id);
+ if(!birth.valid&&todayCheck(manualBirth||''))birth={valid:true,born:manualBirth,manual:true};
  if(!birth.valid)return {status:'unknown',reason:birth.reason};
  if(birth.born>date)return {status:'invalid',reason:'협의년월일이 출생일보다 빠릅니다.'};
  const threshold=date<'2013-07-01'?20:19;
@@ -1341,7 +1342,7 @@ function minorPeople(){
  traverseNodes(state.heirs,n=>{
   if(n.proxy||n.postDeath)return;
   const identity=state.details[n.id]?.ident||'';
-  const age=ageAtAgreement(identity,state.agreementDate);
+  const age=ageAtAgreement(identity,state.agreementDate,state.details[n.id]?.birthDate||'');
   if(age.status==='minor')arr.push({node:n,age,rep:ensureRepresentativeData(n.id)});
  });
  return arr;
@@ -1356,8 +1357,8 @@ function minorityReviewSummary(){
 }
 function minorRepresentativeMarkup(n){
  if(state.method!=='agreement'||n.proxy||n.postDeath)return '';
- const age=ageAtAgreement(state.details[n.id]?.ident||'',state.agreementDate);
- if(age.status==='unknown')return '<div class="minor-review"><b>미성년 여부 확인 대기</b><p class="note">'+esc(age.reason)+' 협의년월일과 등록번호를 입력하면 자동 판정합니다.</p></div>';
+ const age=ageAtAgreement(state.details[n.id]?.ident||'',state.agreementDate,state.details[n.id]?.birthDate||'');
+ if(age.status==='unknown')return '<div class="minor-review"><b>미성년 여부 확인 대기</b><p class="note">'+esc(age.reason)+' 협의년월일과 등록번호를 입력하면 자동 판정합니다. 해외 여권 등으로 7번째 숫자가 없는 경우 증빙서류상의 생년월일을 직접 입력할 수 있습니다.</p><label>증빙서류 기준 생년월일 (등록번호로 판정 불가 시)<input class="cell-input" type="date" data-minor-birth="'+attr(n.id)+'" value="'+attr(state.details[n.id]?.birthDate||'')+'"></label></div>';
  if(age.status==='invalid')return '<div class="minor-review warnbox"><b>협의일·등록번호 오류</b><p class="note">'+esc(age.reason)+'</p></div>';
  if(age.status==='adult')return '<div class="minor-review adult"><b>협의일 기준 성년 · 만 '+age.age+'세</b></div>';
  const rep=ensureRepresentativeData(n.id),id=attr(n.id);
@@ -1702,7 +1703,7 @@ function renderDocGuide(){
  out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'<br><b>망자 국적:</b> '+esc(docGuide.decedentNationality||'내국인')+(docGuide.decedentNationality==='외국인'?' ('+esc(docGuide.decedentCountry||'국가 미입력')+')':'')+'</div>'
  +'<div class="docguide-alert"><strong>중요 · '+(docGuide.decedentNationality==='외국인'?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
  +'<section class="docguide-block"><h3>① 망자(피상속인) 준비서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
- +'<section class="docguide-block"><h3>② 상속인 준비서류</h3>'+list(guide.heirs)+'</section>'
+ +'<section class="docguide-block"><h3>② 내국인 상속인 기본 준비서류 (외국국적자는 아래 국가별 안내 참조)</h3>'+list(guide.heirs)+'</section>'
  +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 준비서류 차이</h3>'+list(guide.method)+'</section>'
  +'<section class="docguide-block"><h3>④ 해당하는 경우 추가 준비서류</h3>'+list(guide.extra)+'</section>'
  +(guide.foreignGroups||[]).map(x=>'<section class="docguide-block"><h3>⑤ '+esc(x.title)+'</h3>'+list(x.items)+'</section>').join('')
@@ -1716,7 +1717,7 @@ function docGuideText(){
   return (i+1)+'. '+name+'\n   발급·준비: '+issuer;
  }).join('\n');
  let text='상속등기 준비서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n망자 국적: '+(docGuide.decedentNationality||'내국인')+(docGuide.decedentNationality==='외국인'?' ('+(docGuide.decedentCountry||'미입력')+')':'')+'\n\n'
- +'[중요] '+guide.oldRegNote+'\n\n[망자 준비서류]\n'+line(guide.decedent)+'\n\n[상속인 준비서류]\n'+line(guide.heirs)+'\n\n[상속방법별 준비서류]\n'+line(guide.method)
+ +'[중요] '+guide.oldRegNote+'\n\n[망자 준비서류]\n'+line(guide.decedent)+'\n\n[내국인 상속인 기본 준비서류]\n'+line(guide.heirs)+'\n\n[상속방법별 준비서류]\n'+line(guide.method)
  +'\n\n[상황별 추가 준비서류]\n'+line(guide.extra);
  for(const group of guide.foreignGroups||[])text+='\n\n['+group.title+']\n'+line(group.items);
  if(guide.foreignMaterials?.length)text+='\n\n[외국문서 인증·번역]\n'+line(guide.foreignMaterials);
@@ -2079,12 +2080,11 @@ function renderAll(){normalise();
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
 function agreementRepresentativeFor(id){
- const info=state.details[id]||{},age=ageAtAgreement(info.ident||'',state.agreementDate);
+ const info=state.details[id]||{},age=ageAtAgreement(info.ident||'',state.agreementDate,info.birthDate||'');
  if(age.status==='invalid')throw Error('상속인 '+(findNode(id)?.name||id)+'의 생년월일과 협의년월일이 맞지 않습니다.');
  if(age.status==='unknown'){
   const node=findNode(id);
-  if(node?.nationality==='내국인')throw Error((node.name||'상속인')+'의 주민번호 앞 7자리에서 협의일 당시 미성년 여부를 확인할 수 없습니다. 생년월일과 성별·세기 번호를 확인하세요.');
-  return null;
+  throw Error((node?.name||'상속인')+'의 협의일 당시 미성년 여부를 확인할 수 없습니다. 국내 등록번호의 7번째 숫자 또는 외국인 신분증명의 생년월일을 확인·입력해 주세요.');
  }
  if(age.status!=='minor')return null;
  const node=findNode(id),rep=ensureRepresentativeData(id),name=node?.name||'성명 미입력';
@@ -2296,6 +2296,13 @@ document.addEventListener('change',e=>{let t=e.target;
   setTimeout(renderAll,0);return}
  if(t.matches('[data-alloc]')){let p=state.properties.find(x=>x.id===t.dataset.alloc);if(!p)return;p.allocUserEdited=true;p.alloc[t.dataset.rec]=t.value;refreshAllocationSums((()=>{try{return calculate()}catch{return null}})());save();return}
  if(t.matches('[data-full-owner]')){if(!t.value)return;let p=state.properties.find(x=>x.id===t.dataset.fullOwner);if(!p)return;let c;try{c=calculate()}catch(e){alert(e.message);return}p.allocUserEdited=true;c.recipients.forEach(r=>p.alloc[r.id]=r.id===t.value?'1':'0');renderAlloc();save();return}
+ if(t.matches('[data-minor-birth]')){
+  const id=t.dataset.minorBirth;if(!findNode(id))return;
+  state.details[id]??={};
+  state.details[id].birthDate=t.value;
+  state.successionReviewed=false;
+  save();renderHeirs();if(state.method==='agreement')renderDocs();return;
+ }
  if(t.matches('[data-rep-id]')){
   const id=t.dataset.repId,person=findNode(id);
   if(!person)return;
