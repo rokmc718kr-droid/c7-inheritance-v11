@@ -557,6 +557,14 @@ button.danger{background:#f5f5f5;color:#434b55}
        <option value="agreement">협의분할상속</option>
       </select>
     </div>
+    <div class="field"><label for="docGuideDecedentNationality">망자 국적/신분</label>
+     <select class="cell-input" id="docGuideDecedentNationality"><option value="내국인">내국인</option><option value="재외국민">재외국민</option><option value="외국인">외국인</option></select></div>
+    <div class="field" id="docGuideDecedentCountryRow"><label for="docGuideDecedentCountry">망자 외국국적 국가명</label>
+     <select class="cell-input" id="docGuideDecedentCountry"><option value="">국가 선택</option><option>미국</option><option>일본</option><option>중국</option><option>캐나다</option><option>독일</option><option>베트남</option><option value="직접입력">기타 국가 직접입력</option></select>
+     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideDecedentCountryOther" placeholder="기타 국가명" maxlength="80"></div>
+    <div class="field"><label for="docGuideForeignHeirCountry">외국국적 상속인 (일반 안내)</label>
+     <select class="cell-input" id="docGuideForeignHeirCountry"><option value="">해당 없음 · 사건 상속인 자동 확인</option><option>미국</option><option>일본</option><option>중국</option><option>캐나다</option><option>독일</option><option>베트남</option><option value="직접입력">기타 국가 직접입력</option></select>
+     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideHeirCountryOther" placeholder="기타 국가명" maxlength="80"></div>
     <div class="docguide-util">
       <button type="button" class="outline" id="docGuideUseCase">현재 사건의 망자 정보 가져오기</button>
       <span class="muted">현재 사건이 없어도 안내문을 만들 수 있습니다.</span>
@@ -1452,7 +1460,7 @@ function renderHeirs(){
 }
 
 // 독립적인 상속 필요서류 안내 (계산/부동산 상태와 별도).
-const docGuide={name:'',year:'',month:'',day:'',method:'unknown'};
+const docGuide={name:'',year:'',month:'',day:'',method:'unknown',decedentNationality:'내국인',decedentCountry:'',foreignHeirs:[],manualForeignHeirCountry:'',sourceCaseId:null};
 const DOCS_BY_PERIOD=[
  {start:1900,end:1959,label:'1900~1959년 · 구관습법 시기',docs:[
   '피상속인이 기재된 제적등본(구호적 포함, 출생·혼인·사망까지 연결되는 기록)',
@@ -1523,11 +1531,110 @@ function docGuideIssuer(name){
 }
 function docGuideSectionRows(a){
  return '<div class="docguide-list">'+a.map(item=>{
-  const isNotice=item.includes('(발급서류 아님')||item.startsWith('협의분할을 선택할 경우');
-  if(isNotice)return '<div class="docguide-advice">'+esc(item.replace(' (발급서류 아님 · 안내사항)',''))+'</div>';
-  return '<div class="docguide-item"><div class="docguide-document">'+esc(item)+'</div><div class="docguide-issuer">발급·준비: '+esc(docGuideIssuer(item))+'</div></div>';
+  const name=typeof item==='string'?item:item.name,issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
+  const isNotice=name.includes('(발급서류 아님')||name.startsWith('협의분할을 선택할 경우');
+  if(isNotice)return '<div class="docguide-advice">'+esc(name.replace(' (발급서류 아님 · 안내사항)',''))+'</div>';
+  return '<div class="docguide-item"><div class="docguide-document">'+esc(name)+'</div><div class="docguide-issuer">발급·준비: '+esc(issuer)+'</div></div>';
  }).join('')+'</div>';
 }
+
+/* 외국국적 망자와 상속인은 한국 호적서류를 일률 적용하지 않습니다.
+ * 국가별 명칭은 예시이며 발급·공증·번역·아포스티유 요건은 적용법과 사건별로 확인합니다. */
+const PRIORITY_FOREIGN_COUNTRIES=['미국','일본','중국','캐나다','독일','베트남'];
+const FOREIGN_GUIDE_DATA={
+ '미국':{
+  deceased:[['사망증명서(Death Certificate)','사망 장소 주(州) Vital Records 담당기관'],
+            ['출생·혼인증명서(Birth / Marriage Certificate, 상속관계 입증 필요시)','관련 주(州) Vital Records 담당기관'],
+            ['상속인 범위 확인자료(유언검인·검인기록·Affidavit of Heirship 등, 사건별 검토)','관할 법원·공증인 또는 해당 주 담당기관']],
+  heir:[['여권 또는 시민권 증명서','미국 여권 발급기관·국무부 등'],
+        ['출생·혼인관계 증명서(해당 가족관계 증명시)','주(州) Vital Records 담당기관'],
+        ['주소증명(주정부 발급자료 또는 주소 관련 공증서면)','주소지 증명기관 또는 현지 공증인'],
+        ['협의분할 시 서명인증·위임장 관련 서류(국내 인감증명 활용 불가 시)','현지 공증인·인증권한 기관']]},
+ '일본':{
+  deceased:[['제적등본(除籍謄本)·개제원호적(改製原戸籍) 등 가족관계 연결 서류','일본 본적지 시·구·정·촌(市区町村) 호적 창구'],
+            ['사망사실 기재 호적·사망증명 서류','일본 본적지 시·구·정·촌'],
+            ['상속관계 설명을 위한 가족관계 연결 호적','일본 본적지 시·구·정·촌']],
+  heir:[['호적등본(戸籍謄本)·가족관계 연결 제적등본','일본 본적지 시·구·정·촌'],
+        ['주민표(住民票) 등 주소증명','일본 주소지 시·구·정·촌'],
+        ['인감등록증명서(印鑑登録証明書, 해당하는 경우)','일본 인감등록 시·구·정·촌'],
+        ['협의분할 서명·인감 증명서류(실제 용도 확인)','일본 해당 시·구·정·촌 또는 공증기관']]},
+ '중국':{
+  deceased:[['사망공증서(死亡公证书) 또는 사망증명 서류','중국 공증처(公证处)·관련 관공서'],
+            ['친속관계공증서(亲属关系公证书)','중국 공증처(公证处)'],
+            ['호구부(户口簿)·호적 말소 관련 자료(관계 확인시)','중국 호적 관할 공안기관']],
+  heir:[['여권 및 신분·국적 입증 서류','중국 여권 발급기관·공안기관'],
+        ['친속관계공증서(亲属关系公证书)','중국 공증처(公证处)'],
+        ['주소·거주 사실 증명서류(필요시)','중국 공안기관·공증처'],
+        ['협의분할 위임·서명에 관한 공증서류','중국 공증처(公证处)']]},
+ '캐나다':{
+  deceased:[['사망증명서(Death Certificate)','사망 발생 주(Province/Territory) Vital Statistics'],
+            ['출생·혼인 증명서(상속인 입증에 필요한 경우)','해당 주(Province/Territory) Vital Statistics'],
+            ['법원의 상속재산 관리 서류(Grant of Probate 등, 해당하는 경우)','관할 주 법원']],
+  heir:[['여권 또는 시민권 증명서','캐나다 여권 발급기관·이민시민권 담당기관'],
+        ['출생·혼인 증명서(가족관계 확인시)','해당 주 Vital Statistics'],
+        ['거주 주소·서명 증명 공증서면(국내 주소증명 불가 시)','캐나다 공증인·해당 증명기관'],
+        ['협의분할 서명·대리권 확인 문서(해당하는 경우)','캐나다 공증인·권한기관']]},
+ '독일':{
+  deceased:[['사망증명서(Sterbeurkunde)','독일 사망신고 관할 Standesamt(호적등록관서)'],
+            ['출생증명서(Geburtsurkunde)·혼인증명서(Eheurkunde)','독일 관할 Standesamt'],
+            ['상속인증명서(Erbschein, 필요성 별도 검토)','독일 관할 Nachlassgericht(상속법원)']],
+  heir:[['여권 또는 국적 증명서','독일 여권 발급기관'],
+        ['출생증명서(Geburtsurkunde)·혼인증명서(Eheurkunde, 필요시)','독일 관할 Standesamt'],
+        ['주민등록 확인서(Meldebescheinigung) 등 주소증명','독일 관할 Meldebehörde/Einwohnermeldeamt'],
+        ['협의분할용 서명·위임 공증서류(필요시)','독일 공증인(Notar)']]},
+ '베트남':{
+  deceased:[['사망신고증명서(Giấy chứng tử)','베트남 관할 인민위원회(Ủy ban nhân dân) 등'],
+            ['출생증명서(Giấy khai sinh)·혼인증명서(필요시)','베트남 관할 호적등록·인민위원회'],
+            ['가족관계·친족관계 확인자료(해당 사례별)','베트남 관할 호적등록기관·공증기관']],
+  heir:[['여권 또는 베트남 국적·신분증명','베트남 출입국·신분증 발급기관'],
+        ['출생증명서(Giấy khai sinh)·혼인관계 증명서(필요시)','베트남 관할 호적등록·인민위원회'],
+        ['거주·주소 증명서류(필요시)','베트남 관할 거주등록기관'],
+        ['협의분할 서명·위임장 공증 자료(필요시)','베트남 현지 공증기관']]}
+};
+function foreignCountryDocs(country,role){
+ const found=FOREIGN_GUIDE_DATA[country];
+ if(found)return found[role].map(x=>({name:x[0],issuer:x[1]}));
+ return [
+  {name:(country||'해당 국가')+'의 사망·친족관계 또는 신분증명 서류(대상에 따라)',issuer:'해당 국가의 주민·가족관계등록기관 또는 공증기관'},
+  {name:'본국 여권·국적·주소 확인서류(필요시)',issuer:'해당 국가의 여권·주소 증명기관'}
+ ];
+}
+function additionalForeignDocs(){
+ return [
+  {name:'외국공문서의 아포스티유 또는 영사확인(발급국·발급일·협약 적용 여부 확인)',issuer:'서류 발급 국가의 권한기관 또는 관할 재외공관 등'},
+  {name:'외국어 서류의 한국어 번역문(요구되는 번역·인증 방식 확인)',issuer:'한국어 번역 및 법무사 확인'},
+  {name:'상속등기에 필요한 동일인·주소·서명 또는 인감 증명(개별 확인)',issuer:'해당 국가 관공서·공증기관 또는 국내 적법한 발급기관'}
+ ];
+}
+function syncDocGuideWithCase(){
+ const d=String(state.decedent.death||'');
+ docGuide.name=state.decedent.name||'';
+ [docGuide.year,docGuide.month,docGuide.day]=todayCheck(d)?d.split('-'):['','',''];
+ docGuide.method=state.method||'unknown';
+ docGuide.decedentNationality=state.decedent.nationality||'내국인';
+ docGuide.decedentCountry=countryName(state.decedent)||'';
+ const heirs=[];
+ traverseNodes(state.heirs,n=>{
+  if(n.proxy||n.postDeath||n.nationality!=='외국인')return;
+  const country=countryName(n)||'국가 미선택';
+  if(!heirs.some(x=>x.name===n.name&&x.country===country))heirs.push({name:n.name||'상속인 성명 미입력',country});
+ });
+ docGuide.foreignHeirs=heirs;
+ docGuide.sourceCaseId=state.caseId||null;
+}
+function docGuideForeignGroups(){
+ const groups=[];
+ if(docGuide.decedentNationality==='외국인'){
+  const country=docGuide.decedentCountry||'국가 미선택';
+  groups.push({title:'외국국적 망자 '+country+' 준비서류',role:'망자',country,items:foreignCountryDocs(country,'deceased')});
+ }
+ const heirs=[...docGuide.foreignHeirs];
+ if(docGuide.manualForeignHeirCountry&&!heirs.some(x=>x.country===docGuide.manualForeignHeirCountry))
+  heirs.push({name:'외국국적 상속인 (일반 안내)',country:docGuide.manualForeignHeirCountry});
+ for(const h of heirs)groups.push({title:(h.name||'상속인')+' · '+h.country+' 외국국적 상속인 준비서류',role:'상속인',country:h.country,items:foreignCountryDocs(h.country,'heir')});
+ return groups;
+}
+
 const docGuidePeriod=(year)=>DOCS_BY_PERIOD.find(p=>year>=p.start&&year<=p.end);
 function docGuideDate(){
  if(!(docGuide.year&&docGuide.month&&docGuide.day))return '';
@@ -1538,17 +1645,32 @@ function docGuideDate(){
 function docGuideItems(){
  const date=docGuideDate(),period=date?docGuidePeriod(Number(date.slice(0,4))):null;
  if(!period)return null;
- const current=period.start>=2008;
- const oldRegNote='망자의 전호적(전적 전 제적등본, 분가 전 호적, 전 호주의 제적등본)은 반드시 확인해야 합니다. 전호적 기록이 존재하면 빠짐없이 확보하여 상속인 누락을 방지하세요. 해당 호적이 없는 경우에는 무조건 서류 발급을 요구하지 말고 개별 확인합니다.';
- const versionWarning= current
-   ?'2008년 이전 출생·혼인·입양 등의 호적 이력이 있다면 제적등본과 전호적도 함께 확인하세요.'
-   :'2008년 이전 사망자도 사망신고 시점 등에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
+ const foreign=docGuide.decedentNationality==='외국인';
+ const oldRegNote=foreign
+  ?'외국국적 피상속인은 한국 호적·제적등본이 원칙적으로 존재하지 않을 수 있습니다. 과거 대한민국 국적·전적·호적 이력이 있는 경우에는 반드시 전호적(전적 전 제적등본) 존재 여부와 상속인 누락을 확인합니다.'
+  :'망자의 전호적(전적 전 제적등본, 분가 전 호적, 전 호주의 제적등본)은 반드시 확인해야 합니다. 전호적 기록이 존재하면 빠짐없이 확보하여 상속인 누락을 방지하세요. 기록이 없는 경우 개별 확인합니다.';
+ const versionWarning=foreign
+  ?'외국국적 망자는 사망 당시 국적, 국제사법에 따른 상속 준거법·반정, 본국의 상속인 범위 및 현지 서류 발급·인증 요건을 먼저 검토해야 합니다. 국내 사망 연도별 호적 규칙을 기계적으로 적용하지 않습니다.'
+  :period.start>=2008?'2008년 이전 출생·혼인·입양 등 호적 이력이 있다면 제적등본과 전호적을 함께 확인하세요.'
+   :'2008년 이전 사망자도 사망신고 시점에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
  const methodText=docGuide.method==='agreement'?'협의분할상속':docGuide.method==='statute'?'법정상속':'상속방법 미정';
  const methodDocs=docGuide.method==='agreement'?DOCS_AGREEMENT:
   docGuide.method==='statute'?DOCS_STATUTE:
   ['협의분할을 선택할 경우, 참여 상속인의 인감증명서·인감도장이 추가로 필요합니다. (상속방법 결정 후 다시 확인)'];
+ const extra=[...DOCS_EXTRA];
+ const linked=!!docGuide.sourceCaseId&&docGuide.sourceCaseId===state.caseId;
+ if(linked&&docGuide.method==='agreement'){
+  for(const minor of minorPeople()){
+   extra.push('협의년월일 기준 미성년 상속인 '+(minor.node.name||'성명 미입력')+': 이해상반 여부 확인 및 법정대리인/특별대리인 검토');
+   if(minor.rep.mode==='special')
+    extra.push('미성년 상속인 '+(minor.node.name||'성명 미입력')+'의 특별대리인 선임심판서 등본(가정법원 발급)');
+  }
+ }
+ const foreignGroups=docGuideForeignGroups();
+ const countryDocs=foreign?foreignCountryDocs(docGuide.decedentCountry||'국가 미선택','deceased'):[];
  return {date,period,methodText,oldRegNote,versionWarning,
-  decedent:period.docs,heirs:DOCS_HEIR,method:methodDocs,extra:DOCS_EXTRA};
+  decedent:foreign?countryDocs:period.docs,heirs:DOCS_HEIR,method:methodDocs,extra,
+  foreignGroups:foreignGroups.filter(x=>x.role!=='망자'),foreignMaterials:foreignGroups.length?additionalForeignDocs():[]};
 }
 function renderDocGuide(){
  const out=document.getElementById('docGuideOutput');if(!out)return;
