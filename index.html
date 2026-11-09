@@ -2013,7 +2013,7 @@ function renderProperties(){
  el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
  <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><span class="muted">${p.selected!==false?'상속지분·협의서 반영 대상':'미선택 · 계산 제외'}</span></div>
  <div class="row" style="align-items:start"><div class="field" style="flex:4;min-width:230px"><label>부동산의 표시 (등기부 기준)</label><textarea data-path="properties.${i}.label" placeholder="예: 서울특별시 ○○구 ○○동 100-1 토지...">${esc(p.label)}</textarea></div><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
- ${c&&p.selected!==false?`<div class="note">${c.recipients.map(r=>`${esc(r.name||r.relation)}: <b>${(()=>{try{return propertyShare(p).mul(r.share).str()}catch{return '지분 오류'}})()}</b>`).join('　 · 　')}</div>`:''}</div>`).join('');
+ </div>`).join('');
 }
 // 협의 취득자 기준 배분(법정상속 지분과 혼합 금지).
 // 체크되지 않은 상속인의 취득비율은 항상 0, 1명만 체크된 경우 반드시 1.
