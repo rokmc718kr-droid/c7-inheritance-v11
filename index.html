@@ -328,7 +328,7 @@ const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Dat
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
-const fresh=()=>({version:3,decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
+const fresh=()=>({version:3,decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -348,7 +348,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
+ state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.name??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -877,7 +877,7 @@ function setPersonRole(id,role){
  if(old!=='heir')n.sub=[];
  n.proxy=role==='proxy';n.postDeath=role==='post';n.death='';
  if(n.proxy||n.postDeath)n.sub=[makeSub()];
- delete proxyDeathDrafts[n.id];state.oldProxyVerified=false;
+ delete proxyDeathDrafts[n.id];state.oldProxyVerified=false;state.successionReviewed=false;
  renderAll();
  showStatus((n.name||n.relation)+' → '+(role==='proxy'?'피대습자':role==='post'?'재전상속 피상속인':'상속인')+'으로 변경했습니다.');
 }
@@ -891,10 +891,10 @@ function renderShareTree(c){
   const label=stageRole(n,level),name=n.name?.trim()||'(성명 미입력)';
   const base=parent?.name?.trim()||rootName;
   const relation=`망 ${base}의 ${n.relation}`;
-  const share=!n.proxy&&shares[n.id]?shares[n.id].str():'';
-  const children=n.proxy&&n.sub?.length?`<ul class="share-tree-list">${n.sub.map(child=>branch(child,n,level+1)).join('')}</ul>`:'';
-  const extra=n.proxy?`<span class="share-tree-death">사망 ${esc(n.death?.replaceAll('-','.')||'미입력')}</span>`:'';
-  return `<li><div class="share-tree-row ${n.proxy?'proxy':level>0?'substitute':'direct'}" aria-label="${attr(label+' '+name+' '+relation+(share?' 지분 '+share:''))}"><span class="share-tree-person"><span class="share-tree-type">${esc(label)}</span> <strong>${esc(name)}</strong> <span class="share-tree-relation">(${esc(relation)})</span>${extra}</span>${share?`<span class="share-tree-value">${share}</span>`:''}</div>${children}</li>`;
+  const share=!n.proxy&&!n.postDeath&&shares[n.id]?shares[n.id].str():'';
+  const children=(n.proxy||n.postDeath)&&n.sub?.length?`<ul class="share-tree-list">${n.sub.map(child=>branch(child,n,level+1)).join('')}</ul>`:'';
+  const extra=n.proxy||n.postDeath?`<span class="share-tree-death">사망 ${esc(n.death?.replaceAll('-','.')||'미입력')}${n.postDeath&&c.intermediate?.[n.id]?' · 취득했던 지분 '+c.intermediate[n.id].str():''}</span>`:'';
+  return `<li><div class="share-tree-row ${n.proxy?'proxy':n.postDeath?'sequential':level>0?'substitute':'direct'}" aria-label="${attr(label+' '+name+' '+relation+(share?' 지분 '+share:''))}"><span class="share-tree-person"><span class="share-tree-type">${esc(label)}</span> <strong>${esc(name)}</strong> <span class="share-tree-relation">(${esc(relation)})</span>${extra}</span>${share?`<span class="share-tree-value">${share}</span>`:''}</div>${children}</li>`;
  }
  return `<div class="share-tree-board"><div class="share-tree-head">상속지분 관계 트리 <span class="muted">피대습자는 지분을 직접 취득하지 않고 아래 대습상속인에게 연결됩니다.</span></div><div class="share-tree-scroll"><div class="share-tree-root"><strong>피상속인 ${esc(rootName)}</strong><span>사망일 ${esc(date)}</span></div><ul class="share-tree-list share-tree-top">${state.heirs.map(n=>branch(n,null,0)).join('')}</ul></div><div class="share-tree-foot">분수는 최초 피상속인의 상속재산 전체를 기준으로 한 법정상속지분입니다.</div></div>`;
 }
@@ -925,8 +925,10 @@ function renderResults(){
   traverseNodes(state.heirs,(n,level)=>{if(level>0&&n.proxy)nestedProxy=true});
   const sum=c.recipients.reduce((a,r)=>a.add(r.share),Z);
   const summary=`<div class="result-grid"><div class="resultbox"><div class="muted">법정상속지분</div><div class="big">${c.manual?'확인 지분 입력 완료':(c.era!=='modern'&&state.heirs.some(h=>h.proxy)?'참고 지분 산출':'자동 계산 완료')}</div><small class="muted">정확한 분수로 계산 · 실제 취득자 ${c.recipients.length}명</small></div><div class="resultbox"><div class="muted">지분 합계</div><div class="big">${sum.eq(O)?'1/1':sum.str()}</div><small class="muted">${sum.eq(O)?'상속인 전체 지분 합계 검증 완료':'⚠ 합계를 확인해 주세요'}</small></div></div>`;
+  const staged=c.sequential?(c.stages||[]).map((x,i)=>`<div class="propertycard" style="margin:8px 0"><div class="mini-title">후속상속 ${i+1} · 망 ${esc(x.decedent)} (${esc(x.date)})</div><p class="note">이 사건으로 승계된 지분: <strong>${esc(x.baseShare)}</strong> · 적용법: 1991년 이후 민법 기준 · <strong>${esc(x.rank)}</strong></p><div class="note">이번 상속에서 취득: ${esc(x.included.join(', ')||'없음')}</div>${x.excluded.length?`<div class="note" style="color:#a15612"><strong>후순위로 지분 제외:</strong> ${esc(x.excluded.map(n=>n.name+' ('+n.relation+')').join(', '))}</div>`:''}</div>`).join(''):'';
+  const review=c.sequential?`<div class="warnbox" style="margin:12px 0"><strong>상속등기 전 검토 필수</strong><p class="note" style="margin:7px 0">상속등기 미완료 상태에서 상속인이 다시 사망한 경우, 각 사망을 별개의 상속개시로 계산합니다. 첫 번째 상속지분과 후속상속지분을 곱해 최종 취득분을 산출했습니다. 상속인 누락·가족관계·재산분할협의 당사자와 중간 등기 필요 여부는 별도 확인해야 합니다.</p><label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><input type="checkbox" id="successionReviewed" ${state.successionReviewed?'checked':''} style="width:18px;height:18px"> <b>각 단계의 상속관계·순위 및 서류를 확인했습니다.</b></label></div>`:'';
   const table=`<details class="shares-table-toggle"><summary>상속지분 표로도 보기</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>구분</th><th>성명</th><th>망자와의 관계</th><th>대습 연결</th><th>법정상속지분</th></tr></thead><tbody>${c.recipients.map((r,i)=>{const info=recipientParents.get(r.id)||{},parent=info.parent,level=info.level||0,base=parent?.name?.trim()||state.decedent.name?.trim()||'피상속인';return `<tr><td><span class="result-role ${level>0?'sub':''}">${esc(stageRole({proxy:false},level))}</span></td><td><b>${esc(r.name||`취득자 ${i+1}`)}</b></td><td>${esc(`망 ${base}의 ${r.relation}`)}</td><td>${esc(r.via||'—')}</td><td><strong>${r.share.str()}</strong></td></tr>`}).join('')}</tbody></table></div></details>`;
-  el.innerHTML=`<div class="results"><div class="choice-info"><b>적용 기준:</b> ${esc(eraText(c.era))}${state.eraMode==='choose'?' (사용자 확인·선택)':' (사망일 기준)'}${c.manual?' · <b>법무사 확인 지분 입력</b>':' · 자동 산출 (개별 법률 요건 확인 필요)'}</div>${nestedProxy?'<div class="warnbox" style="margin-bottom:10px"><b>2차 이상 대습 검토 필요:</b> 차수는 입력 관계를 구분하기 위한 표시입니다. 실제 다단계 대습 인정 여부·사망 순서·배우자의 상속권·적용법은 실무 검증 후 확정하세요.</div>':''}${summary}${renderShareTree(c)}${table}</div>`;
+  el.innerHTML=`<div class="results"><div class="choice-info"><b>적용 기준:</b> ${esc(eraText(c.era))}${state.eraMode==='choose'?' (사용자 확인·선택)':' (사망일 기준)'}${c.manual?' · <b>법무사 확인 지분 입력</b>':' · 자동 산출 (개별 법률 요건 확인 필요)'}</div>${nestedProxy?'<div class="warnbox" style="margin-bottom:10px"><b>2차 이상 대습 검토 필요:</b> 차수는 입력 관계를 구분하기 위한 표시입니다. 실제 다단계 대습 인정 여부·사망 순서·배우자의 상속권·적용법은 실무 검증 후 확정하세요.</div>':''}${summary}${review}${staged}${renderShareTree(c)}${table}</div>`;
  }catch(e){
   const oldProxy=['civil60','civil79','custom'].includes(effectiveEra(state.decedent.death))&&state.heirs.some(h=>h.proxy);
   const shortcut=oldProxy?'<div style="margin-top:12px"><button type="button" class="outline" data-action="enableManualShares" style="white-space:normal">법무사 확인 지분 직접 입력하기</button></div>':'';
@@ -986,13 +988,14 @@ function buildDocument(c){
  const persons=c.recipients.map(r=>{let info=state.details[r.id]||{};return {name:r.name,relation:r.relation,via:r.via,address:info.address,ident:info.ident,id:r.id}});
  const allNames=persons.map(x=>esc(x.name)).join(', ');
  function sheet(person){let signature=person?[person]:persons;let stamp=signature.map(x=>`<tr><td style="width:36%">상속인: ${esc(x.name)} ${x.via?`<span style="font-size:9pt">(${esc(x.via)})</span>`:''}</td><td style="width:54%">등록번호: ${esc(x.ident)}<br>주소: ${esc(x.address)}</td><td class="seal">(인)　　</td></tr>`).join('');
- return `<section class="doc-sheet">${person?`<div class="doc-individual-header">동일 내용 상속인별 개별 협의서 · 날인자: ${esc(person.name)}</div>`:''}<h1>상속재산분할협의서</h1><p class="doc-meta">피상속인: <b>${esc(state.decedent.name)}</b><br>등록번호: ${esc(state.decedent.ident)}<br>최후 주소: ${esc(state.decedent.address)}<br>사망일: ${dateText(state.decedent.death)}<br>공동상속인: ${allNames}</p><p>위 피상속인의 공동상속인 전원은 아래 상속재산에 관하여 협의한 결과, 다음과 같이 분할하기로 합의한다.</p><div style="font-weight:bold;margin:13px 0 8px">제1조 (상속재산의 표시와 분할 내용)</div>${propContent}<p style="margin-top:20px">제2조 (협의의 확인)<br>상속인 전원은 위 분할 내용에 동의하며, 이 협의의 성립을 확인하기 위하여 본 협의서를 작성한다. 본 협의서에 기재되지 않은 재산은 별도 협의한다.</p>${person?'<p style="font-size:9.5pt">※ 본 서면은 위와 동일한 내용으로 작성된 다른 공동상속인의 협의서와 함께 공동상속인 전원의 분할합의를 증명하기 위한 것이다.</p>':''}<div class="doc-date">${dateText(state.agreementDate)}</div><div style="font-weight:bold;margin:4px 0 8px">공동상속인 ${person?'(아래 날인자)':'전원'}</div><table class="doc-sign">${stamp}</table>${person?`<div class="doc-notice">※ 공동상속인 전원(${persons.length}명)의 분할 내용이 동일하여야 하며, 각 상속인의 의사 확인 및 등기신청에 필요한 서면·인감증명서를 별도로 갖추어야 합니다.</div>`:''}</section>`}
+ return `<section class="doc-sheet">${hasSequentialSuccession()?'<p class="doc-notice" style="font-weight:bold;color:#8c2e29">※ 재전상속 관련 검토용 초안 · 각 상속개시별 협의 및 등기 필요서류를 별도 검토해야 합니다.</p>':''}${person?`<div class="doc-individual-header">동일 내용 상속인별 개별 협의서 · 날인자: ${esc(person.name)}</div>`:''}<h1>상속재산분할협의서</h1><p class="doc-meta">피상속인: <b>${esc(state.decedent.name)}</b><br>등록번호: ${esc(state.decedent.ident)}<br>최후 주소: ${esc(state.decedent.address)}<br>사망일: ${dateText(state.decedent.death)}<br>공동상속인: ${allNames}</p><p>위 피상속인의 공동상속인 전원은 아래 상속재산에 관하여 협의한 결과, 다음과 같이 분할하기로 합의한다.</p><div style="font-weight:bold;margin:13px 0 8px">제1조 (상속재산의 표시와 분할 내용)</div>${propContent}<p style="margin-top:20px">제2조 (협의의 확인)<br>상속인 전원은 위 분할 내용에 동의하며, 이 협의의 성립을 확인하기 위하여 본 협의서를 작성한다. 본 협의서에 기재되지 않은 재산은 별도 협의한다.</p>${person?'<p style="font-size:9.5pt">※ 본 서면은 위와 동일한 내용으로 작성된 다른 공동상속인의 협의서와 함께 공동상속인 전원의 분할합의를 증명하기 위한 것이다.</p>':''}<div class="doc-date">${dateText(state.agreementDate)}</div><div style="font-weight:bold;margin:4px 0 8px">공동상속인 ${person?'(아래 날인자)':'전원'}</div><table class="doc-sign">${stamp}</table>${person?`<div class="doc-notice">※ 공동상속인 전원(${persons.length}명)의 분할 내용이 동일하여야 하며, 각 상속인의 의사 확인 및 등기신청에 필요한 서면·인감증명서를 별도로 갖추어야 합니다.</div>`:''}</section>`}
  return state.docMode==='individual'?persons.map(sheet).join(''):sheet(null);
 }
 function outputDocument(saveFile){try{
  const era=effectiveEra(state.decedent.death);
  if(['civil60','civil79'].includes(era)&&state.heirs.some(h=>h.proxy)&&!state.verifiedManual&&!state.oldProxyVerified)
   throw Error('구민법 대습상속 사건은 [상속법별 세부사항·확인 지분]에서 법무사 검토 완료를 체크한 뒤 문서를 출력할 수 있습니다.');
+ if(hasSequentialSuccession()&&!state.successionReviewed)throw Error('재전상속이 연결된 사건입니다. ③ 상속지분 확인 화면에서 각 단계의 상속관계·순위 및 서류를 검토한 후 확인에 체크해야 협의서 초안을 출력할 수 있습니다.');
  let c=fullValidate();allocateDefaults(c);let html=buildDocument(c);if(!saveFile){document.querySelector('#printRoot').innerHTML=html;window.print();return}
  let styles=document.querySelector('style').textContent;
  let doc=`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><title>상속재산분할협의서 - ${esc(state.decedent.name)}</title><style>${styles}\nbody{background:white}#printRoot{display:block!important;max-width:210mm;margin:auto;padding:17mm;box-sizing:border-box}@media print{#printRoot{padding:0}}.doc-sheet{margin-bottom:24px}</style></head><body><div id="printRoot">${html}</div></body></html>`;
@@ -1034,6 +1037,7 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('#decedentSex')){state.decedent.sex=t.value;renderAll();return}
  if(t.matches('#verifiedManual')){state.verifiedManual=t.checked;renderAll();return}
  if(t.matches('#oldProxyVerified')){state.oldProxyVerified=t.checked;renderAll();return}
+ if(t.matches('#successionReviewed')){state.successionReviewed=t.checked;renderAll();return}
  if(t.matches('[data-manual-id]')){state.manualShares[t.dataset.manualId]=t.value;renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}save();return}
  if(t.matches('[data-legacy-register]')){let h=state.heirs.find(x=>x.id===t.dataset.legacyRegister);if(h)h.legacyRegister=t.value;renderAll();return}
  if(t.matches('[name="method"]')){state.method=t.value;renderAll();return}
