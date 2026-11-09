@@ -702,7 +702,7 @@ function caseOpenSaved(id,mode='open'){
    activeStage='documents';
   }else if(mode==='forms')activeStage='forms';
   else if(mode==='shares')activeStage='shares';
-  else activeStage='people';
+  else activeStage='property';
   const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
   renderAll();
   if(mode==='forms')formMakerFeedback(caseMeta(state).name+' 사건의 인적사항과 저장된 서식을 불러왔습니다.');
@@ -1246,7 +1246,7 @@ function clearProxyDeathDrafts(){proxyDeathDrafts=Object.create(null)}
 let selectedPersonId='__decedent__';
 let treeEditorOpen=false;
 let treeMini=true;
-let activeStage='home';
+let activeStage='files';
 function proxyDeathOrderWarning(){
  if(!todayCheck(state.decedent.death))return '';
  let msgs=[];
@@ -1662,23 +1662,23 @@ function formPrintSelected(toFile){
 
 function applyActiveStage(){
  if(activeStage==='agreement')activeStage='forms';
- if(activeStage==='cost')activeStage='home';
- const mainStage=activeStage==='files'||activeStage==='home';
+ if(activeStage==='cost'||activeStage==='home')activeStage='files';
+ const isNewCaseScreen=['property','people','shares'].includes(activeStage);
  document.querySelectorAll('.stage-screen').forEach(el=>el.classList.toggle('is-active',el.dataset.stage===activeStage));
- document.querySelectorAll('[data-go-stage]').forEach(btn=>{
-  const isHome=btn.dataset.goStage===activeStage;
-  const inTopMenu=!!btn.closest('#totalMainNav');
-  btn.classList.toggle('active',inTopMenu?(mainStage&&isHome):(!mainStage&&isHome));
-  btn.disabled=btn.dataset.goStage==='cost';
+ document.querySelectorAll('#stageNav [data-go-stage]').forEach(btn=>{
+  btn.classList.toggle('active',isNewCaseScreen&&btn.dataset.goStage===activeStage);
+  btn.disabled=false;
  });
- document.getElementById('stageNav')?.classList.toggle('stage-nav-hidden',mainStage);
+ document.getElementById('stageNav')?.classList.toggle('stage-nav-hidden',!isNewCaseScreen);
+ document.getElementById('inheritanceEditorTop')?.classList.toggle('is-visible',isNewCaseScreen);
+ const name=document.getElementById('inheritanceEditorCaseName');
+ if(name)name.textContent=(state.decedent?.name||'새 상속사건')+' · '+caseStageText(state);
 }
 function navigateStage(name){
  if(name==='agreement')name='forms';
- if(name==='cost')return;
+ if(name==='cost'||name==='home')name='files';
  activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
- const rootMenu=name==='home'||name==='files';
- document.getElementById(rootMenu?'totalMainNav':'stageNav')?.scrollIntoView({block:'start',behavior:'instant'});
+ document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView')?.scrollIntoView({block:'start',behavior:'instant'});
 }
 // 1차 일반 상속인과 1차·2차 대습상속인을 모두 선택 후 다음 차수의 피대습자로 변경할 수 있습니다.
 function setPersonRole(id,role){
@@ -2028,7 +2028,12 @@ document.querySelector('#loadJson').addEventListener('click',()=>document.queryS
 document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
 document.querySelector('#reset').addEventListener('click',caseNew);
 document.querySelector('#caseNewItem').addEventListener('click',caseNew);
-document.querySelector('#caseSaveToList').addEventListener('click',caseSaveCurrent);
+document.querySelector('#caseSaveToList').addEventListener('click',()=>{
+ if(caseSaveCurrent())navigateStage('files');
+});
+document.getElementById('editorCaseSave').addEventListener('click',()=>{
+ if(caseSaveCurrent())navigateStage('files');
+});
 document.addEventListener('click',e=>{
  const open=e.target.closest('[data-case-open]');
  if(open){caseOpenSaved(open.dataset.caseOpen);return;}
