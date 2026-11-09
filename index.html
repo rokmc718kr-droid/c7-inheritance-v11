@@ -288,6 +288,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 </div>
 <div class="stage-screen" data-stage="shares"><details class="era-details"><summary>⚠ 1900년 이후 구법·다단계 대습 계산 시 유의사항 보기</summary><div><strong>1900년부터 사망일 입력 가능 · 시대별 적용법 구분</strong> — <b>1900~1959년 구관습법</b>, <b>1960~1978년 구민법</b>, <b>1979~1990년 개정 구민법</b>, <b>1991년 이후 현행 계열</b>을 구분합니다. <b>구관습법은 호주상속/유산상속 구별이 필수</b>이고, 구민법은 호주승계·여성의 가적·피상속인 성별 확인이 추가로 필요합니다. 이 조건이 불분명하거나 구법 대습/재전상속 등 예외 사건에서는 자동지분을 확정하지 않고 <b>법무사 확인 지분 입력</b>을 지원합니다. 다단계 대습의 인정 범위 및 사망 순서, 상속인 누락, 실종선고·부칙 등 예외는 반드시 별도로 검토해야 합니다.</div></details>
 <section class="panel law-choice-panel" id="lawChoicePanel"><div class="panelhead"><h2>적용 상속법 확인 <span id="lawEraSummary" class="tag"></span></h2><small>기본은 사망일 자동판정 · 예외가 있으면 전문가 선택</small></div><div class="body" id="lawChoiceView"></div></section>
+<div id="calculationGuide" class="panel hidden" aria-live="polite"></div>
 <section class="panel hidden" id="historyPanel"><div class="panelhead"><h2>상속법별 세부사항 · 확인 지분 <span id="eraLabel" class="tag"></span></h2><small>옛 법의 추가 조건 또는 전문가 검증 지분 입력</small></div><div class="body" id="historyView"></div></section>
 <div class="stage-banner">상속관계 트리에서 선택한 관계·사망일을 기준으로 지분을 계산합니다. 오른쪽에 표시된 분수는 실제 상속인 몫입니다.</div>
 <section class="panel"><div class="panelhead"><h2>05. 법정상속지분 자동산출</h2><div class="mini-actions"><button class="outline" id="recalc">↻ 다시 계산</button><span class="muted">상속포기 제외 · 선사망 대습만 계산</span></div></div><div class="body" id="resultView"></div></section>
@@ -749,6 +750,24 @@ function renderShareTree(c){
  }
  return `<div class="share-tree-board"><div class="share-tree-head">상속지분 관계 트리 <span class="muted">피대습자는 지분을 직접 취득하지 않고 아래 대습상속인에게 연결됩니다.</span></div><div class="share-tree-scroll"><div class="share-tree-root"><strong>피상속인 ${esc(rootName)}</strong><span>사망일 ${esc(date)}</span></div><ul class="share-tree-list share-tree-top">${state.heirs.map(n=>branch(n,null,0)).join('')}</ul></div><div class="share-tree-foot">분수는 최초 피상속인의 상속재산 전체를 기준으로 한 법정상속지분입니다.</div></div>`;
 }
+function renderCalculationGuide(){
+ const el=document.getElementById('calculationGuide');
+ if(!el)return;
+ const era=effectiveEra(state.decedent.death||'');
+ const hasProxy=state.heirs.some(h=>h.proxy);
+ try{
+  const c=calculate();
+  const isOldProxy=hasProxy&&['civil60','civil79'].includes(era)&&!c.manual;
+  if(!isOldProxy){el.classList.add('hidden');return;}
+  el.classList.remove('hidden');
+  el.innerHTML='<div class="body"><strong style="color:#725416">1차 대습상속 참고 지분 산출 가능</strong><p class="note" style="margin:6px 0 0">입력한 당시 관계유형·사망일·가적·호주승계 정보를 바탕으로 참고 지분을 계산했습니다. 제적부 및 적용법을 확인한 뒤 최종 확정하세요.</p></div>';
+ }catch(e){
+  el.classList.remove('hidden');
+  const error=esc(e?.message||String(e));
+  const old=hasProxy&&['civil60','civil79','custom'].includes(era);
+  el.innerHTML='<div class="body"><strong style="color:#a62929">지분산출에 필요한 입력을 확인하세요</strong><p style="margin:7px 0 12px;white-space:pre-line">'+error+'</p><div class="actionbar"><button type="button" class="outline" data-action="goPeopleStage">상속인 관계 입력으로 이동</button>'+(old?'<button type="button" class="outline" data-action="goHistoryStage">구법 세부사항 확인</button><button type="button" class="outline" data-action="enableManualShares">법무사 확인 지분 입력</button>':'')+'</div></div>';
+ }
+}
 function renderResults(){
  const el=document.querySelector('#resultView');
  try{
@@ -801,7 +820,7 @@ function renderAll(){normalise();
  document.querySelector('#methodHint').textContent=state.method==='agreement'?'협의로 취득할 상속인을 아래에서 체크한 뒤, 필요한 경우 부동산별 지분을 조정하고 협의서를 출력합니다.':'법정상속지분을 자동 계산하여 각 부동산의 피상속인 소유지분에 적용합니다.';
  document.querySelector('#allocPanel').classList.toggle('hidden',state.method!=='agreement');
  document.querySelector('#docPanel').classList.toggle('hidden',state.method!=='agreement');
- renderHeirs();renderLawSelection();renderHistory();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}applyActiveStage();save()
+ renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}applyActiveStage();save()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
 function buildDocument(c){
@@ -893,6 +912,8 @@ document.addEventListener('change',e=>{let t=e.target;
 });
 document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(!btn)return;let act=btn.dataset.action,i=Number(btn.dataset.i),j=Number(btn.dataset.j);
  if(act==='changePersonRole'){setProxyRole(btn.dataset.node,btn.dataset.asProxy==='true');return}
+ if(act==='goPeopleStage'){navigateStage('people');return}
+ if(act==='goHistoryStage'){document.getElementById('historyPanel')?.scrollIntoView({block:'start',behavior:'smooth'});return}
  if(act==='enableManualShares'){
    state.verifiedManual=true;renderAll();
    document.getElementById('historyPanel')?.scrollIntoView({block:'start',behavior:'smooth'});
