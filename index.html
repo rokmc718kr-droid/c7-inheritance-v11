@@ -1085,19 +1085,51 @@ function renderProperties(){
  <div class="row" style="align-items:start"><div class="field" style="flex:4;min-width:230px"><label>부동산의 표시 (등기부 기준)</label><textarea data-path="properties.${i}.label" placeholder="예: 서울특별시 ○○구 ○○동 100-1 토지...">${esc(p.label)}</textarea></div><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
  ${c&&p.selected!==false?`<div class="note">${c.recipients.map(r=>`${esc(r.name||r.relation)}: <b>${(()=>{try{return propertyShare(p).mul(r.share).str()}catch{return '지분 오류'}})()}</b>`).join('　 · 　')}</div>`:''}</div>`).join('');
 }
-function allocateDefaults(c,force=false){if(!c)return;selectedProperties().forEach(p=>{p.alloc??={};const ids=new Set(c.recipients.map(x=>x.id));Object.keys(p.alloc).filter(k=>!ids.has(k)).forEach(k=>delete p.alloc[k]);c.recipients.forEach(r=>{if(force||!(r.id in p.alloc))p.alloc[r.id]=r.share.str()})})}
+// 협의 취득자 기준 배분(법정상속 지분과 혼합 금지).
+// 체크되지 않은 상속인의 취득비율은 항상 0, 1명만 체크된 경우 반드시 1.
+function allocateDefaults(c,force=false){
+ if(!c)return;
+ const ids=new Set(c.recipients.map(r=>r.id));
+ const chosen=c.recipients.filter(r=>state.agreementSelected.includes(r.id));
+ const divisor=chosen.length?new F(1,BigInt(chosen.length)).str():'0';
+ selectedProperties().forEach(p=>{
+  p.alloc??={};
+  Object.keys(p.alloc).filter(id=>!ids.has(id)).forEach(id=>delete p.alloc[id]);
+  if(!chosen.length){c.recipients.forEach(r=>{p.alloc[r.id]='0'});return}
+  if(chosen.length===1){
+   c.recipients.forEach(r=>{p.alloc[r.id]=r.id===chosen[0].id?'1':'0'});
+   p.allocUserEdited=false;
+   return;
+  }
+  // 사용자 직접입력 중에는 미완성 합계를 유지하여 경고하고 입력값을 덮어쓰지 않습니다.
+  const mustRedistribute=force||!p.allocUserEdited&&(()=>{
+   try{
+    if(chosen.some(r=>!(r.id in p.alloc)))return true;
+    return !chosen.reduce((sum,r)=>sum.add(frac(p.alloc[r.id])),Z).eq(O);
+   }catch{return true}
+  })();
+  if(mustRedistribute)p.allocUserEdited=false;
+  c.recipients.forEach(r=>{
+   if(!state.agreementSelected.includes(r.id))p.alloc[r.id]='0';
+   else if(mustRedistribute)p.alloc[r.id]=divisor;
+   else if(!(r.id in p.alloc))p.alloc[r.id]='0';
+  });
+ });
+}
 function autoAllocateSelected(c){
  let selected=new Set(state.agreementSelected);
  let count=c.recipients.filter(r=>selected.has(r.id)).length;
- for(let p of selectedProperties()){p.alloc={};for(let r of c.recipients)p.alloc[r.id]=selected.has(r.id)&&count?new F(1,BigInt(count)).str():'0'}
+ for(let p of selectedProperties()){p.alloc={};p.allocUserEdited=false;for(let r of c.recipients)p.alloc[r.id]=selected.has(r.id)&&count?new F(1,BigInt(count)).str():'0'}
 }
 function renderAlloc(){
  let el=document.querySelector('#allocationView');let c;try{c=fullValidate()}catch(e){el.innerHTML=`<div class="errorbox">${esc(e.message)}</div>`;return}
  let validIds=new Set(c.recipients.map(r=>r.id));state.agreementSelected=state.agreementSelected.filter(id=>validIds.has(id));
+ // HTML 작성 전부터 실데이터를 먼저 정합화합니다. 미선택자의 옛 2/7 등이 남지 않게 합니다.
+ allocateDefaults(c);
  let chosen=new Set(state.agreementSelected);
  el.innerHTML=`<div class="choice-info"><b>협의로 부동산을 취득할 상속인에게 체크하세요.</b><br>1명만 선택하면 그 사람이 피상속인 소유지분 전부를 취득합니다. 여러 명을 선택하면 우선 균등 배분하며, 아래에서 각 부동산별 지분을 수정할 수 있습니다. <b>체크하지 않은 상속인도 협의서의 합의·날인 당사자로 포함됩니다.</b></div><div class="check-grid">${c.recipients.map((r,i)=>`<label class="check-card"><input type="checkbox" data-receive="${attr(r.id)}" ${chosen.has(r.id)?'checked':''}><span><strong>${esc(r.name||`상속인 ${i+1}`)}</strong><small>${esc(r.via||r.relation)} · 법정지분 ${r.share.str()}</small></span></label>`).join('')}</div>
  ${!chosen.size?'<div class="empty">협의로 취득할 상속인을 1명 이상 선택하세요.</div>':`<div class="actionbar"><button class="light" data-action="redistribute">선택 상속인에게 균등 배분</button><button class="light" data-action="applyFirst">선택한 첫 번째 상속인에게 전부 배분</button></div><p class="note">협의 취득자를 체크하거나 해제하면 모든 부동산의 배분비율이 다시 자동 설정됩니다.</p>${selectedProperties().map((p,i)=>`<div class="propertycard"><h3>부동산 ${i+1} <span class="muted">· 피상속인 지분 ${esc(p.share)}</span></h3><div class="muted" style="margin-bottom:6px">${esc(p.label||'(부동산 표시 미입력)')}</div><div class="sharegrid"><span class="head">협의 취득자</span><span class="head">배분비율</span><span class="head">부동산 전체 기준</span></div>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>{let text=p.alloc[r.id]??'0',final='—';try{final=propertyShare(p).mul(frac(text)).str()}catch{}return `<div class="sharegrid"><div>${esc(r.name||r.relation)} <span class="muted">(${esc(r.relation)})</span></div><input data-alloc="${attr(p.id)}" data-rec="${attr(r.id)}" value="${attr(text)}" placeholder="예: 1/2"><b data-share-result="${attr(p.id)}:${attr(r.id)}">${final}</b></div>`}).join('')}<div class="total" id="sum_${attr(p.id)}"></div><div class="mini-actions"><span class="muted">이 부동산 전부 취득자</span><select class="cell-input" style="max-width:240px" data-full-owner="${attr(p.id)}"><option value="">선택하면 자동 배분</option>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>`<option value="${attr(r.id)}">${esc(r.name||r.relation)}</option>`).join('')}</select></div></div>`).join('')}`}`;
- if(chosen.size){allocateDefaults(c);refreshAllocationSums(c)}
+ if(chosen.size)refreshAllocationSums(c)
 }
 function refreshAllocationSums(c){if(!c)return;for(let p of selectedProperties()){let total=Z,ok=true;for(let r of c.recipients){try{let f=frac(p.alloc[r.id]);if(f.lt(Z)||f.gt(O))ok=false;total=total.add(f);let cell=document.querySelector(`[data-share-result="${p.id}:${r.id}"]`);if(cell)cell.textContent=propertyShare(p).mul(f).str()}catch{ok=false;let cell=document.querySelector(`[data-share-result="${p.id}:${r.id}"]`);if(cell)cell.textContent='오류'}}let el=document.getElementById(`sum_${p.id}`);if(el){el.style.color=ok&&total.eq(O)?'#187348':'#b42e31';el.textContent=`배분 합계: ${total.str()} / 1 ${ok&&total.eq(O)?'✓ 정상':'⚠ 1이 되어야 합니다.'}`}}}
 function allRecipientsSafe(){try{return calculate().recipients}catch{return []}}
@@ -1220,8 +1252,8 @@ document.addEventListener('change',e=>{let t=e.target;
   if(path.endsWith('.name')){renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}save();return}
   if(path.endsWith('.proxy')&&t.value==='true'){const nums=path.split('.');let h=state.heirs[Number(nums[1])];if(!h.sub.length)h.sub.push(makeSub())}
   setTimeout(renderAll,0);return}
- if(t.matches('[data-alloc]')){let p=state.properties.find(x=>x.id===t.dataset.alloc);p.alloc[t.dataset.rec]=t.value;refreshAllocationSums((()=>{try{return calculate()}catch{return null}})());save();return}
- if(t.matches('[data-full-owner]')){if(!t.value)return;let p=state.properties.find(x=>x.id===t.dataset.fullOwner);let c;try{c=calculate()}catch(e){alert(e.message);return}c.recipients.forEach(r=>p.alloc[r.id]=r.id===t.value?'1':'0');renderAlloc();save();return}
+ if(t.matches('[data-alloc]')){let p=state.properties.find(x=>x.id===t.dataset.alloc);if(!p)return;p.allocUserEdited=true;p.alloc[t.dataset.rec]=t.value;refreshAllocationSums((()=>{try{return calculate()}catch{return null}})());save();return}
+ if(t.matches('[data-full-owner]')){if(!t.value)return;let p=state.properties.find(x=>x.id===t.dataset.fullOwner);if(!p)return;let c;try{c=calculate()}catch(e){alert(e.message);return}p.allocUserEdited=true;c.recipients.forEach(r=>p.alloc[r.id]=r.id===t.value?'1':'0');renderAlloc();save();return}
  if(t.matches('[data-detail]')){state.details[t.dataset.detail]??={};state.details[t.dataset.detail][t.dataset.key]=t.value;save();if(state.method==='agreement')setTimeout(()=>renderDocs(),0)}
 });
 document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(!btn)return;let act=btn.dataset.action,i=Number(btn.dataset.i),j=Number(btn.dataset.j);
@@ -1241,7 +1273,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
  if(act==='removeSub')state.heirs[i].sub.splice(j,1);
  if(act==='removeProperty')state.properties.splice(i,1);
  if(act==='redistribute'){try{autoAllocateSelected(calculate())}catch(e){alert(e.message)}}
- if(act==='applyFirst'){try{let c=calculate();let first=c.recipients.find(r=>state.agreementSelected.includes(r.id));if(first)selectedProperties().forEach(p=>{c.recipients.forEach(r=>p.alloc[r.id]=r.id===first.id?'1':'0')})}catch(e){alert(e.message)}}
+ if(act==='applyFirst'){try{let c=calculate();let first=c.recipients.find(r=>state.agreementSelected.includes(r.id));if(first)selectedProperties().forEach(p=>{p.allocUserEdited=true;c.recipients.forEach(r=>p.alloc[r.id]=r.id===first.id?'1':'0')})}catch(e){alert(e.message)}}
  renderAll()
 });
 document.addEventListener('click',e=>{if(e.target.closest('#printAgreement'))outputDocument(false);if(e.target.closest('#downloadAgreement'))outputDocument(true)});
