@@ -325,8 +325,8 @@ button.danger{background:#f5f5f5;color:#434b55}
 const KEY='inheritance_mvp_local_20261104_v1'; // 이전 사건 데이터 유지
 const ID=()=> 'r'+Math.random().toString(36).slice(2,10);
 const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Date(d.getTime()-off*60000).toISOString().slice(0,10)};
-const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
-const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
+const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
+const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
 const fresh=()=>({version:3,decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
@@ -335,8 +335,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'
 const attr=esc;
 const relationOptions=['배우자','아들','딸','아버지','어머니','형제','자매'];
 const subOptions=['배우자','아들','딸'];
-function traverseNodes(nodes,action,level=0,parent=null){for(const n of nodes){action(n,level,parent);if(n.proxy)traverseNodes(n.sub||[],action,level+1,n)}}
-function leafNodes(nodes){let arr=[];traverseNodes(nodes,n=>{if(!n.proxy)arr.push(n)});return arr}
+function traverseNodes(nodes,action,level=0,parent=null){for(const n of nodes){action(n,level,parent);if(n.proxy||n.postDeath)traverseNodes(n.sub||[],action,level+1,n)}}
+function leafNodes(nodes){let arr=[];traverseNodes(nodes,n=>{if(!n.proxy&&!n.postDeath)arr.push(n)});return arr}
 function findNode(id){let result=null;traverseNodes(state.heirs,n=>{if(n.id===id)result=n});return result}
 function removeNode(id,nodes=state.heirs){for(let i=0;i<nodes.length;i++){if(nodes[i].id===id){nodes.splice(i,1);return true}if(removeNode(id,nodes[i].sub||[]))return true}return false}
 function numberOfRecipients(){return leafNodes(state.heirs).length}
@@ -349,7 +349,7 @@ function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
- state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.death??='';n.name??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
+ state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.name??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
   const ids=new Set();state.properties.forEach(p=>Object.entries(p.alloc||{}).forEach(([id,v])=>{if(/^\s*[1-9]\d*(?:\/\d+)?\s*$/.test(String(v)))ids.add(id)}));state.agreementSelected=[...ids];
@@ -373,9 +373,9 @@ function effectiveEra(date){
 // Era-sensitive relation choices. The legal role is stored separately from the base relationship.
 // Shares remain formula-driven; the listed weights are base ratios, not the final fraction.
 function relationEra(parent){
- // 대습분도 최초 피상속인의 상속개시일에 적용되는 법을 기준으로 판단한다.
- const d=state.decedent.death;
- return todayCheck(d)?effectiveEra(d):'modern';
+ // 대습은 최초 상속개시 기준, 재전상속은 그 후속 피상속인의 사망일 기준.
+ const d=parent?.postDeath?parent.death:state.decedent.death;
+ return todayCheck(d)?(parent?.postDeath?getEra(d):effectiveEra(d)):'modern';
 }
 function relationChoices(era,nested){
  const names=nested?['배우자','아들','딸']:['배우자','아들','딸','아버지','어머니','형제','자매'];
@@ -400,7 +400,11 @@ function relationChoices(era,nested){
  return output;
 }
 function relationVariantSelect(node,parent){
- const era=relationEra(parent),choices=relationChoices(era,!!parent),current=node.eraVariant||'';
+ const era=relationEra(parent),choices=parent?.postDeath?relationChoices(era,false).concat(era==='modern'?[
+  {base:'손자녀',v:'',label:'직계비속 · 손자녀 등 (촌수 검토 필요)'},
+  {base:'조부모',v:'',label:'직계존속 · 조부모 등 (촌수 검토 필요)'},
+  {base:'4촌 이내 방계혈족',v:'',label:'4촌 이내 방계혈족 (촌수 확인 필요)'}
+ ]:[]):relationChoices(era,!!parent),current=node.eraVariant||'';
  let html=`<select class="cell-input" data-node-id="${attr(node.id)}" data-era-relation="1" aria-label="${attr(relationCaption(parent?.name||state.decedent.name||'피상속인'))}">`;
  if(era!=='modern')html+=`<option value="" ${!current?'selected':''}>— ${esc(eraText(era))} · 관계유형 선택 —</option>`;
  for(const o of choices){const val=o.base+'|'+o.v;const picked=node.relation===o.base&&(era==='modern'||current===o.v);html+=`<option value="${attr(val)}" ${picked?'selected':''}>${esc(o.label)}</option>`}
@@ -656,7 +660,7 @@ function proxyDateSelectMarkup(node){
 }
 function updateProxyDatePart(nodeId,part,value){
  const node=findNode(nodeId);
- if(!node||!node.proxy)return;
+ if(!node||!(node.proxy||node.postDeath))return;
  const p={...proxyDateParts(node),[part]:value};
  if(p.day&&p.year&&p.month&&Number(p.day)>new Date(Number(p.year),Number(p.month),0).getDate())p.day='';
  if(p.year&&p.month&&p.day){
@@ -778,7 +782,7 @@ function setProxyRole(id,wantProxy){
  renderAll();
  showStatus((n.name||n.relation)+'을(를) '+(wantProxy?(depth+1)+'차 피대습자':(depth?depth+'차 대습상속인':'상속인'))+'로 변경했습니다.');
 }
-function stageRole(n,level){return n.proxy?`${level+1}차 피대습자`:(level>0?`${level}차 대습상속인`:'상속인')}
+function stageRole(n,level){if(n.postDeath)return (level>0?level+'차 대습상속인 · ':'')+'재전상속 피상속인';return n.proxy?`${level+1}차 피대습자`:(level>0?`${level}차 대습상속인`:'상속인')}
 function renderShareTree(c){
  const shares=c.byid||{};
  const rootName=state.decedent.name?.trim()||'(피상속인 성명 미입력)';
