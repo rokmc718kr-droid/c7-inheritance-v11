@@ -665,7 +665,7 @@ function calculate(){
    throw Error('망 '+(node.name||node.relation)+'의 후속상속이 4촌 이내 방계혈족입니다. 촌수별 가까운 친족을 확인한 후 법무사 확인 지분을 입력하세요.');
   // 원래 피상속인의 자녀가 나중에 사망했다면, 이미 사망한 원래 피상속인을
   // 그 후속 사건의 부모상속인으로 다시 넣어서는 안 된다.
-  if(state.heirs.some(x=>x.id===node.id)&&['아들','딸'].includes(node.relation)&&parents.length){
+  if(state.heirs.some(x=>x.id===node.id)&&['아들','딸'].includes(node.relation)&&parents.length&&!children.length){
    const deceasedParent=state.decedent.sex==='남성'?'아버지':state.decedent.sex==='여성'?'어머니':'';
    if(deceasedParent&&parents.some(x=>x.relation===deceasedParent))
     throw Error('망 '+(node.name||node.relation)+'의 '+deceasedParent+'는 최초 피상속인과 동일할 수 있으며, 최초 사망자가 후속 사건에서 다시 상속인이 될 수 없습니다. 해당 부모의 인적사항·생존 여부를 확인하고 제외하세요.');
