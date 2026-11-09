@@ -282,7 +282,6 @@ button.danger{background:#f5f5f5;color:#434b55}
 
 
 /* 상속인 신분을 외국인으로 선택할 때만 국가명 항목 노출 */
-.editor-form .field select[data-country-select]{min-width:0;max-width:100%;width:100%}
 .editor-form input[data-country-other]{min-width:0;width:100%}
 
 
@@ -558,13 +557,11 @@ button.danger{background:#f5f5f5;color:#434b55}
       </select>
     </div>
     <div class="field"><label for="docGuideDecedentNationality">망자 국적/신분</label>
-     <select class="cell-input" id="docGuideDecedentNationality"><option value="내국인">내국인</option><option value="재외국민">재외국민</option><option value="외국인">외국인</option></select></div>
-    <div class="field" id="docGuideDecedentCountryRow"><label for="docGuideDecedentCountry">망자 외국국적 국가명</label>
-     <select class="cell-input" id="docGuideDecedentCountry"><option value="">국가 선택</option><option>미국</option><option>일본</option><option>중국</option><option>캐나다</option><option>독일</option><option>베트남</option><option value="직접입력">기타 국가 직접입력</option></select>
-     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideDecedentCountryOther" placeholder="기타 국가명" maxlength="80"></div>
+     <select class="cell-input" id="docGuideDecedentNationality"></select>
+     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideDecedentCountryOther" aria-label="망자 국가명 직접입력" placeholder="국가명 직접입력" maxlength="80" hidden></div>
     <div class="field"><label for="docGuideForeignHeirCountry">외국국적 상속인 (일반 안내)</label>
-     <select class="cell-input" id="docGuideForeignHeirCountry"><option value="">해당 없음 · 사건 상속인 자동 확인</option><option>미국</option><option>일본</option><option>중국</option><option>캐나다</option><option>독일</option><option>베트남</option><option value="직접입력">기타 국가 직접입력</option></select>
-     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideHeirCountryOther" placeholder="기타 국가명" maxlength="80"></div>
+     <select class="cell-input" id="docGuideForeignHeirCountry"></select>
+     <input class="cell-input" style="margin-top:6px" type="text" id="docGuideHeirCountryOther" aria-label="상속인 국가명 직접입력" placeholder="국가명 직접입력" maxlength="80" hidden></div>
     <div class="docguide-util">
       <button type="button" class="outline" id="docGuideUseCase">현재 사건의 망자 정보 가져오기</button>
       <span class="muted">현재 사건이 없어도 안내문을 만들 수 있습니다.</span>
@@ -1297,14 +1294,30 @@ function countryName(node){
  if(node.country==='직접입력')return String(node.countryCustom||'').trim();
  return String(node.country||'').trim();
 }
-function countrySelectMarkup(node){
- if(!node||node.nationality!=='외국인')return '';
- const raw=String(node.country||'').trim(),isListed=FOREIGN_COUNTRIES.includes(raw),isOther=raw==='직접입력'||(raw&&!isListed);
- const chosen=isOther?'직접입력':raw;
- const selectOption=(value,label)=>'<option value="'+attr(value)+'"'+(chosen===value?' selected':'')+'>'+esc(label)+'</option>';
- const options=selectOption('','— 국가 선택 —')+FOREIGN_COUNTRIES.map(x=>selectOption(x,x)).join('')+selectOption('직접입력','기타 국가 (직접입력)');
- const manual=isOther?'<div class="field wide"><label>국가명 직접입력</label><input type="text" class="cell-input" data-node-id="'+attr(node.id)+'" data-country-other="1" value="'+attr(node.country==='직접입력'?(node.countryCustom||''):raw)+'" placeholder="예: 싱가포르" autocomplete="off" maxlength="80"></div>':'';
- return '<div class="field wide"><label>외국인 국가명</label><select class="cell-input" data-node-id="'+attr(node.id)+'" data-country-select="1" aria-label="외국인 국가명 선택">'+options+'</select></div>'+manual;
+function nationalitySelection(person){
+ if(person.nationality!=='외국인')return person.nationality;
+ const country=String(person.country||'').trim();
+ return country&&!FOREIGN_COUNTRIES.includes(country)?'직접입력':country;
+}
+function nationalityOptions(selected,includeDomestic=true){
+ const option=(value,label=value,disabled=false)=>'<option value="'+attr(value)+'"'+(selected===value?' selected':'')+(disabled?' disabled':'')+'>'+esc(label)+'</option>';
+ const domestic=includeDomestic?option('내국인')+option('재외국민'):'';
+ const blank=includeDomestic?(selected===''?option('','외국 국적 미선택',true):''):option('','해당 없음 · 사건 상속인 자동 확인');
+ return domestic+blank+FOREIGN_COUNTRIES.map(country=>option(country)).join('')+option('직접입력');
+}
+function applyNationalitySelection(person,value){
+ if(value==='내국인'||value==='재외국민'){
+  person.nationality=value;
+ }else if(FOREIGN_COUNTRIES.includes(value)||value==='직접입력'){
+  person.nationality='외국인';
+  person.country=value;
+ }
+}
+function nationalityMarkup(person,id,label){
+ const selected=nationalitySelection(person);
+ const custom=selected==='직접입력'
+  ?'<div class="field wide"><label for="nationalityOther-'+attr(id)+'">국가명 직접입력</label><input type="text" class="cell-input" id="nationalityOther-'+attr(id)+'" data-node-id="'+attr(id)+'" data-country-other value="'+attr(countryName(person))+'" placeholder="예: 싱가포르" autocomplete="off" maxlength="80"></div>':'';
+ return '<div class="field nationality-field"><label for="nationality-'+attr(id)+'">'+esc(label)+'</label><select class="cell-input" id="nationality-'+attr(id)+'" data-node-id="'+attr(id)+'" data-nationality-select>'+nationalityOptions(selected)+'</select></div>'+custom;
 }
 
 
@@ -1437,12 +1450,7 @@ function renderHeirs(){
  <p class="note" style="margin:7px 0 9px">선사망은 대습상속, 최초 상속개시 이후 사망은 재전상속으로 구분됩니다. 후속 상속인의 관계는 이 망자를 기준으로 다시 선택하세요.</p>
   <div class="editor-rel"><div class="field"><label>${esc(relationCaption(parentName))} <span class="era-compact">· ${esc(eraText(relationEra(selectedParent)))}</span></label>${relationVariantSelect(person,selectedParent)}</div></div>
   <div class="editor-form">
-  <div class="field nationality-field"><label>국적/신분</label><select class="cell-input" data-node-id="${id}" data-node-prop="nationality" aria-label="상속인 국적 또는 신분 선택">
-    <option value="내국인" ${person.nationality==='내국인'?'selected':''}>내국인</option>
-    <option value="재외국민" ${person.nationality==='재외국민'?'selected':''}>재외국민</option>
-    <option value="외국인" ${person.nationality==='외국인'?'selected':''}>외국인</option>
-  </select></div>
-  ${countrySelectMarkup(person)}
+  ${nationalityMarkup(person,person.id,'국적/신분')}
   <div class="field"><label>성명</label><input class="cell-input" data-node-id="${id}" data-node-prop="name" value="${attr(person.name)}" placeholder="성명" autocomplete="off"></div>
   <div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-detail="${id}" data-key="ident" value="${attr(info.ident||'')}" placeholder="등록번호" autocomplete="off"></div>
   <div class="field wide"><label>주소</label><input class="cell-input" data-detail="${id}" data-key="address" value="${attr(info.address||'')}" placeholder="주소" autocomplete="off"></div></div>
@@ -1450,8 +1458,7 @@ function renderHeirs(){
   ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (연·월·일 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
- <div class="field nationality-field"><label>피상속인 국적/신분</label><select class="cell-input" data-decedent-edit="nationality"><option value="내국인" ${state.decedent.nationality==='내국인'?'selected':''}>내국인</option><option value="재외국민" ${state.decedent.nationality==='재외국민'?'selected':''}>재외국민</option><option value="외국인" ${state.decedent.nationality==='외국인'?'selected':''}>외국인</option></select></div>
- ${countrySelectMarkup({...state.decedent,id:'__decedent__'})}
+ ${nationalityMarkup(state.decedent,'__decedent__','피상속인 국적/신분')}
  <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 재전상속 피상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
@@ -1460,7 +1467,7 @@ function renderHeirs(){
 }
 
 // 독립적인 상속 필요서류 안내 (계산/부동산 상태와 별도).
-const docGuide={name:'',year:'',month:'',day:'',method:'unknown',decedentNationality:'내국인',decedentCountry:'',foreignHeirs:[],manualForeignHeirCountry:'',sourceCaseId:null};
+const docGuide={name:'',year:'',month:'',day:'',method:'unknown',decedent:{nationality:'내국인',country:'',countryCustom:''},foreignHeirs:[],manualHeir:{nationality:'외국인',country:'',countryCustom:''},sourceCaseId:null};
 const DOCS_BY_PERIOD=[
  {start:1900,end:1959,label:'1900~1959년 · 구관습법 시기',docs:[
   '피상속인이 기재된 제적등본(구호적 포함, 출생·혼인·사망까지 연결되는 기록)',
@@ -1540,7 +1547,6 @@ function docGuideSectionRows(a){
 
 /* 외국국적 망자와 상속인은 한국 호적서류를 일률 적용하지 않습니다.
  * 국가별 명칭은 예시이며 발급·공증·번역·아포스티유 요건은 적용법과 사건별로 확인합니다. */
-const PRIORITY_FOREIGN_COUNTRIES=['미국','일본','중국','캐나다','독일','베트남'];
 const FOREIGN_GUIDE_DATA={
  '미국':{
   deceased:[['사망증명서(Death Certificate)','사망 장소 주(州) Vital Records 담당기관'],
@@ -1611,8 +1617,8 @@ function syncDocGuideWithCase(){
  docGuide.name=state.decedent.name||'';
  [docGuide.year,docGuide.month,docGuide.day]=todayCheck(d)?d.split('-'):['','',''];
  docGuide.method=state.method||'unknown';
- docGuide.decedentNationality=state.decedent.nationality||'내국인';
- docGuide.decedentCountry=countryName(state.decedent)||'';
+ const {nationality,country,countryCustom}=state.decedent;
+ docGuide.decedent={nationality,country,countryCustom};
  const heirs=[];
  traverseNodes(state.heirs,n=>{
   if(n.proxy||n.postDeath||n.nationality!=='외국인')return;
@@ -1624,13 +1630,14 @@ function syncDocGuideWithCase(){
 }
 function docGuideForeignGroups(){
  const groups=[];
- if(docGuide.decedentNationality==='외국인'){
-  const country=docGuide.decedentCountry||'국가 미선택';
+ if(docGuide.decedent.nationality==='외국인'){
+  const country=countryName(docGuide.decedent)||'국가 미선택';
   groups.push({title:'외국국적 망자 '+country+' 준비서류',role:'망자',country,items:foreignCountryDocs(country,'deceased')});
  }
  const heirs=[...docGuide.foreignHeirs];
- if(docGuide.manualForeignHeirCountry&&!heirs.some(x=>x.country===docGuide.manualForeignHeirCountry))
-  heirs.push({name:'외국국적 상속인 (일반 안내)',country:docGuide.manualForeignHeirCountry});
+ const manualCountry=countryName(docGuide.manualHeir);
+ if(manualCountry&&!heirs.some(x=>x.country===manualCountry))
+  heirs.push({name:'외국국적 상속인 (일반 안내)',country:manualCountry});
  for(const h of heirs)groups.push({title:(h.name||'상속인')+' · '+h.country+' 외국국적 상속인 준비서류',role:'상속인',country:h.country,items:foreignCountryDocs(h.country,'heir')});
  return groups;
 }
@@ -1645,7 +1652,7 @@ function docGuideDate(){
 function docGuideItems(){
  const date=docGuideDate(),period=date?docGuidePeriod(Number(date.slice(0,4))):null;
  if(!period)return null;
- const foreign=docGuide.decedentNationality==='외국인';
+ const foreign=docGuide.decedent.nationality==='외국인';
  const oldRegNote=foreign
   ?'외국국적 피상속인은 한국 호적·제적등본이 원칙적으로 존재하지 않을 수 있습니다. 과거 대한민국 국적·전적·호적 이력이 있는 경우에는 반드시 전호적(전적 전 제적등본) 존재 여부와 상속인 누락을 확인합니다.'
   :'망자의 전호적(전적 전 제적등본, 분가 전 호적, 전 호주의 제적등본)은 반드시 확인해야 합니다. 전호적 기록이 존재하면 빠짐없이 확보하여 상속인 누락을 방지하세요. 기록이 없는 경우 개별 확인합니다.';
@@ -1667,7 +1674,7 @@ function docGuideItems(){
   }
  }
  const foreignGroups=docGuideForeignGroups();
- const countryDocs=foreign?foreignCountryDocs(docGuide.decedentCountry||'국가 미선택','deceased'):[];
+ const countryDocs=foreign?foreignCountryDocs(countryName(docGuide.decedent)||'국가 미선택','deceased'):[];
  return {date,period,methodText,oldRegNote,versionWarning,
   decedent:foreign?countryDocs:period.docs,heirs:DOCS_HEIR,method:methodDocs,extra,
   foreignGroups:foreignGroups.filter(x=>x.role!=='망자'),foreignMaterials:foreignGroups.length?additionalForeignDocs():[]};
@@ -1683,16 +1690,17 @@ function renderDocGuide(){
  days.innerHTML=opts(Array.from({length:daysInMonth},(_,i)=>String(i+1).padStart(2,'0')),docGuide.day,'일');
  document.getElementById('docGuideName').value=docGuide.name;
  document.getElementById('docGuideMethod').value=docGuide.method;
- const nat=document.getElementById('docGuideDecedentNationality'),foreign=document.getElementById('docGuideDecedentCountry'),other=document.getElementById('docGuideDecedentCountryOther'),heir=document.getElementById('docGuideForeignHeirCountry'),heirOther=document.getElementById('docGuideHeirCountryOther');
- nat.value=docGuide.decedentNationality||'내국인';
- document.getElementById('docGuideDecedentCountryRow').style.display=nat.value==='외국인'?'block':'none';
- const preferred=PRIORITY_FOREIGN_COUNTRIES;
- foreign.value=preferred.includes(docGuide.decedentCountry)?docGuide.decedentCountry:docGuide.decedentCountry?'직접입력':'';
- other.style.display=nat.value==='외국인'&&foreign.value==='직접입력'?'block':'none';
- other.value=other.style.display==='block'?(docGuide.decedentCountry==='직접입력'?'':docGuide.decedentCountry):'';
- heir.value=preferred.includes(docGuide.manualForeignHeirCountry)?docGuide.manualForeignHeirCountry:docGuide.manualForeignHeirCountry?'직접입력':'';
- heirOther.style.display=heir.value==='직접입력'?'block':'none';
- heirOther.value=heirOther.style.display==='block'?(docGuide.manualForeignHeirCountry==='직접입력'?'':docGuide.manualForeignHeirCountry):'';
+ const decedentSelection=nationalitySelection(docGuide.decedent);
+ const heirSelection=nationalitySelection(docGuide.manualHeir);
+ document.getElementById('docGuideDecedentNationality').innerHTML=nationalityOptions(decedentSelection);
+ document.getElementById('docGuideForeignHeirCountry').innerHTML=nationalityOptions(heirSelection,false);
+ const other=document.getElementById('docGuideDecedentCountryOther');
+ const heirOther=document.getElementById('docGuideHeirCountryOther');
+ other.hidden=decedentSelection!=='직접입력';
+ heirOther.hidden=heirSelection!=='직접입력';
+ const guideCountryInput=person=>person.country==='직접입력'?(person.countryCustom||''):countryName(person);
+ other.value=other.hidden?'':guideCountryInput(docGuide.decedent);
+ heirOther.value=heirOther.hidden?'':guideCountryInput(docGuide.manualHeir);
  const guide=docGuideItems();
  document.getElementById('docGuideActions').style.display=guide?'flex':'none';
  const list=docGuideSectionRows;
@@ -1700,8 +1708,8 @@ function renderDocGuide(){
   out.innerHTML='<div class="empty">망자의 사망 연도·월·일을 선택하면 해당 사망 시기의 필요서류 안내가 바로 표시됩니다.<br>상속지분 계산이나 부동산 입력은 필요하지 않습니다.</div>';
   return;
  }
- out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'<br><b>망자 국적:</b> '+esc(docGuide.decedentNationality||'내국인')+(docGuide.decedentNationality==='외국인'?' ('+esc(docGuide.decedentCountry||'국가 미입력')+')':'')+'</div>'
- +'<div class="docguide-alert"><strong>중요 · '+(docGuide.decedentNationality==='외국인'?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
+ out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'<br><b>망자 국적:</b> '+esc(docGuide.decedent.nationality||'내국인')+(docGuide.decedent.nationality==='외국인'?' ('+esc(countryName(docGuide.decedent)||'국가 미입력')+')':'')+'</div>'
+ +'<div class="docguide-alert"><strong>중요 · '+(docGuide.decedent.nationality==='외국인'?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
  +'<section class="docguide-block"><h3>① 망자(피상속인) 준비서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
  +'<section class="docguide-block"><h3>② 내국인 상속인 기본 준비서류 (외국국적자는 아래 국가별 안내 참조)</h3>'+list(guide.heirs)+'</section>'
  +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 준비서류 차이</h3>'+list(guide.method)+'</section>'
@@ -1716,7 +1724,7 @@ function docGuideText(){
   const name=typeof item==='string'?item:item.name,issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
   return (i+1)+'. '+name+'\n   발급·준비: '+issuer;
  }).join('\n');
- let text='상속등기 준비서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n망자 국적: '+(docGuide.decedentNationality||'내국인')+(docGuide.decedentNationality==='외국인'?' ('+(docGuide.decedentCountry||'미입력')+')':'')+'\n\n'
+ let text='상속등기 준비서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n망자 국적: '+(docGuide.decedent.nationality||'내국인')+(docGuide.decedent.nationality==='외국인'?' ('+(countryName(docGuide.decedent)||'미입력')+')':'')+'\n\n'
  +'[중요] '+guide.oldRegNote+'\n\n[망자 준비서류]\n'+line(guide.decedent)+'\n\n[내국인 상속인 기본 준비서류]\n'+line(guide.heirs)+'\n\n[상속방법별 준비서류]\n'+line(guide.method)
  +'\n\n[상황별 추가 준비서류]\n'+line(guide.extra);
  for(const group of guide.foreignGroups||[])text+='\n\n['+group.title+']\n'+line(group.items);
@@ -2215,19 +2223,21 @@ document.querySelector('#formSaveSelected').addEventListener('click',()=>formPri
 document.querySelector('#docGuideName').addEventListener('input',e=>{docGuide.name=e.target.value;renderDocGuide()});
 document.querySelector('#docGuideMethod').addEventListener('change',e=>{docGuide.method=e.target.value;renderDocGuide()});
 document.querySelector('#docGuideDecedentNationality').addEventListener('change',e=>{
- docGuide.decedentNationality=e.target.value;renderDocGuide();
+ applyNationalitySelection(docGuide.decedent,e.target.value);
+ renderDocGuide();
 });
-document.querySelector('#docGuideDecedentCountry').addEventListener('change',e=>{
- docGuide.decedentCountry=e.target.value;renderDocGuide();
-});
-document.querySelector('#docGuideDecedentCountryOther').addEventListener('change',e=>{
- docGuide.decedentCountry=e.target.value.trim()||'직접입력';renderDocGuide();
+document.querySelector('#docGuideDecedentCountryOther').addEventListener('input',e=>{
+ docGuide.decedent.country='직접입력';
+ docGuide.decedent.countryCustom=e.target.value;
+ renderDocGuide();
 });
 document.querySelector('#docGuideForeignHeirCountry').addEventListener('change',e=>{
- docGuide.manualForeignHeirCountry=e.target.value;renderDocGuide();
+ docGuide.manualHeir.country=e.target.value;
+ renderDocGuide();
 });
-document.querySelector('#docGuideHeirCountryOther').addEventListener('change',e=>{
- docGuide.manualForeignHeirCountry=e.target.value.trim()||'직접입력';renderDocGuide();
+document.querySelector('#docGuideHeirCountryOther').addEventListener('input',e=>{
+ docGuide.manualHeir.countryCustom=e.target.value;
+ renderDocGuide();
 });
 for(const part of ['year','month','day'])document.getElementById('docGuide'+part[0].toUpperCase()+part.slice(1)).addEventListener('change',e=>updateDocGuideDatePart(part,e.target.value));
 document.querySelector('#docGuideUseCase').addEventListener('click',()=>{
@@ -2254,7 +2264,6 @@ document.addEventListener('change',e=>{let t=e.target;
   renderAll();return;
  }
   if(t.matches('[data-decedent-edit]')){
-  if(t.dataset.decedentEdit==='nationality'&&!['내국인','재외국민','외국인'].includes(t.value))return;
   state.decedent[t.dataset.decedentEdit]=t.value;renderAll();return
  }
 	 if(t.matches('[name="eraMode"]')){state.eraMode=t.value;state.eraVerified=false;renderAll();return}
@@ -2282,22 +2291,24 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-role]')){setPersonRole(t.dataset.role,t.dataset.value);return}
  if(t.matches('[data-era-relation]')){const n=findNode(t.dataset.nodeId);if(!n)return;let par=null;traverseNodes(state.heirs,(x,l,p)=>{if(x.id===n.id)par=p});applyRelationVariant(n,t.value,par);renderAll();return}
  if(t.matches('[data-property-selected]')){let p=state.properties.find(p=>p.id===t.dataset.propertySelected);if(p){p.selected=t.checked;renderAll()}return}
- if(t.matches('[data-country-select]')){
-  const n=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
-  const next=t.value;
-  if(next!==''&&next!=='직접입력'&&!FOREIGN_COUNTRIES.includes(next))return;
-  n.country=next;
-  if(next==='직접입력')n.countryCustom=n.countryCustom||'';
-  renderAll();return;
- }
- if(t.matches('[data-country-other]')){
-  const n=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);if(!n||n.nationality!=='외국인')return;
-  n.country='직접입력';n.countryCustom=t.value.trim();
-  renderAll();return;
+ if(t.matches('[data-nationality-select],[data-country-other]')){
+  const person=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);
+  if(!person)return;
+  if(t.matches('[data-nationality-select]')){
+   applyNationalitySelection(person,t.value);
+   renderAll();
+  }else if(person.nationality==='외국인'){
+   person.country='직접입력';
+   person.countryCustom=t.value.trim();
+   save();
+   if(state.method==='agreement')renderDocs();
+   applyActiveStage();
+   renderCaseList();
+  }
+  return;
  }
  if(t.matches('[data-node-prop]')){
   const n=findNode(t.dataset.nodeId);if(!n)return;
-  if(t.dataset.nodeProp==='nationality'&&!['내국인','재외국민','외국인'].includes(t.value))return;
   n[t.dataset.nodeProp]=t.value;
   if(t.dataset.nodeProp==='relation'&&n.relation==='배우자'&&n.proxy){n.proxy=false;n.death='';}
   renderAll();return
