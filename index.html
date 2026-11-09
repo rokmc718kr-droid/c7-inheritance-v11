@@ -474,7 +474,7 @@ function calculate(){
   if(n.proxy){
    if(!(level===0?([...child,...sibling].includes(n.relation)):child.includes(n.relation)))throw Error(`${n.name||n.relation}: 피대습자는 원칙적으로 해당 단계의 직계비속이어야 합니다(첫 단계 형제자매 포함).`);
    if(!todayCheck(n.death))throw Error(`${n.name||n.relation} 피대습자의 사망일을 입력하세요.`);
-   if(n.death>=d)throw Error(`망 ${n.name||n.relation}의 사망일이 최초 피상속인 사망일보다 늦거나 같습니다. 재전상속 등 별도 검토가 필요합니다.`);
+   if(n.death>=d)throw Error(`망 ${n.name||n.relation}의 사망일(${n.death})이 피상속인 사망일(${d}) 이후이거나 같습니다. 이 경우 선사망에 의한 대습상속이 아닙니다. 원래 상속인이 취득한 지분이 후속 사망으로 다시 상속되는 재전상속 등 별도 검토가 필요하므로, 피대습자 구분을 해제하고 첫 상속과 후속 상속을 구분해 처리하세요.`);
    if(!n.sub.length)throw Error(`${n.name||n.relation}의 대습상속인을 추가하세요.`);
    if(n.sub.filter(s=>s.relation==='배우자').length>1)throw Error(`${n.name||n.relation}: 배우자가 둘 이상 입력되었습니다.`);
    n.sub.forEach(s=>{if(!subOptions.includes(s.relation))throw Error('대습상속인 관계는 배우자·아들·딸만 선택할 수 있습니다.');validateBranch(s,level+1)});
@@ -680,6 +680,20 @@ let selectedPersonId='__decedent__';
 let treeEditorOpen=false;
 let treeMini=true;
 let activeStage='property';
+function proxyDeathOrderWarning(){
+ if(!todayCheck(state.decedent.death))return '';
+ let msgs=[];
+ traverseNodes(state.heirs,(n,level)=>{
+  if(!n.proxy||!todayCheck(n.death)||n.death<state.decedent.death)return;
+  msgs.push('피상속인 사망일 '+state.decedent.death.replaceAll('-','.')+' / '+(level+1)+'차 피대습자 '+(n.name||'성명 미입력')+' 사망일 '+n.death.replaceAll('-','.'));
+ });
+ if(!msgs.length)return '';
+ return '<div role="alert" class="warnbox" style="margin:10px 0;border-color:#d9a9a9;background:#fff6f6;color:#8e222a;font-size:12px;line-height:1.75">'
+ +'<strong>⚠ 대습상속 조건에 맞지 않는 사망일입니다.</strong><br>'
+ +msgs.map(esc).join('<br>')
+ +'<br>피상속인보다 늦게 사망한 상속인은 피대습자가 아닙니다. 최초 상속지분을 계산한 뒤 그 사람의 사망에 따른 재전상속을 별도로 검토해야 합니다. 현재 V11은 재전상속 자동산출을 지원하지 않습니다.'
+ +'</div>';
+}
 function renderHeirs(){
  const target=document.querySelector('#heirsView');
  // 입력 단계에서 피상속인보다 늦게 사망한 사람을 피대습자로 지정한 오류를 즉시 안내.
@@ -730,7 +744,7 @@ function renderHeirs(){
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="danger" data-action="removePerson" data-node="${id}">${selectedDepth>0?'대습상속인 삭제':'상속인 삭제'}${person.proxy?' (하위 대습 포함)':''}</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div><button type="button" class="editor-close" data-tree-close>완료 ✓</button></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form"><div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
- <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 1차/2차 피대습자 · 1차/2차 대습상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul><div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
+ <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 1차/2차 피대습자 · 1차/2차 대습상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
  <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
  document.body.classList.toggle('tree-editor-open',treeEditorOpen);
 }
