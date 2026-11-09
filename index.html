@@ -2009,7 +2009,6 @@ function renderProperties(){
  const el=document.querySelector('#propertiesView');
  document.querySelector('#selectedPropertyCount').textContent='선택 '+selectedProperties().length+' / 전체 '+state.properties.length+'건';
  if(!state.properties.length){el.innerHTML='<div class="empty">부동산을 먼저 추가하고 선택해 주세요.</div>';return}
- let c;try{c=calculate()}catch{}
  el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
  <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><span class="muted">${p.selected!==false?'상속지분·협의서 반영 대상':'미선택 · 계산 제외'}</span></div>
  <div class="row" style="align-items:start"><div class="field" style="flex:4;min-width:230px"><label>부동산의 표시 (등기부 기준)</label><textarea data-path="properties.${i}.label" placeholder="예: 서울특별시 ○○구 ○○동 100-1 토지...">${esc(p.label)}</textarea></div><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
