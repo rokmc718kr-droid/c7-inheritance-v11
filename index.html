@@ -406,6 +406,24 @@ button.danger{background:#f5f5f5;color:#434b55}
 .case-stage-badge.draft{background:#fff3dc;color:#875c1b}
 .case-stage-badge.completed{background:#e6f5ed;color:#177348}
 .case-list-actions button:disabled{color:#7e8994;background:#f3f5f8;cursor:not-allowed;border-style:dashed}
+
+/* 사건리스트 중심 최종 메뉴: 신규 사건에는 부동산 입력/상속관계 입력/AI 상속지분 계산만 */
+.inheritance-editor-top{display:none;align-items:center;justify-content:space-between;gap:10px;border:1px solid #dbe2ed;border-radius:12px;background:#fff;padding:10px 14px;margin-bottom:6px}
+.inheritance-editor-top.is-visible{display:flex}
+.inheritance-editor-top-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.inheritance-editor-top-left strong{font-size:15px;color:#243b5a}
+.inheritance-editor-top-left small{font-size:12px;color:#708296;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inheritance-editor-top-actions{display:flex;gap:7px;flex-shrink:0}
+.inheritance-editor-top-actions button{font-size:12px;min-height:40px;padding:9px 14px}
+.stage-nav.stage-nav-hidden{display:none}
+.stage-nav button{flex:1;min-width:max-content}
+@media(max-width:620px){
+ .inheritance-editor-top{padding:9px 10px}
+ .inheritance-editor-top-actions button{font-size:11px;padding:8px 10px}
+ .stage-nav{gap:6px;padding-top:8px}
+ .stage-nav button{font-size:12px;padding:10px 12px}
+}
+
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -419,39 +437,21 @@ button.danger{background:#f5f5f5;color:#434b55}
 <noscript><div class="errorbox" style="margin-bottom:14px"><b>스크립트가 실행되지 않고 있습니다.</b> 파일 미리보기에서는 버튼이 작동하지 않을 수 있습니다. HTML 파일을 다운로드하여 Chrome 또는 Edge 브라우저로 열어 주세요.</div></noscript>
 
 
-<nav class="total-main-nav" id="totalMainNav" aria-label="상속 토탈 상위 메뉴">
- <button type="button" data-go-stage="home">상속 토탈 홈</button>
- <button type="button" data-go-stage="cost" disabled aria-disabled="true" title="C7 상속비용 자동산출 연동 예정">상속비용 산출 <span class="nav-upcoming">연동 예정</span></button>
- <button type="button" data-go-stage="files">사건리스트</button>
-</nav>
-<nav class="stage-nav" id="stageNav" aria-label="사건별 상세 업무 메뉴">
- <button type="button" data-go-stage="property">① 부동산 선택</button>
+<div class="inheritance-editor-top" id="inheritanceEditorTop">
+ <div class="inheritance-editor-top-left"><strong>상속사건 입력</strong><small id="inheritanceEditorCaseName">새 상속사건</small></div>
+ <div class="inheritance-editor-top-actions"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="primary" id="editorCaseSave">저장</button></div>
+</div>
+<nav class="stage-nav" id="stageNav" aria-label="상속사건 입력 단계">
+ <button type="button" data-go-stage="property">① 부동산 입력</button>
  <button type="button" data-go-stage="people">② 상속관계 입력</button>
  <button type="button" data-go-stage="shares">③ AI 상속지분 계산</button>
- <button type="button" data-go-stage="forms">④ 서류 자동작성·출력</button>
- <button type="button" data-go-stage="documents">상속 준비서류</button>
 </nav>
-<div class="stage-screen" data-stage="home">
-<section class="total-hub" aria-label="상속 토탈 홈 핵심업무">
- <div class="total-hub-head"><div><strong>AI 상속 토탈</strong><small>지분계산 · 서류작성 · 준비서류</small></div><small>상속비용 산출은 상위탭에서 연동 예정입니다.</small></div>
- <div class="total-hub-links">
-  <button type="button" data-go-stage="shares"><b>AI 상속지분 계산</b><small>법정·대습·재전상속</small></button>
-  <button type="button" data-go-stage="forms"><b>서류 자동작성·출력</b><small>사건별 위임장·협의분할서</small></button>
-  <button type="button" data-go-stage="documents"><b>상속 준비서류</b><small>사망 시기별 발급처·안내문</small></button>
- </div>
- <div class="total-hub-bottom">
-  <span>사건을 선택한 후 지분계산·서류작성에 같은 정보를 활용합니다.</span>
-  <button type="button" class="outline" data-go-stage="files">사건리스트에서 시작 →</button>
-  <button type="button" class="outline" data-go-stage="property">새 상속사건 입력 →</button>
- </div>
-</section>
-</div>
 <div class="stage-screen" data-stage="property">
-<section class="panel"><div class="panelhead"><h2>01. 부동산 선택 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
+<section class="panel"><div class="panelhead"><h2>01. 부동산 입력 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
 <div class="choice-info"><b>C7 연동 시 공통 부동산 리스트에서 선택한 부동산을 가져오는 화면입니다.</b><br>현재 오프라인 시제품에서는 부동산을 직접 등록하고 체크해 선택합니다. 여러 부동산을 선택할 수 있으며, 선택된 부동산의 피상속인 소유지분만 계산·협의서에 반영됩니다.</div>
 <div id="propertiesView"></div>
 <p class="note">‘부동산 표시’에는 등기사항증명서의 토지·건물 표시를 입력하세요. 피상속인 소유지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
-<div class="actionbar"><button type="button" class="primary" id="proceedAfterProperty">선택 완료 · 상속관계 입력 →</button></div>
+<div class="actionbar"><button type="button" class="primary" id="proceedAfterProperty">입력 완료 · 상속관계 입력 →</button></div>
 </div></section>
 </div>
 <div class="stage-screen" data-stage="people">
@@ -552,14 +552,14 @@ button.danger{background:#f5f5f5;color:#434b55}
  </section>
 </div>
 <div class="stage-screen" data-stage="files">
-<section class="panel"><div class="panelhead"><h2>상속 사건리스트 <span class="tag" id="caseListCount">0건</span></h2><small>피상속인별 지분계산·서류작성·준비서류 바로가기</small></div>
+<section class="panel"><div class="panelhead"><h2>상속 사건리스트 <span class="tag" id="caseListCount">0건</span></h2><small>신규 사건 등록 및 사건별 후속업무</small></div>
 <div class="body">
  <div class="case-list-toolbar">
-  <div class="case-current"><b>현재 작업 사건</b> <span id="caseActiveLabel">새 사건</span></div>
-  <div class="actionbar"><button type="button" class="primary" id="caseSaveToList">현재 사건 임시저장</button><button type="button" class="outline" id="caseNewItem">＋ 새 사건</button></div>
+  <div class="case-current"><b>상속 사건리스트</b> <span id="caseActiveLabel">입력 중인 사건 없음</span></div>
+  <div class="actionbar"><button type="button" class="outline" id="caseSaveToList">현재 사건 저장</button><button type="button" class="primary" id="caseNewItem">＋ 신규</button></div>
  </div>
  <div id="caseListView"></div>
- <p class="note">임시저장 상태에서도 [지분계산]·[서류작성]·[준비서류]를 바로 실행할 수 있습니다. 비용계산도 동일한 사건에서 실행하도록 연결할 예정입니다. 입력된 정보는 재사용하고 없는 정보만 해당 업무에서 추가합니다.</p>
+ <p class="note">임시저장 사건도 후속업무를 시작할 수 있습니다. 사건별 [비용계산(연동 예정)] · [서류작성] · [준비서류]를 이용하세요. 먼저 입력한 정보는 자동으로 불러오고 부족한 항목만 추가 입력합니다.</p>
  <hr class="divider">
  <b>사건파일 백업·불러오기</b>
  <div class="actionbar"><button class="light" id="saveJson">사건파일(JSON) 다운로드</button><button class="light" id="loadJson">사건파일(JSON) 불러오기</button><button class="danger" id="reset">새 사건으로 초기화</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div>
