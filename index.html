@@ -285,6 +285,19 @@ button.danger{background:#f5f5f5;color:#434b55}
 .editor-form .field select[data-country-select]{min-width:0;max-width:100%;width:100%}
 .editor-form input[data-country-other]{min-width:0;width:100%}
 
+
+/* 단독 필요서류 안내 — 체크박스가 아닌 텍스트 안내문 */
+.docguide-form{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:11px;margin:14px 0 20px}
+.docguide-form>.field{min-width:0}.docguide-dates{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:6px}
+.docguide-util{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.docguide-block{margin:12px 0;padding:16px;border:1px solid #dfe5ef;border-radius:12px;background:#fff}
+.docguide-block h3{margin:0 0 8px;font-size:15px;color:#1f3048}.docguide-block ul{margin:7px 0;padding-left:21px;line-height:1.85}
+.docguide-alert{background:#fff8eb;border:1px solid #e8c78e;border-radius:10px;padding:13px 14px;margin:12px 0;color:#7b5117;line-height:1.8}
+.docguide-meta{background:#f3f6fa;border:1px solid #e2e6ed;padding:12px;border-radius:10px;line-height:1.7}
+.docguide-source{font-size:12px;color:#6c7787;margin:15px 0 5px;line-height:1.8}
+@media(max-width:800px){.docguide-form{grid-template-columns:1fr 1fr}.docguide-form>.field:last-of-type{grid-column:1/-1}}
+@media(max-width:520px){.docguide-form{grid-template-columns:1fr}.docguide-form>.field:last-of-type{grid-column:auto}.docguide-dates{grid-template-columns:1.25fr .85fr .85fr}.docguide-util{gap:6px}}
+
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">V11 · 부동산 선택 먼저 · 연도별 관계유형 · 대습 추가/삭제</div><h1>상속지분 자동산출</h1><p class="sub">부동산을 먼저 선택하고, 사망 연도에 맞는 상속인 관계유형을 지정해 지분을 산출합니다.</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -303,6 +316,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <button type="button" data-go-stage="people">② 상속관계 입력</button>
  <button type="button" data-go-stage="shares">③ 상속지분 확인</button>
  <button type="button" data-go-stage="agreement">④ 협의분할서</button>
+ <button type="button" data-go-stage="documents">상속 필요서류 안내</button>
  <button type="button" data-go-stage="files">사건 저장</button>
 </nav>
 <div class="stage-screen" data-stage="property">
@@ -329,6 +343,42 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="stage-screen" data-stage="agreement">
 <section class="panel hidden" id="allocPanel"><div class="panelhead"><h2>06. 협의로 취득할 상속인 선택</h2><span class="tag">취득자 체크 → 지분 자동 배분</span></div><div class="body"><div id="allocationView"></div></div></section>
 <section class="panel hidden" id="docPanel"><div class="panelhead"><h2>07. 상속재산분할협의서 자동작성</h2><span class="tag">통합 1부 / 상속인별 작성 선택</span></div><div class="body"><div id="docView"></div></div></section>
+</div>
+
+<div class="stage-screen" data-stage="documents">
+ <section class="panel">
+  <div class="panelhead"><h2>상속 필요서류 안내</h2><small>지분계산·부동산 선택 없이 바로 이용</small></div>
+  <div class="body">
+   <p class="choice-info"><b>사망일을 선택하면 해당 시기의 서류명이 자동 표시됩니다.</b><br>망자·상속인 필요서류를 안내문으로 만들어 복사하거나 휴대전화에서 바로 공유할 수 있습니다. 이 화면에는 서류 준비 체크박스가 없습니다.</p>
+   <div class="docguide-form">
+    <div class="field"><label for="docGuideName">망자 성명 (선택)</label><input id="docGuideName" class="cell-input" placeholder="예: 홍길동" autocomplete="off"></div>
+    <div class="field"><label>망자 사망일 (필수)</label><div class="docguide-dates">
+      <select id="docGuideYear" class="cell-input" aria-label="사망 연도"></select>
+      <select id="docGuideMonth" class="cell-input" aria-label="사망 월"></select>
+      <select id="docGuideDay" class="cell-input" aria-label="사망 일"></select>
+     </div></div>
+    <div class="field"><label for="docGuideMethod">상속방법 (서류 안내용)</label>
+      <select id="docGuideMethod" class="cell-input">
+       <option value="unknown">미정 · 공통서류 우선 안내</option>
+       <option value="statute">법정상속</option>
+       <option value="agreement">협의분할상속</option>
+      </select>
+    </div>
+    <div class="docguide-util">
+      <button type="button" class="outline" id="docGuideUseCase">현재 사건의 망자 정보 가져오기</button>
+      <span class="muted">현재 사건이 없어도 안내문을 만들 수 있습니다.</span>
+    </div>
+   </div>
+   <div id="docGuideOutput" aria-live="polite"></div>
+   <div class="actionbar" id="docGuideActions">
+    <button type="button" class="primary" id="docGuideCopy">안내문 복사</button>
+    <button type="button" class="outline" id="docGuideShare">휴대전화로 공유</button>
+    <button type="button" class="light" id="docGuidePrint">안내문 인쇄</button>
+   </div>
+   <p id="docGuideStatus" class="note" role="status"></p>
+   <div class="docguide-source">기준: 「상속등기에 관한 업무처리지침」(대법원 등기예규 제1871호), 가족관계등록제도 및 등기 실무. 사망 연도는 최초 분류 기준입니다. <b>가족관계등록부 존재 여부는 실제 사망신고·호적 이력에 따라 달라질 수 있으며, 전호적의 발급 범위도 개별 확인해야 합니다.</b></div>
+  </div>
+ </section>
 </div>
 <div class="stage-screen" data-stage="files">
 <section class="panel"><div class="panelhead"><h2>사건 저장·불러오기</h2><small>서버 전송 없이 이 브라우저에만 보관합니다.</small></div><div class="body"><div class="actionbar"><button class="light" id="saveJson">사건파일(JSON) 저장</button><button class="light" id="loadJson">사건파일 불러오기</button><button class="danger" id="reset">새 사건</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div><div class="status" id="status"></div><p class="note">이름·주소·식별정보는 기기 안에만 보관되며 인터넷으로 전송되지 않습니다. 공용 컴퓨터 사용 시 사건을 초기화하고, 중요 정보는 별도 관리하세요.</p></div></section>
@@ -985,6 +1035,154 @@ function renderHeirs(){
  <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
  document.body.classList.toggle('tree-editor-open',treeEditorOpen);
 }
+
+// 독립적인 상속 필요서류 안내 (계산/부동산 상태와 별도).
+const docGuide={name:'',year:'',month:'',day:'',method:'unknown'};
+const DOCS_BY_PERIOD=[
+ {start:1900,end:1959,label:'1900~1959년 · 구관습법 시기',docs:[
+  '피상속인이 기재된 제적등본(구호적 포함, 출생·혼인·사망까지 연결되는 기록)',
+  '전호적 제적등본(전적·분가 이전 호적 및 전 호주의 제적등본)',
+  '호주·가족관계·출가·입양 등을 확인할 제적등본 및 관련 호적 기록',
+  '말소자 주민등록표 초본(주소변동 포함, 기록이 존재하는 경우)'
+ ]},
+ {start:1960,end:1978,label:'1960~1978년 · 구민법 시기',docs:[
+  '피상속인의 제적등본(사망 사실과 당시 가족관계 확인)',
+  '전호적 제적등본(전적·분가 이전 호적 및 전 호주의 제적등본)',
+  '혼인·입양·출가·호주승계 여부를 확인할 관련 제적등본',
+  '말소자 주민등록표 초본(주소변동 포함, 발급 가능한 경우)'
+ ]},
+ {start:1979,end:1990,label:'1979~1990년 · 개정 구민법 시기',docs:[
+  '피상속인의 제적등본(사망 사실과 당시 가족관계 확인)',
+  '전호적 제적등본(전적·분가 이전 호적 및 전 호주의 제적등본)',
+  '호주승계·동일가적/출가·입양 여부를 확인할 관련 제적등본',
+  '말소자 주민등록표 초본(주소변동 포함, 발급 가능한 경우)'
+ ]},
+ {start:1991,end:2007,label:'1991~2007년 · 가족관계등록제도 시행 전',docs:[
+  '피상속인의 제적등본(사망 사실 및 배우자·자녀 등 확인)',
+  '전호적 제적등본(전적·분가 이전 호적 및 전 호주의 제적등본)',
+  '말소자 주민등록표 초본(주소변동 포함)',
+  '가족관계등록사항별 증명서(사망신고 시점 등으로 가족관계등록부가 존재하는 경우 추가 확인)'
+ ]},
+ {start:2008,end:9999,label:'2008년 이후 · 가족관계등록제도 시행 후',docs:[
+  '피상속인의 기본증명서(상세, 폐쇄등록부 포함)',
+  '피상속인의 가족관계증명서(상세, 폐쇄등록부 포함)',
+  '피상속인의 혼인관계증명서(상세)',
+  '피상속인의 입양관계증명서(상세)',
+  '피상속인의 친양자입양관계증명서(상세)',
+  '말소자 주민등록표 초본(주소변동 포함)',
+  '제적등본 및 전호적 제적등본(2008년 이전 호적 이력이 있는 경우 반드시 확인)'
+ ]}
+];
+const DOCS_HEIR=[
+ '상속인별 가족관계증명서(상세)',
+ '상속인별 기본증명서(상세, 상속관계 확인상 필요한 경우)',
+ '상속인별 주민등록표 등본 또는 초본(주소증명)',
+ '신분증 등 본인 확인자료'
+];
+const DOCS_AGREEMENT=[
+ '상속재산분할협의서(공동상속인 전원의 협의 내용)',
+ '협의분할에 참여하는 공동상속인 전원의 인감증명서 및 인감도장(원칙, 공증·외국인 등 예외 확인)',
+ '대리 협의 시 협의분할 위임장 등 관련 권한증명 서류'
+];
+const DOCS_EXTRA=[
+ '대습상속·재전상속이 있으면 사망자별 사망 및 가족관계를 증명하는 서류',
+ '미성년자·피성년후견인 등 이해상반관계 시 특별대리인 선임 등 증빙서류',
+ '재외국민·외국인 상속인은 국적·주소·서명 또는 인감증명에 관한 추가 서류'
+];
+const docGuidePeriod=(year)=>DOCS_BY_PERIOD.find(p=>year>=p.start&&year<=p.end);
+function docGuideDate(){
+ if(!(docGuide.year&&docGuide.month&&docGuide.day))return '';
+ const d=[docGuide.year,docGuide.month,docGuide.day].join('-');
+ if(!todayCheck(d)||d>now()||d<'1900-01-01')return '';
+ return d;
+}
+function docGuideItems(){
+ const date=docGuideDate(),period=date?docGuidePeriod(Number(date.slice(0,4))):null;
+ if(!period)return null;
+ const current=period.start>=2008;
+ const oldRegNote='망자의 전호적(전적 전 제적등본, 분가 전 호적, 전 호주의 제적등본)은 반드시 확인해야 합니다. 전호적 기록이 존재하면 빠짐없이 확보하여 상속인 누락을 방지하세요. 해당 호적이 없는 경우에는 무조건 서류 발급을 요구하지 말고 개별 확인합니다.';
+ const versionWarning= current
+   ?'2008년 이전 출생·혼인·입양 등의 호적 이력이 있다면 제적등본과 전호적도 함께 확인하세요.'
+   :'2008년 이전 사망자도 사망신고 시점 등에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
+ const methodText=docGuide.method==='agreement'?'협의분할상속':docGuide.method==='statute'?'법정상속':'상속방법 미정';
+ const methodDocs=docGuide.method==='agreement'?DOCS_AGREEMENT:
+   docGuide.method==='statute'?['법정상속지분대로 등기하는 경우 상속재산분할협의서·상속인 전원의 인감증명서는 일반적으로 불필요합니다.']:
+   ['협의분할상속이라면: '+DOCS_AGREEMENT.join(' / ')];
+ return {date,period,methodText,oldRegNote,versionWarning,
+  decedent:period.docs,heirs:DOCS_HEIR,method:methodDocs,extra:DOCS_EXTRA};
+}
+function renderDocGuide(){
+ const out=document.getElementById('docGuideOutput');if(!out)return;
+ const years=document.getElementById('docGuideYear'),months=document.getElementById('docGuideMonth'),days=document.getElementById('docGuideDay');
+ const currentYear=new Date().getFullYear();
+ const opts=(arr,value,blank)=>'<option value="">'+blank+'</option>'+arr.map(x=>'<option value="'+x+'"'+(x===value?' selected':'')+'>'+x+'</option>').join('');
+ years.innerHTML=opts(Array.from({length:currentYear-1899},(_,i)=>String(currentYear-i)),docGuide.year,'사망 연도');
+ months.innerHTML=opts(Array.from({length:12},(_,i)=>String(i+1).padStart(2,'0')),docGuide.month,'월');
+ const daysInMonth=docGuide.year&&docGuide.month?new Date(Number(docGuide.year),Number(docGuide.month),0).getDate():31;
+ days.innerHTML=opts(Array.from({length:daysInMonth},(_,i)=>String(i+1).padStart(2,'0')),docGuide.day,'일');
+ document.getElementById('docGuideName').value=docGuide.name;
+ document.getElementById('docGuideMethod').value=docGuide.method;
+ const guide=docGuideItems();
+ document.getElementById('docGuideActions').style.display=guide?'flex':'none';
+ const list=a=>'<ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+ if(!guide){
+  out.innerHTML='<div class="empty">망자의 사망 연도·월·일을 선택하면 해당 사망 시기의 필요서류 안내가 바로 표시됩니다.<br>상속지분 계산이나 부동산 입력은 필요하지 않습니다.</div>';
+  return;
+ }
+ out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'</div>'
+ +'<div class="docguide-alert"><strong>중요 · 망자의 전호적 반드시 확인</strong><br>'+esc(guide.oldRegNote)+'</div>'
+ +'<section class="docguide-block"><h3>① 망자(피상속인) 필요서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
+ +'<section class="docguide-block"><h3>② 상속인 필요서류</h3>'+list(guide.heirs)+'</section>'
+ +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 관련 서류</h3>'+list(guide.method)+'</section>'
+ +'<section class="docguide-block"><h3>④ 해당 시 추가 확인서류</h3>'+list(guide.extra)+'</section>';
+}
+function docGuideText(){
+ const guide=docGuideItems();if(!guide)return '';
+ const line=items=>items.map((d,i)=>(i+1)+'. '+d).join('\n');
+ return '상속등기 필요서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n\n'
+ +'[중요] '+guide.oldRegNote+'\n\n[망자 필요서류]\n'+line(guide.decedent)+'\n\n[상속인 필요서류]\n'+line(guide.heirs)+'\n\n[상속방법별 서류]\n'+line(guide.method)
+ +'\n\n[상황별 추가서류]\n'+line(guide.extra)
+ +'\n\n안내: '+guide.versionWarning+'\n정확한 제출서류는 실제 가족관계·사망신고·호적 이력과 등기신청 사건에 따라 달라질 수 있습니다.';
+}
+function docGuideFeedback(text,isError=false){const el=document.getElementById('docGuideStatus');if(el){el.textContent=text;el.style.color=isError?'#a62929':'#14744c';}}
+async function copyDocGuide(){
+ const text=docGuideText();
+ if(!text){docGuideFeedback('먼저 사망일을 선택하세요.',true);return false;}
+ try{
+  if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);docGuideFeedback('서류 안내문이 복사되었습니다. 카톡·문자 등에 붙여넣어 보내세요.');return true;}
+ }catch(e){}
+ const input=document.createElement('textarea');
+ input.value=text;input.setAttribute('readonly','');input.style.position='fixed';input.style.top='-1000px';document.body.appendChild(input);input.select();
+ const success=!!document.execCommand?.('copy');document.body.removeChild(input);
+ docGuideFeedback(success?'서류 안내문을 복사했습니다.':'자동 복사가 제한됩니다. 안내문을 길게 눌러 복사해 주세요.',!success);
+ return success;
+}
+async function shareDocGuide(){
+ const text=docGuideText();if(!text){docGuideFeedback('먼저 사망일을 선택하세요.',true);return;}
+ if(navigator.share){try{await navigator.share({title:'상속등기 필요서류 안내',text});docGuideFeedback('휴대전화 공유 기능을 실행했습니다.');return}catch(e){if(e?.name==='AbortError')return;}}
+ const copied=await copyDocGuide();
+ if(copied)docGuideFeedback('이 브라우저는 바로 공유를 지원하지 않아 안내문을 복사했습니다. 카톡·문자에 붙여넣어 주세요.');
+}
+function printDocGuide(){
+ const guide=docGuideItems();if(!guide){docGuideFeedback('먼저 사망일을 선택하세요.',true);return}
+ const root=document.querySelector('#printRoot');
+ const content=document.getElementById('docGuideOutput').innerHTML;
+ root.innerHTML='<section class="doc-sheet" style="padding:10mm"><h1>상속등기 필요서류 안내</h1>'+content+'</section>';
+ window.print();
+}
+function updateDocGuideDatePart(part,value){
+ docGuide[part]=value;
+ const date=docGuideDate();
+ if(docGuide.day&&docGuide.year&&docGuide.month){
+  const max=new Date(Number(docGuide.year),Number(docGuide.month),0).getDate();
+  if(Number(docGuide.day)>max)docGuide.day='';
+ }
+ if(docGuide.year&&docGuide.month&&docGuide.day&&!docGuideDate()){
+  docGuide.day='';docGuideFeedback('미래의 사망일 또는 유효하지 않은 날짜입니다. 일자를 다시 선택하세요.',true);
+ }
+ renderDocGuide();
+}
+
 function applyActiveStage(){
  if(activeStage==='agreement'&&state.method!=='agreement')activeStage='shares';
  document.querySelectorAll('.stage-screen').forEach(el=>el.classList.toggle('is-active',el.dataset.stage===activeStage));
@@ -1142,7 +1340,7 @@ function renderAll(){normalise();
  document.querySelector('#methodHint').textContent=state.method==='agreement'?'협의로 취득할 상속인을 아래에서 체크한 뒤, 필요한 경우 부동산별 지분을 조정하고 협의서를 출력합니다.':'법정상속지분을 자동 계산하여 각 부동산의 피상속인 소유지분에 적용합니다.';
  document.querySelector('#allocPanel').classList.toggle('hidden',state.method!=='agreement');
  document.querySelector('#docPanel').classList.toggle('hidden',state.method!=='agreement');
- renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}applyActiveStage();save()
+ renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderDocGuide();applyActiveStage();save()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
 function buildDocument(c){
@@ -1192,6 +1390,22 @@ document.addEventListener('click',e=>{
  const mini=e.target.closest('[data-tree-mini]');if(mini){treeMini=!treeMini;renderHeirs();return}
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
+
+document.querySelector('#docGuideName').addEventListener('input',e=>{docGuide.name=e.target.value;renderDocGuide()});
+document.querySelector('#docGuideMethod').addEventListener('change',e=>{docGuide.method=e.target.value;renderDocGuide()});
+for(const part of ['year','month','day'])document.getElementById('docGuide'+part[0].toUpperCase()+part.slice(1)).addEventListener('change',e=>updateDocGuideDatePart(part,e.target.value));
+document.querySelector('#docGuideUseCase').addEventListener('click',()=>{
+ const d=state.decedent.death;
+ if(!todayCheck(d)){docGuideFeedback('현재 사건에 망자 사망일이 없습니다. 직접 사망일을 선택해 주세요.',true);return;}
+ [docGuide.year,docGuide.month,docGuide.day]=d.split('-');
+ docGuide.name=state.decedent.name||'';
+ docGuide.method=state.method||'unknown';
+ renderDocGuide();docGuideFeedback('현재 사건 정보를 가져왔습니다. 상속지분 계산은 필요하지 않습니다.');
+});
+document.querySelector('#docGuideCopy').addEventListener('click',copyDocGuide);
+document.querySelector('#docGuideShare').addEventListener('click',shareDocGuide);
+document.querySelector('#docGuidePrint').addEventListener('click',printDocGuide);
+
 document.querySelector('#proceedAfterProperty').addEventListener('click',()=>{if(!selectedProperties().length){alert('상속할 부동산을 한 건 이상 체크해 주세요.');return}navigateStage('people')});
 for(let id of ['decedentName','decedentDeath','decedentIdent','decedentAddress']){document.getElementById(id).addEventListener('change',e=>{let key={decedentName:'name',decedentDeath:'death',decedentIdent:'ident',decedentAddress:'address'}[id];state.decedent[key]=e.target.value;if(key==='death'){renderLawSelection();renderHistory();renderResults();renderProperties();if(state.method==='agreement')renderAlloc()}if(key==='name')renderHeirs();if(state.method==='agreement')renderDocs();save()})}
 document.addEventListener('change',e=>{let t=e.target;
