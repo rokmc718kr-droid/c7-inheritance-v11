@@ -325,8 +325,8 @@ button.danger{background:#f5f5f5;color:#434b55}
 const KEY='inheritance_mvp_local_20261104_v1'; // 이전 사건 데이터 유지
 const ID=()=> 'r'+Math.random().toString(36).slice(2,10);
 const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Date(d.getTime()-off*60000).toISOString().slice(0,10)};
-const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
-const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sub:[],legacyRegister:'',eraVariant:''});
+const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
+const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
 const fresh=()=>({version:3,decedent:{name:'',death:'',ident:'',address:'',sex:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:now(),heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
@@ -349,7 +349,7 @@ function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
- state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.name??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
+ state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
   const ids=new Set();state.properties.forEach(p=>Object.entries(p.alloc||{}).forEach(([id,v])=>{if(/^\s*[1-9]\d*(?:\/\d+)?\s*$/.test(String(v)))ids.add(id)}));state.agreementSelected=[...ids];
@@ -477,7 +477,7 @@ function calculateInitial(){
   if(level>12)throw Error('대습 입력 단계가 너무 깊습니다. 입력관계를 확인하세요.');
   if(n.postDeath){
    if(!todayCheck(n.death))throw Error((n.name||n.relation)+' 재전상속 피상속인의 사망일을 입력하세요.');
-   if(n.death<=d)throw Error((n.name||n.relation)+'의 사망일은 최초 피상속인('+d+') 이후에 사망해야 재전상속으로 처리할 수 있습니다. 먼저 사망했다면 피대습자로 지정하세요.');
+   checkPostDeathOrder(n,d);
    if(!n.sub.length)throw Error('망 '+(n.name||n.relation)+'의 후속상속인을 추가하세요.');
    return;
   }
@@ -607,7 +607,7 @@ function validateSequentialChronology(){
     if(!todayCheck(n.death)||n.death>=opening)throw Error('망 '+(n.name||n.relation)+'의 피대습 사망일은 해당 상속개시일('+opening+') 이전이어야 합니다.');
     check(n.sub||[],opening);
    }else if(n.postDeath){
-    if(!todayCheck(n.death)||n.death<=opening)throw Error('망 '+(n.name||n.relation)+'의 재전상속 사망일은 지분 취득일('+opening+') 이후여야 합니다.');
+    checkPostDeathOrder(n,opening);
     check(n.sub||[],n.death);
    }
   }
@@ -642,7 +642,7 @@ function calculate(){
  const distributed=[],intermediate={},stages=[];
  function nextEvent(node,parentShare,openingDate,via){
   if(!todayCheck(node.death))throw Error('망 '+(node.name||node.relation)+'의 재전상속 사망일을 입력하세요.');
-  if(node.death<=openingDate)throw Error('망 '+(node.name||node.relation)+'의 사망일이 해당 지분 취득일('+openingDate+')보다 먼저입니다. 피대습자/재전상속 구분을 확인하세요.');
+  checkPostDeathOrder(node,openingDate);
   if(node.death>now())throw Error('재전상속 피상속인의 사망일은 미래일 수 없습니다.');
   if(getEra(node.death)!=='modern')throw Error('망 '+(node.name||node.relation)+'의 후속상속이 1991년 이전에 개시됐습니다. 해당 당시법의 상속순위·상속분을 별도로 검증하고 법무사 확인 지분을 입력하세요.');
   if(!node.sub||!node.sub.length)throw Error('망 '+(node.name||node.relation)+'의 후속상속인을 추가하세요.');
@@ -774,47 +774,94 @@ function proxyDateParts(node){
  const parts=String(node.death||'').split('-');
  return {year:parts[0]||'',month:parts[1]||'',day:parts[2]||''};
 }
+// 단계별 재전상속의 비교 기준: 최초 피상속인 또는 직전 재전상속 피상속인의 상속개시일.
+function openingDateForNode(nodeId){
+ let parent=null,found=false;
+ traverseNodes(state.heirs,(n,level,p)=>{if(n.id===nodeId){parent=p;found=true}});
+ if(!found)return '';
+ let cursor=parent;
+ while(cursor){if(cursor.postDeath)return cursor.death||'';let ancestor=null;traverseNodes(state.heirs,(n,l,p)=>{if(n.id===cursor.id)ancestor=p});cursor=ancestor}
+ return state.decedent.death||'';
+}
+function sameDayKey(node,opening){return String(opening||'')+'|'+String(node.death||'')}
+function isSameDayConfirmed(node,opening){return !!node.sameDayVerifiedFor&&node.sameDayVerifiedFor===sameDayKey(node,opening)}
+function checkPostDeathOrder(node,opening){
+ if(!todayCheck(node.death))throw Error('망 '+(node.name||node.relation)+'의 재전상속 사망일을 입력하세요.');
+ if(!todayCheck(opening))throw Error('선행 피상속인의 사망일을 먼저 입력하세요.');
+ if(node.death<opening)throw Error('망 '+(node.name||node.relation)+'의 사망일('+node.death+')은 선행 피상속인의 사망일('+opening+')보다 이전일 수 없습니다. 상속 구분과 사망일을 확인하세요.');
+ if(node.death===opening&&!isSameDayConfirmed(node,opening))throw Error('망 '+(node.name||node.relation)+'이(가) 선행 피상속인과 같은 날짜에 사망했습니다. 시간상 후에 사망한 사실을 자료로 확인하고 [사망 순서 확인]에 체크해야 재전상속 지분을 계산할 수 있습니다.');
+}
 function proxyDateSelectMarkup(node){
- const p=proxyDateParts(node), currentYear=new Date().getFullYear();
- const years=Array.from({length:currentYear-1899},(_,i)=>String(currentYear-i));
+ const p=proxyDateParts(node),curYear=new Date().getFullYear();
+ const opening=node.postDeath?openingDateForNode(node.id):'';
+ const floor=todayCheck(opening)?opening.split('-').map(Number):null;
+ const years=Array.from({length:curYear-1899},(_,i)=>String(curYear-i));
  const months=Array.from({length:12},(_,i)=>String(i+1).padStart(2,'0'));
- const daysInMonth=p.year&&p.month?new Date(Number(p.year),Number(p.month),0).getDate():31;
- const days=Array.from({length:daysInMonth},(_,i)=>String(i+1).padStart(2,'0'));
- const opts=(values,chosen,placeholder)=>'<option value="">'+placeholder+'</option>'+values.map(v=>'<option value="'+v+'"'+(v===chosen?' selected':'')+'>'+v+'</option>').join('');
- const id=attr(node.id);
- return '<div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.85fr) minmax(0,.85fr);gap:6px;min-width:0;">'
-  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="year" aria-label="피대습자 사망 연도">'+opts(years,p.year,'연도')+'</select>'
-  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="month" aria-label="피대습자 사망 월">'+opts(months,p.month,'월')+'</select>'
-  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="day" aria-label="피대습자 사망 일">'+opts(days,p.day,'일')+'</select>'
-  +'</div><small class="muted" style="display:block;margin-top:5px;">1900년부터 선택 가능 · 연·월·일을 모두 선택하세요.</small>';
+ const daysCount=p.year&&p.month?new Date(Number(p.year),Number(p.month),0).getDate():31;
+ const days=Array.from({length:daysCount},(_,i)=>String(i+1).padStart(2,'0'));
+ const unavailable=(part,value)=>{
+  if(!floor)return false;
+  const year=Number(p.year),month=Number(p.month),v=Number(value);
+  if(part==='year')return v<floor[0];
+  if(part==='month')return year===floor[0]&&v<floor[1];
+  if(part==='day')return year===floor[0]&&month===floor[1]&&v<floor[2];
+  return false;
+ };
+ const opts=(values,chosen,placeholder,part)=>'<option value="">'+placeholder+'</option>'+values.map(v=>'<option value="'+v+'"'+(v===chosen?' selected':'')+(unavailable(part,v)?' disabled':'')+'>'+ (part==='year'?v+'년':part==='month'?Number(v)+'월':Number(v)+'일')+'</option>').join('');
+ const id=attr(node.id),title=node.postDeath?'재전상속':'피대습자';
+ let html='<div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.85fr) minmax(0,.85fr);gap:6px;min-width:0;">'
+  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="year" aria-label="'+title+' 사망 연도">'+opts(years,p.year,'연도','year')+'</select>'
+  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="month" aria-label="'+title+' 사망 월">'+opts(months,p.month,'월','month')+'</select>'
+  +'<select class="cell-input" data-proxy-ymd="'+id+'" data-proxy-part="day" aria-label="'+title+' 사망 일">'+opts(days,p.day,'일','day')+'</select>'
+  +'</div>';
+ if(node.postDeath){
+  if(floor)html+='<small class="muted" style="display:block;margin-top:6px">선행 피상속인 사망일 <strong>'+esc(opening.replaceAll('-','.'))+'</strong> 이후만 선택할 수 있습니다. 같은 날도 선택 가능합니다.</small>';
+  else html+='<small style="display:block;margin-top:6px;color:#a33d32">선행 피상속인의 사망일을 먼저 입력하세요.</small>';
+  if(node.death&&floor&&node.death<opening)html+='<small style="display:block;margin-top:5px;color:#ac3030">⚠ 이전에 저장된 사망일이 선행 사망일보다 빠릅니다. 사망일을 수정해 주세요.</small>';
+  if(node.death&&floor&&node.death===opening)
+   html+='<label class="note" style="display:flex;align-items:flex-start;gap:8px;padding:9px;margin-top:8px;background:#fff8ea;border:1px solid #edd8af;border-radius:8px;cursor:pointer">'
+    +'<input type="checkbox" data-same-day-order="'+id+'" style="width:19px;height:19px;flex:0 0 auto" '+(isSameDayConfirmed(node,opening)?'checked':'')+'>'
+    +'<span><b>사망 순서 확인</b><br>동일 날짜라도 사망시각·증빙자료를 확인했으며, 후속 피상속인이 먼저 사망한 피상속인보다 늦게 사망했습니다. (순서 확인 전에는 지분을 자동 확정하지 않습니다.)</span></label>';
+ }else html+='<small class="muted" style="display:block;margin-top:5px">1900년부터 선택 가능 · 연·월·일을 모두 선택하세요.</small>';
+ return html;
 }
 function updateProxyDatePart(nodeId,part,value){
  const node=findNode(nodeId);
  if(!node||!(node.proxy||node.postDeath))return;
  const p={...proxyDateParts(node),[part]:value};
+ const opening=node.postDeath?openingDateForNode(nodeId):'';
+ // 빠른 해제: 선택한 연도가 상속개시 연도보다 작으면 즉시 복귀
+ if(node.postDeath&&todayCheck(opening)&&p.year&&Number(p.year)<Number(opening.slice(0,4))){
+  showStatus('재전상속 사망연도는 선행 피상속인 사망연도('+opening.slice(0,4)+'년) 이전일 수 없습니다.',true);renderHeirs();return;
+ }
  if(p.day&&p.year&&p.month&&Number(p.day)>new Date(Number(p.year),Number(p.month),0).getDate())p.day='';
+ if(node.postDeath&&todayCheck(opening)&&p.year&&p.month){
+  if(p.year===opening.slice(0,4)&&Number(p.month)<Number(opening.slice(5,7))){
+   p.month='';p.day='';
+  }else if(p.year===opening.slice(0,4)&&p.month===opening.slice(5,7)&&p.day&&p.day<opening.slice(8,10))p.day='';
+ }
  if(p.year&&p.month&&p.day){
-  const date=[p.year,p.month,p.day].join('-'),n=new Date();
-  const today=[n.getFullYear(),String(n.getMonth()+1).padStart(2,'0'),String(n.getDate()).padStart(2,'0')].join('-');
+  const date=[p.year,p.month,p.day].join('-'),today=now();
   if(date>today){
    p.day='';node.death='';proxyDeathDrafts[nodeId]=p;
-   showStatus('미래 날짜는 피대습자 사망일로 선택할 수 없습니다.',true);
+   showStatus('미래의 사망일은 선택할 수 없습니다.',true);
+  }else if(node.postDeath&&todayCheck(opening)&&date<opening){
+   p.day='';node.death='';node.sameDayVerifiedFor='';proxyDeathDrafts[nodeId]=p;
+   showStatus('재전상속 사망일은 선행 피상속인 사망일('+opening+')보다 빠를 수 없습니다.',true);
   }else{
-   node.death=date;
-   delete proxyDeathDrafts[nodeId];
+   const prev=node.death;
+   node.death=date;delete proxyDeathDrafts[nodeId];
+   if(prev!==date){node.sameDayVerifiedFor='';state.successionReviewed=false;}
    if(node.proxy&&todayCheck(state.decedent.death)&&date>state.decedent.death){
     node.proxy=false;node.postDeath=true;state.oldProxyVerified=false;state.successionReviewed=false;
-    showStatus('최초 피상속인보다 늦게 사망했습니다. 입력된 하위 상속인 정보는 유지하며 재전상속 피상속인으로 자동 구분했습니다.');
-   }else if(node.postDeath&&todayCheck(state.decedent.death)&&date<state.decedent.death){
-    if(['아들','딸','형제','자매'].includes(node.relation)){
-     node.postDeath=false;node.proxy=true;state.successionReviewed=false;
-     showStatus('최초 피상속인보다 먼저 사망했습니다. 피대습자로 자동 구분했습니다.');
-    }else showStatus('선사망 관계인의 대습상속권을 검토하세요.',true);
+    showStatus('최초 피상속인보다 늦게 사망했습니다. 하위 입력정보를 유지하며 재전상속 피상속인으로 구분했습니다.');
    }
+   if(node.postDeath&&todayCheck(opening)&&date===opening&&!isSameDayConfirmed(node,opening))
+    showStatus('동일 날짜 사망입니다. 아래에서 사망시각의 선후를 확인하고 체크해 주세요.',true);
   }
  }else{
-  node.death='';
-  proxyDeathDrafts[nodeId]=p;
+  node.death='';node.sameDayVerifiedFor='';proxyDeathDrafts[nodeId]=p;
+  state.successionReviewed=false;
  }
  renderAll();
 }
@@ -925,7 +972,7 @@ function setPersonRole(id,role){
  n.proxy=role==='proxy';n.postDeath=role==='post';
  if(role==='heir')n.death='';
  if((n.proxy||n.postDeath)&&!n.sub?.length)n.sub=[makeSub()];
- delete proxyDeathDrafts[n.id];state.oldProxyVerified=false;state.successionReviewed=false;
+ n.sameDayVerifiedFor='';delete proxyDeathDrafts[n.id];state.oldProxyVerified=false;state.successionReviewed=false;
  renderAll();showStatus((n.name||n.relation)+' → '+(role==='proxy'?'피대습자':role==='post'?'재전상속 피상속인':'상속인')+'으로 변경했습니다.');
 }
 function setProxyRole(id,wantProxy){setPersonRole(id,wantProxy?'proxy':'heir')}
@@ -1076,6 +1123,14 @@ for(let id of ['decedentName','decedentDeath','decedentIdent','decedentAddress']
 document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-decedent-ymd]')){updateDecedentDatePart(t.dataset.decedentYmd,t.value);return}
  if(t.matches('[data-proxy-ymd]')){updateProxyDatePart(t.dataset.proxyYmd,t.dataset.proxyPart,t.value);return}
+ if(t.matches('[data-same-day-order]')){
+  const n=findNode(t.dataset.sameDayOrder);
+  if(!n||!n.postDeath)return;
+  const opening=openingDateForNode(n.id);
+  n.sameDayVerifiedFor=t.checked&&n.death===opening?sameDayKey(n,opening):'';
+  state.successionReviewed=false;
+  renderAll();return;
+ }
   if(t.matches('[data-decedent-edit]')){state.decedent[t.dataset.decedentEdit]=t.value;renderAll();return}
 	 if(t.matches('[name="eraMode"]')){state.eraMode=t.value;state.eraVerified=false;renderAll();return}
  if(t.matches('#eraOverride')){state.eraOverride=t.value;state.eraVerified=false;renderAll();return}
