@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI 상속지분 자동산출 V11 · 부동산 선택·시대별 관계</title>
+<title>C7 AI 상속 토탈 · 지분·비용·서류</title>
 <style>
 :root{--ink:#182536;--sub:#627184;--primary:#245ddd;--primarydark:#1b49b4;--soft:#eff4ff;--bg:#f5f7fb;--border:#dfe5ef;--warn:#a95b00;--bad:#a62929;--good:#15704a;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;font-size:14px;line-height:1.55}
@@ -308,9 +308,45 @@ button.danger{background:#f5f5f5;color:#434b55}
 
 
 .docguide-advice{border:1px solid #dce7ef;background:#f3f7fb;color:#44566c;padding:11px 12px;border-radius:8px;line-height:1.7;margin:7px 0;font-size:13px}
+
+/* C7 AI 상속 토탈: 도구별 직행 허브 */
+.total-hub{border-radius:14px;border:1px solid #dde5f0;background:#fff;margin:8px 0 16px;padding:14px}
+.total-hub-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:11px;flex-wrap:wrap}
+.total-hub-head strong{font-size:15px}.total-hub-head small{color:#67778a}
+.total-hub-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.total-hub-links button{border:1px solid #dce4f2;border-radius:10px;background:#f7faff;padding:12px;text-align:left;min-width:0}
+.total-hub-links button b{display:block;font-size:13px;color:#214f97}.total-hub-links button small{display:block;font-size:11px;margin-top:3px;color:#60738a}
+.nav-upcoming{font-size:10px;color:#8a6846;background:#fdf1d8;border-radius:4px;padding:1px 4px;margin-left:2px}
+.total-cost-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.total-cost-card{border:1px solid #e0e6ed;background:#fafcff;padding:14px;border-radius:9px;display:flex;flex-direction:column;gap:6px}
+.total-cost-card small{color:#61758c}
+.form-maker-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-maker-group{border:1px solid #e0e7f0;background:#fafcff;padding:13px;border-radius:10px;margin-bottom:12px;min-width:0}
+.form-maker-group h3{font-size:14px;margin:0 0 11px}
+.form-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.form-field-grid label{font-size:11px;color:#5c7089;font-weight:600;display:flex;flex-direction:column;gap:4px;min-width:0}
+.form-field-grid input{width:100%;font-size:13px;min-width:0}
+.form-field-grid .form-full{grid-column:1/-1}
+.form-manual{border-top:1px solid #dce3ec;margin-top:13px;padding-top:11px}
+.form-muted{font-size:11px;color:#687d93;margin-bottom:7px}
+.form-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.form-check-row{border:1px solid #e1e7f0;border-radius:8px;background:#fff;padding:9px;display:flex;align-items:start;gap:8px;cursor:pointer;font-size:12px;line-height:1.5}
+.form-check-row input{width:17px;height:17px;flex:0 0 auto;margin-top:1px;accent-color:#245ddd}
+.form-maker-summary{border-radius:9px;background:#f3f7fc;border:1px solid #dce5f4;padding:12px;color:#526781;font-size:12px;margin:11px 0}
+.form-doc-title{text-align:center;margin:0 0 20px;font-size:20pt!important;letter-spacing:2px}
+.form-doc-table{width:100%;border-collapse:collapse;font-size:10.5pt;margin:13px 0}
+.form-doc-table th,.form-doc-table td{border:1px solid #9ea6b0;padding:8px 10px;vertical-align:top;word-break:break-word}
+.form-doc-table th{background:#f4f6f9;width:25%;font-weight:600}
+.form-doc-paragraph{line-height:2.2;margin:22px 0!important;white-space:pre-wrap}
+.form-doc-printnotes{font-size:9pt;color:#565656;line-height:1.6;padding-top:8px;border-top:1px solid #aaa;margin-top:26px}
+.form-template-warning{background:#fff5df;color:#745c23;padding:9px 10px;border-radius:7px;font-size:11px;margin-top:8px}
+@media(max-width:800px){.total-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}.form-maker-grid{grid-template-columns:1fr}.total-cost-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.total-hub{padding:10px}.total-hub-links{gap:6px}.total-hub-links button{padding:10px}.form-check-grid{grid-template-columns:1fr}}
+@media print{.form-doc-table th,.form-doc-table td{border-color:#555}.form-doc-printnotes{color:#333}.doc-sheet{page-break-inside:auto}}
+
 </style>
 </head><body>
-<div class="topbar"><div><div class="pill">V11 · 부동산 선택 먼저 · 연도별 관계유형 · 대습 추가/삭제</div><h1>상속지분 자동산출</h1><p class="sub">부동산을 먼저 선택하고, 사망 연도에 맞는 상속인 관계유형을 지정해 지분을 산출합니다.</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
+<div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
 <main class="wrap">
 <div id="previewWarning" class="errorbox" style="margin:0 0 16px;padding:18px 16px;border:2px solid #e5a137;font-size:14px;line-height:1.8;background:#fff5d9;color:#653e10">
 <strong style="font-size:17px">⚠ 지금은 파일 미리보기일 수 있습니다.</strong><br>
@@ -321,14 +357,24 @@ button.danger{background:#f5f5f5;color:#434b55}
 <noscript><div class="errorbox" style="margin-bottom:14px"><b>스크립트가 실행되지 않고 있습니다.</b> 파일 미리보기에서는 버튼이 작동하지 않을 수 있습니다. HTML 파일을 다운로드하여 Chrome 또는 Edge 브라우저로 열어 주세요.</div></noscript>
 
 
-<nav class="stage-nav" id="stageNav" aria-label="상속지분 업무 단계">
+<nav class="stage-nav" id="stageNav" aria-label="AI 상속 토탈 업무 메뉴">
  <button type="button" data-go-stage="property">① 부동산 선택</button>
  <button type="button" data-go-stage="people">② 상속관계 입력</button>
- <button type="button" data-go-stage="shares">③ 상속지분 확인</button>
- <button type="button" data-go-stage="agreement">④ 협의분할서</button>
+ <button type="button" data-go-stage="shares">③ 지분 계산</button>
+ <button type="button" data-go-stage="cost">④ 상속비용 산출 <span class="nav-upcoming">연동 예정</span></button>
+ <button type="button" data-go-stage="forms">⑤ 서류 자동작성·출력</button>
  <button type="button" data-go-stage="documents">상속 준비서류</button>
  <button type="button" data-go-stage="files">사건 저장</button>
 </nav>
+<section class="total-hub" aria-label="상속 토탈 핵심업무">
+ <div class="total-hub-head"><strong>상속업무 한 곳에서</strong><small>필요한 업무를 바로 선택 · 입력한 사건정보 재사용</small></div>
+ <div class="total-hub-links">
+  <button type="button" data-go-stage="shares"><b>AI 상속지분 계산</b><small>법정·대습·재전상속</small></button>
+  <button type="button" data-go-stage="cost"><b>AI 상속비용 산출</b><small>C7 비용계산 연동 예정</small></button>
+  <button type="button" data-go-stage="forms"><b>서류 자동작성·출력</b><small>위임장·협의분할서</small></button>
+  <button type="button" data-go-stage="documents"><b>고객 준비서류</b><small>사망 시기별 발급처</small></button>
+ </div>
+</section>
 <div class="stage-screen" data-stage="property">
 <section class="panel"><div class="panelhead"><h2>01. 부동산 선택 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
 <div class="choice-info"><b>C7 연동 시 공통 부동산 리스트에서 선택한 부동산을 가져오는 화면입니다.</b><br>현재 오프라인 시제품에서는 부동산을 직접 등록하고 체크해 선택합니다. 여러 부동산을 선택할 수 있으며, 선택된 부동산의 피상속인 소유지분만 계산·협의서에 반영됩니다.</div>
@@ -350,7 +396,60 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="stage-banner">상속관계 트리에서 선택한 관계·사망일을 기준으로 지분을 계산합니다. 오른쪽에 표시된 분수는 실제 상속인 몫입니다.</div>
 <section class="panel"><div class="panelhead"><h2>05. 법정상속지분 자동산출</h2><div class="mini-actions"><button class="outline" id="recalc">↻ 다시 계산</button><span class="muted">상속포기 제외 · 선사망 대습만 계산</span></div></div><div class="body" id="resultView"></div></section>
 </div>
-<div class="stage-screen" data-stage="agreement">
+<div class="stage-screen" data-stage="cost">
+ <section class="panel"><div class="panelhead"><h2>상속비용 자동산출</h2><span class="tag">C7 통합 비용계산 연동 예정</span></div>
+  <div class="body"><div class="choice-info"><b>상속비용 계산 기능을 연결할 공간입니다.</b><br>향후 같은 사건의 부동산·상속지분 자료를 활용하여 취득세 등 세금, 국민주택채권, 등기신청수수료, 법무사 보수와 예상·확정비용표를 산출할 예정입니다. <b>현재 버전에서는 비용을 계산하지 않습니다.</b></div>
+  <div class="total-cost-grid">
+   <div class="total-cost-card"><b>부동산별 과세표준</b><small>공시가격·부동산 종류·지분</small></div>
+   <div class="total-cost-card"><b>취득 관련 세액</b><small>사망 시기·등기원인·법령</small></div>
+   <div class="total-cost-card"><b>국민주택채권·공과금</b><small>매입금액·할인율·등기수수료</small></div>
+   <div class="total-cost-card"><b>법무사 보수·비용표</b><small>예상 / 확정 / 비용표 연결</small></div>
+  </div>
+  <div class="actionbar"><button type="button" class="outline" data-go-stage="property">부동산 확인</button><button type="button" class="outline" data-go-stage="shares">상속지분 확인</button></div>
+  </div>
+ </section>
+</div>
+<div class="stage-screen" data-stage="forms">
+<section class="panel" id="formMakerPanel">
+ <div class="panelhead"><h2>05. 법무사 서류 자동작성·출력</h2><span class="tag">지분 계산 없이도 위임장 작성 가능</span></div>
+ <div class="body">
+  <div class="choice-info"><strong>상속인 인적사항을 재사용하여 선택 서식을 일괄 작성합니다.</strong><br>사건에 입력한 상속인 또는 직접 입력한 대상자를 선택할 수 있습니다. 주민등록표·가족관계등록 서류의 대리발급은 기관별 지정 양식과 위임 요건을 확인해 제출하세요. 이곳에서 생성하는 문서는 <b>작성·날인 전 검토용 초안</b>입니다.</div>
+  <div class="form-maker-grid">
+   <div class="form-maker-group">
+    <h3>① 수임인(대리인) 정보</h3>
+    <div class="form-field-grid">
+     <label>법무사 / 대리인 성명<input class="cell-input" data-form-info="agentName" placeholder="예: 홍길동"></label>
+     <label>법무사 사무소 명칭<input class="cell-input" data-form-info="officeName" placeholder="예: ○○법무사 사무소"></label>
+     <label>대리인 등록번호<input class="cell-input" data-form-info="agentIdent" placeholder="필요한 서식에 기재"></label>
+     <label>사무소 연락처<input class="cell-input" data-form-info="officePhone" placeholder="연락처"></label>
+     <label class="form-full">대리인 주소 / 사무소 주소<input class="cell-input" data-form-info="officeAddress" placeholder="주소"></label>
+     <label>위임일자<input class="cell-input" data-form-info="issueDate" type="date"></label>
+    </div>
+   </div>
+   <div class="form-maker-group">
+    <h3>② 위임인 선택</h3>
+    <div id="formPeopleList"></div>
+    <div class="form-manual">
+     <div class="form-muted">상속인 등록 없이 위임장만 작성할 경우</div>
+     <div class="form-field-grid">
+      <label>위임인 성명<input class="cell-input" data-form-info="manualName" placeholder="성명"></label>
+      <label>위임인 등록번호<input class="cell-input" data-form-info="manualIdent" placeholder="주민등록번호 등"></label>
+      <label class="form-full">위임인 주소<input class="cell-input" data-form-info="manualAddress" placeholder="주소"></label>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="form-maker-group">
+   <h3>③ 작성할 서식 선택</h3>
+   <div id="formTemplateList"></div>
+   <p class="note">상속재산분할협의서는 아래 기존 자동작성 기능을 사용합니다. 법정상속 방식에서도 등기·주민등록·가족관계 발급 관련 위임장 작성은 가능합니다.</p>
+  </div>
+  <div id="formMakerSummary" class="form-maker-summary"></div>
+  <div class="actionbar"><button type="button" class="primary" id="formPrintSelected">선택 서류 일괄 출력</button><button type="button" class="outline" id="formSaveSelected">선택 서류 HTML 저장</button></div>
+  <p class="note" id="formMakerStatus" role="status">발급기관의 최신 법정서식을 확인한 뒤 사용해 주세요. 현재 생성 문서는 검토용 초안입니다.</p>
+ </div>
+</section>
+
 <section class="panel hidden" id="allocPanel"><div class="panelhead"><h2>06. 협의로 취득할 상속인 선택</h2><span class="tag">취득자 체크 → 지분 자동 배분</span></div><div class="body"><div id="allocationView"></div></div></section>
 <section class="panel hidden" id="docPanel"><div class="panelhead"><h2>07. 상속재산분할협의서 자동작성</h2><span class="tag">통합 1부 / 상속인별 작성 선택</span></div><div class="body"><div id="docView"></div></div></section>
 </div>
@@ -424,7 +523,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
+ state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -1218,13 +1317,13 @@ function updateDocGuideDatePart(part,value){
 }
 
 function applyActiveStage(){
- if(activeStage==='agreement'&&state.method!=='agreement')activeStage='shares';
+ if(activeStage==='agreement')activeStage='forms';
  document.querySelectorAll('.stage-screen').forEach(el=>el.classList.toggle('is-active',el.dataset.stage===activeStage));
- document.querySelectorAll('[data-go-stage]').forEach(btn=>{btn.classList.toggle('active',btn.dataset.goStage===activeStage);btn.disabled=btn.dataset.goStage==='agreement'&&state.method!=='agreement'});
+ document.querySelectorAll('[data-go-stage]').forEach(btn=>{btn.classList.toggle('active',btn.dataset.goStage===activeStage);btn.disabled=false;});
 }
 function navigateStage(name){
- if(name==='agreement'&&state.method!=='agreement')name='shares';
- activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();document.getElementById('stageNav')?.scrollIntoView({block:'start',behavior:'instant'});
+ if(name==='agreement')name='forms';
+ activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();document.getElementById('stageNav')?.scrollIntoView({block:'start',behavior:'instant'});
 }
 // 1차 일반 상속인과 1차·2차 대습상속인을 모두 선택 후 다음 차수의 피대습자로 변경할 수 있습니다.
 function setPersonRole(id,role){
@@ -1374,7 +1473,7 @@ function renderAll(){normalise();
  document.querySelector('#methodHint').textContent=state.method==='agreement'?'협의로 취득할 상속인을 아래에서 체크한 뒤, 필요한 경우 부동산별 지분을 조정하고 협의서를 출력합니다.':'법정상속지분을 자동 계산하여 각 부동산의 피상속인 소유지분에 적용합니다.';
  document.querySelector('#allocPanel').classList.toggle('hidden',state.method!=='agreement');
  document.querySelector('#docPanel').classList.toggle('hidden',state.method!=='agreement');
- renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderDocGuide();applyActiveStage();save()
+ renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocGuide();applyActiveStage();save()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
 function buildDocument(c){
