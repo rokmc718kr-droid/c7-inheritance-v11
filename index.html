@@ -298,6 +298,14 @@ button.danger{background:#f5f5f5;color:#434b55}
 @media(max-width:800px){.docguide-form{grid-template-columns:1fr 1fr}.docguide-form>.field:last-of-type{grid-column:1/-1}}
 @media(max-width:520px){.docguide-form{grid-template-columns:1fr}.docguide-form>.field:last-of-type{grid-column:auto}.docguide-dates{grid-template-columns:1.25fr .85fr .85fr}.docguide-util{gap:6px}}
 
+
+/* 발급처를 모든 고객 준비서류명 바로 아래에 표시 */
+.docguide-list{display:flex;flex-direction:column;gap:0}
+.docguide-item{border-bottom:1px solid #e7ecf2;padding:9px 0}
+.docguide-item:last-child{border-bottom:none}
+.docguide-document{font-weight:650;color:#25354b;line-height:1.55}
+.docguide-issuer{color:#65748a;font-size:12px;line-height:1.6;margin:4px 0 0;padding-left:9px;border-left:2px solid #d6dde8}
+
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">V11 · 부동산 선택 먼저 · 연도별 관계유형 · 대습 추가/삭제</div><h1>상속지분 자동산출</h1><p class="sub">부동산을 먼저 선택하고, 사망 연도에 맞는 상속인 관계유형을 지정해 지분을 산출합니다.</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -316,7 +324,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <button type="button" data-go-stage="people">② 상속관계 입력</button>
  <button type="button" data-go-stage="shares">③ 상속지분 확인</button>
  <button type="button" data-go-stage="agreement">④ 협의분할서</button>
- <button type="button" data-go-stage="documents">상속 필요서류 안내</button>
+ <button type="button" data-go-stage="documents">상속 준비서류</button>
  <button type="button" data-go-stage="files">사건 저장</button>
 </nav>
 <div class="stage-screen" data-stage="property">
@@ -347,9 +355,9 @@ button.danger{background:#f5f5f5;color:#434b55}
 
 <div class="stage-screen" data-stage="documents">
  <section class="panel">
-  <div class="panelhead"><h2>상속 필요서류 안내</h2><small>지분계산·부동산 선택 없이 바로 이용</small></div>
+  <div class="panelhead"><h2>상속 준비서류 안내</h2><small>지분계산·부동산 선택 없이 바로 이용</small></div>
   <div class="body">
-   <p class="choice-info"><b>사망일을 선택하면 해당 시기의 서류명이 자동 표시됩니다.</b><br>망자·상속인 필요서류를 안내문으로 만들어 복사하거나 휴대전화에서 바로 공유할 수 있습니다. 이 화면에는 서류 준비 체크박스가 없습니다.</p>
+   <p class="choice-info"><b>망자의 사망일을 선택하면 필요한 준비서류와 발급처를 바로 안내합니다.</b><br>부동산 선택이나 상속지분 계산은 필요하지 않습니다. 법무사가 작성하는 상속재산분할협의서·등기신청서·위임장 등은 고객 준비서류에서 제외했습니다.</p>
    <div class="docguide-form">
     <div class="field"><label for="docGuideName">망자 성명 (선택)</label><input id="docGuideName" class="cell-input" placeholder="예: 홍길동" autocomplete="off"></div>
     <div class="field"><label>망자 사망일 (필수)</label><div class="docguide-dates">
@@ -359,7 +367,7 @@ button.danger{background:#f5f5f5;color:#434b55}
      </div></div>
     <div class="field"><label for="docGuideMethod">상속방법 (서류 안내용)</label>
       <select id="docGuideMethod" class="cell-input">
-       <option value="unknown">미정 · 공통서류 우선 안내</option>
+       <option value="unknown">미정 · 공통 준비서류</option>
        <option value="statute">법정상속</option>
        <option value="agreement">협의분할상속</option>
       </select>
@@ -371,12 +379,12 @@ button.danger{background:#f5f5f5;color:#434b55}
    </div>
    <div id="docGuideOutput" aria-live="polite"></div>
    <div class="actionbar" id="docGuideActions">
-    <button type="button" class="primary" id="docGuideCopy">안내문 복사</button>
+    <button type="button" class="primary" id="docGuideCopy">준비서류 안내문 복사</button>
     <button type="button" class="outline" id="docGuideShare">휴대전화로 공유</button>
     <button type="button" class="light" id="docGuidePrint">안내문 인쇄</button>
    </div>
    <p id="docGuideStatus" class="note" role="status"></p>
-   <div class="docguide-source">기준: 「상속등기에 관한 업무처리지침」(대법원 등기예규 제1871호), 가족관계등록제도 및 등기 실무. 사망 연도는 최초 분류 기준입니다. <b>가족관계등록부 존재 여부는 실제 사망신고·호적 이력에 따라 달라질 수 있으며, 전호적의 발급 범위도 개별 확인해야 합니다.</b></div>
+   <div class="docguide-source">기준: 「상속등기에 관한 업무처리지침」(대법원 등기예규 제1871호), 가족관계등록제도 및 등기 실무. 발급 가능 여부와 신청자격은 발급기관마다 확인하세요. 사망 연도는 분류 기준이며, <b>전호적(전적 전 제적등본) 확인을 반드시 안내하되 실제 기록이 없는 경우에는 예외로 처리합니다.</b><br><a href="https://efamily.scourt.go.kr" target="_blank" rel="noopener noreferrer">대법원 전자가족관계등록시스템</a> · <a href="https://www.gov.kr" target="_blank" rel="noopener noreferrer">정부24</a></div>
   </div>
  </section>
 </div>
@@ -1073,22 +1081,44 @@ const DOCS_BY_PERIOD=[
   '제적등본 및 전호적 제적등본(2008년 이전 호적 이력이 있는 경우 반드시 확인)'
  ]}
 ];
+// 고객 준비서류만 열거합니다. 협의서·등기신청서·위임장은 법무사가 작성합니다.
 const DOCS_HEIR=[
  '상속인별 가족관계증명서(상세)',
- '상속인별 기본증명서(상세, 상속관계 확인상 필요한 경우)',
- '상속인별 주민등록표 등본 또는 초본(주소증명)',
- '신분증 등 본인 확인자료'
+ '상속인별 기본증명서(상세, 신분관계 추가 확인 시)',
+ '상속인별 주민등록표 등본 또는 초본(주소 확인용)',
+ '신분증 지참(본인 확인용)'
+];
+const DOCS_STATUTE=[
+ '법정상속분대로 등기할 때는 원칙적으로 공동상속인 전원의 인감증명서·인감도장이 필요하지 않습니다. (발급서류 아님 · 안내사항)'
 ];
 const DOCS_AGREEMENT=[
- '상속재산분할협의서(공동상속인 전원의 협의 내용)',
- '협의분할에 참여하는 공동상속인 전원의 인감증명서 및 인감도장(원칙, 공증·외국인 등 예외 확인)',
- '대리 협의 시 협의분할 위임장 등 관련 권한증명 서류'
+ '협의에 참여하는 상속인 전원의 인감증명서(부동산 상속등기 제출용)',
+ '협의에 참여하는 상속인 전원의 인감도장(날인용 · 직접 지참)',
+ '협의에 참여하는 상속인 전원의 신분증(본인 확인용 · 지참)'
 ];
 const DOCS_EXTRA=[
- '대습상속·재전상속이 있으면 사망자별 사망 및 가족관계를 증명하는 서류',
- '미성년자·피성년후견인 등 이해상반관계 시 특별대리인 선임 등 증빙서류',
- '재외국민·외국인 상속인은 국적·주소·서명 또는 인감증명에 관한 추가 서류'
+ '대습상속·재전상속 시 추가 사망자의 기본증명서(상세) 또는 사망 사실을 증명하는 제적등본',
+ '대습상속·재전상속 시 추가 사망자의 가족관계증명서(상세) 및 전호적 제적등본(해당 호적 이력이 있는 경우)',
+ '미성년자 등 이해상반관계 시 특별대리인 선임심판서 등본(해당하는 경우)',
+ '재외국민·외국인 상속인의 국적·주소 또는 서명·인감 관련 증명서(상황별 별도 안내)'
 ];
+function docGuideIssuer(name){
+ if(name.includes('발급서류 아님'))return '발급 대상 없음 (안내사항)';
+ if(name.includes('인감도장'))return '발급처 없음 · 본인이 직접 준비';
+ if(name.includes('신분증'))return '발급처 없음 · 본인이 직접 지참 (없다면 신분증 발급기관에 문의)';
+ if(name.includes('인감증명서'))return '읍·면·동 행정복지센터 또는 시·군·구 민원창구 방문 (부동산 등기 관련 용도는 정부24 온라인 발급 대상 아님)';
+ if(name.includes('특별대리인')||name.includes('심판서'))return '관할 가정법원 (선임절차·발급사항 법무사 확인)';
+ if(name.includes('재외국민')||name.includes('외국인'))return '해당 국가의 증명서 발급기관·대한민국 재외공관 등 (국적·서류에 따라 다름)';
+ if(name.includes('주민등록'))return '정부24(www.gov.kr) 또는 읍·면·동 행정복지센터 / 말소자·제3자 발급은 주민센터에서 신청자격 확인';
+ if(name.includes('제적')||name.includes('호적'))return '대법원 전자가족관계등록시스템(efamily.scourt.go.kr, 해당 기록이 전산화된 경우) 또는 시·구·읍·면 가족관계등록 민원창구';
+ if(/가족관계증명서|기본증명서|혼인관계증명서|입양관계증명서|친양자입양관계증명서/.test(name))return '대법원 전자가족관계등록시스템(efamily.scourt.go.kr) 또는 시·구·읍·면 가족관계등록 민원창구';
+ return '해당 증명서 발급기관에 별도 확인';
+}
+function docGuideSectionRows(a){
+ return '<div class="docguide-list">'+a.map(item=>
+  '<div class="docguide-item"><div class="docguide-document">'+esc(item)+'</div><div class="docguide-issuer">발급·준비: '+esc(docGuideIssuer(item))+'</div></div>'
+ ).join('')+'</div>';
+}
 const docGuidePeriod=(year)=>DOCS_BY_PERIOD.find(p=>year>=p.start&&year<=p.end);
 function docGuideDate(){
  if(!(docGuide.year&&docGuide.month&&docGuide.day))return '';
@@ -1106,8 +1136,8 @@ function docGuideItems(){
    :'2008년 이전 사망자도 사망신고 시점 등에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
  const methodText=docGuide.method==='agreement'?'협의분할상속':docGuide.method==='statute'?'법정상속':'상속방법 미정';
  const methodDocs=docGuide.method==='agreement'?DOCS_AGREEMENT:
-   docGuide.method==='statute'?['법정상속지분대로 등기하는 경우 상속재산분할협의서·상속인 전원의 인감증명서는 일반적으로 불필요합니다.']:
-   ['협의분할상속이라면: '+DOCS_AGREEMENT.join(' / ')];
+  docGuide.method==='statute'?DOCS_STATUTE:
+  ['협의분할을 선택할 경우, 참여 상속인의 인감증명서·인감도장이 추가로 필요합니다. (상속방법 결정 후 다시 확인)'];
  return {date,period,methodText,oldRegNote,versionWarning,
   decedent:period.docs,heirs:DOCS_HEIR,method:methodDocs,extra:DOCS_EXTRA};
 }
@@ -1124,24 +1154,24 @@ function renderDocGuide(){
  document.getElementById('docGuideMethod').value=docGuide.method;
  const guide=docGuideItems();
  document.getElementById('docGuideActions').style.display=guide?'flex':'none';
- const list=a=>'<ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+ const list=docGuideSectionRows;
  if(!guide){
   out.innerHTML='<div class="empty">망자의 사망 연도·월·일을 선택하면 해당 사망 시기의 필요서류 안내가 바로 표시됩니다.<br>상속지분 계산이나 부동산 입력은 필요하지 않습니다.</div>';
   return;
  }
  out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'</div>'
  +'<div class="docguide-alert"><strong>중요 · 망자의 전호적 반드시 확인</strong><br>'+esc(guide.oldRegNote)+'</div>'
- +'<section class="docguide-block"><h3>① 망자(피상속인) 필요서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
- +'<section class="docguide-block"><h3>② 상속인 필요서류</h3>'+list(guide.heirs)+'</section>'
- +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 관련 서류</h3>'+list(guide.method)+'</section>'
- +'<section class="docguide-block"><h3>④ 해당 시 추가 확인서류</h3>'+list(guide.extra)+'</section>';
+ +'<section class="docguide-block"><h3>① 망자(피상속인) 준비서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
+ +'<section class="docguide-block"><h3>② 상속인 준비서류</h3>'+list(guide.heirs)+'</section>'
+ +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 준비서류 차이</h3>'+list(guide.method)+'</section>'
+ +'<section class="docguide-block"><h3>④ 해당하는 경우 추가 준비서류</h3>'+list(guide.extra)+'</section>';
 }
 function docGuideText(){
  const guide=docGuideItems();if(!guide)return '';
- const line=items=>items.map((d,i)=>(i+1)+'. '+d).join('\n');
- return '상속등기 필요서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n\n'
- +'[중요] '+guide.oldRegNote+'\n\n[망자 필요서류]\n'+line(guide.decedent)+'\n\n[상속인 필요서류]\n'+line(guide.heirs)+'\n\n[상속방법별 서류]\n'+line(guide.method)
- +'\n\n[상황별 추가서류]\n'+line(guide.extra)
+ const line=items=>items.map((d,i)=>(i+1)+'. '+d+'\n   발급·준비: '+docGuideIssuer(d)).join('\n');
+ return '상속등기 준비서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n\n'
+ +'[중요] '+guide.oldRegNote+'\n\n[망자 준비서류]\n'+line(guide.decedent)+'\n\n[상속인 준비서류]\n'+line(guide.heirs)+'\n\n[상속방법별 준비서류]\n'+line(guide.method)
+ +'\n\n[상황별 추가 준비서류]\n'+line(guide.extra)
  +'\n\n안내: '+guide.versionWarning+'\n정확한 제출서류는 실제 가족관계·사망신고·호적 이력과 등기신청 사건에 따라 달라질 수 있습니다.';
 }
 function docGuideFeedback(text,isError=false){const el=document.getElementById('docGuideStatus');if(el){el.textContent=text;el.style.color=isError?'#a62929':'#14744c';}}
@@ -1159,7 +1189,7 @@ async function copyDocGuide(){
 }
 async function shareDocGuide(){
  const text=docGuideText();if(!text){docGuideFeedback('먼저 사망일을 선택하세요.',true);return;}
- if(navigator.share){try{await navigator.share({title:'상속등기 필요서류 안내',text});docGuideFeedback('휴대전화 공유 기능을 실행했습니다.');return}catch(e){if(e?.name==='AbortError')return;}}
+ if(navigator.share){try{await navigator.share({title:'상속등기 준비서류 안내',text});docGuideFeedback('휴대전화 공유 기능을 실행했습니다.');return}catch(e){if(e?.name==='AbortError')return;}}
  const copied=await copyDocGuide();
  if(copied)docGuideFeedback('이 브라우저는 바로 공유를 지원하지 않아 안내문을 복사했습니다. 카톡·문자에 붙여넣어 주세요.');
 }
@@ -1167,7 +1197,7 @@ function printDocGuide(){
  const guide=docGuideItems();if(!guide){docGuideFeedback('먼저 사망일을 선택하세요.',true);return}
  const root=document.querySelector('#printRoot');
  const content=document.getElementById('docGuideOutput').innerHTML;
- root.innerHTML='<section class="doc-sheet" style="padding:10mm"><h1>상속등기 필요서류 안내</h1>'+content+'</section>';
+ root.innerHTML='<section class="doc-sheet" style="padding:10mm"><h1>상속등기 준비서류 안내</h1>'+content+'</section>';
  window.print();
 }
 function updateDocGuideDatePart(part,value){
