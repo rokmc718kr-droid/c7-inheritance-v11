@@ -1925,7 +1925,7 @@ function refreshAllocationSums(c){if(!c)return;for(let p of selectedProperties()
 function allRecipientsSafe(){try{return calculate().recipients}catch{return []}}
 function renderDocs(){let el=document.querySelector('#docView');
  let rec=allRecipientsSafe();let selected=new Set(state.agreementSelected);
- el.innerHTML=`<div class="segmented"><label><input type="radio" name="docmode" value="combined" ${state.docMode==='combined'?'checked':''}> 통합 협의서 1부</label><label><input type="radio" name="docmode" value="individual" ${state.docMode==='individual'?'checked':''}> 상속인별 개별 협의서</label></div><p class="note">상속인별 출력은 <b>같은 재산분할 내용을 상속인 전원에게 각각 기재하고 해당 상속인의 날인란을 표시</b>합니다. 실제 등기 제출요건은 별도로 확인하세요.</p><div class="row control-row"><div class="field" style="flex:0 1 240px"><label>협의서 작성일</label><input id="agreementDate" type="date" value="${attr(state.agreementDate)}"></div></div><hr class="divider"><b>협의서 기재인적사항 확인</b><p class="note">성명·등록번호·주소는 위의 피상속인/상속인 입력란에서 수정합니다. 협의로 취득하지 않는 상속인도 협의서에 기재됩니다.</p><div class="info-card"><div class="ident">피상속인 : ${esc(state.decedent.name||'(성명 미입력)')}</div><div class="muted">등록번호: ${esc(state.decedent.ident||'미입력')}　·　주소: ${esc(state.decedent.address||'미입력')}</div></div><div class="signature-data">${rec.map((r,i)=>{let info=state.details[r.id]||{};let ok=!!(r.name.trim()&&info.ident?.trim()&&info.address?.trim());return `<div class="docperson"><b>${i+1}. ${esc(r.name||'(성명 미입력)')}</b> <span class="muted">${esc((findNode(r.id)?.nationality||'내국인')+(findNode(r.id)?.nationality==='외국인'?' ('+(countryName(findNode(r.id))||'국가 미선택')+')':'')+' · '+(r.via||r.relation))}</span> · ${selected.has(r.id)?'<span class="check">협의 취득자</span>':'<span class="muted">취득 없음 · 협의 당사자</span>'}<div class="muted">등록번호: ${esc(info.ident||'미입력')} / 주소: ${esc(info.address||'미입력')}</div><span class="${ok?'check':'missing'}">${ok?'인적사항 확인됨':'인적사항 입력 필요'}</span></div>`}).join('')||'<div class="empty">상속인 정보를 먼저 입력하세요.</div>'}</div><div class="actionbar"><button class="primary" id="printAgreement">협의서 인쇄 / PDF 저장</button><button class="outline" id="downloadAgreement">협의서 HTML 파일 저장</button></div><p class="note">브라우저 인쇄 화면에서 ‘PDF로 저장’을 선택할 수 있습니다. ‘통합 협의서 1부’는 문서 1건을 뜻하며 내용이 많으면 여러 페이지가 될 수 있습니다.</p>`}
+ el.innerHTML=`<div class="agreement-doc-summary">${minorityReviewSummary()}</div><div class="segmented"><label><input type="radio" name="docmode" value="combined" ${state.docMode==='combined'?'checked':''}> 통합 협의서 1부</label><label><input type="radio" name="docmode" value="individual" ${state.docMode==='individual'?'checked':''}> 상속인별 개별 협의서</label></div><p class="note">상속인별 출력은 <b>같은 재산분할 내용을 상속인 전원에게 각각 기재하고 해당 상속인의 날인란을 표시</b>합니다. 실제 등기 제출요건은 별도로 확인하세요.</p><div class="row control-row"><div class="field" style="flex:0 1 240px"><label>협의년월일</label><input id="agreementDate" type="date" value="${attr(state.agreementDate)}"></div></div><hr class="divider"><b>협의서 기재인적사항 확인</b><p class="note">성명·등록번호·주소는 위의 피상속인/상속인 입력란에서 수정합니다. 협의로 취득하지 않는 상속인도 협의서에 기재됩니다.</p><div class="info-card"><div class="ident">피상속인 : ${esc(state.decedent.name||'(성명 미입력)')}</div><div class="muted">등록번호: ${esc(state.decedent.ident||'미입력')}　·　주소: ${esc(state.decedent.address||'미입력')}</div></div><div class="signature-data">${rec.map((r,i)=>{let info=state.details[r.id]||{};let ok=!!(r.name.trim()&&info.ident?.trim()&&info.address?.trim());return `<div class="docperson"><b>${i+1}. ${esc(r.name||'(성명 미입력)')}</b> <span class="muted">${esc((findNode(r.id)?.nationality||'내국인')+(findNode(r.id)?.nationality==='외국인'?' ('+(countryName(findNode(r.id))||'국가 미선택')+')':'')+' · '+(r.via||r.relation))}</span> · ${selected.has(r.id)?'<span class="check">협의 취득자</span>':'<span class="muted">취득 없음 · 협의 당사자</span>'}<div class="muted">등록번호: ${esc(info.ident||'미입력')} / 주소: ${esc(info.address||'미입력')}</div><span class="${ok?'check':'missing'}">${ok?'인적사항 확인됨':'인적사항 입력 필요'}</span></div>`}).join('')||'<div class="empty">상속인 정보를 먼저 입력하세요.</div>'}</div><div class="actionbar"><button class="primary" id="printAgreement">협의서 인쇄 / PDF 저장</button><button class="outline" id="downloadAgreement">협의서 HTML 파일 저장</button></div><p class="note">브라우저 인쇄 화면에서 ‘PDF로 저장’을 선택할 수 있습니다. ‘통합 협의서 1부’는 문서 1건을 뜻하며 내용이 많으면 여러 페이지가 될 수 있습니다.</p>`}
 function renderAll(){normalise();
  for(let id of ['decedentName','decedentDeath','decedentIdent','decedentAddress']){let key={decedentName:'name',decedentDeath:'death',decedentIdent:'ident',decedentAddress:'address'}[id];document.getElementById(id).value=state.decedent[key]||''}
  document.querySelector(`input[name="method"][value="${state.method}"]`).checked=true;
@@ -1939,22 +1939,62 @@ function renderAll(){normalise();
  renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocGuide();applyActiveStage();save();renderCaseList()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
+function agreementRepresentativeFor(id){
+ const info=state.details[id]||{},age=ageAtAgreement(info.ident||'',state.agreementDate);
+ if(age.status==='invalid')throw Error('상속인 '+(findNode(id)?.name||id)+'의 생년월일과 협의년월일이 맞지 않습니다.');
+ if(age.status==='unknown'){
+  const node=findNode(id);
+  if(node?.nationality==='내국인')throw Error((node.name||'상속인')+'의 주민번호 앞 7자리에서 협의일 당시 미성년 여부를 확인할 수 없습니다. 생년월일과 성별·세기 번호를 확인하세요.');
+  return null;
+ }
+ if(age.status!=='minor')return null;
+ const node=findNode(id),rep=ensureRepresentativeData(id),name=node?.name||'성명 미입력';
+ if(rep.mode==='review')throw Error(name+'은(는) 협의일 기준 만 '+age.age+'세입니다. 이해상반관계와 특별대리인 선임 여부를 검토해 주세요.');
+ if(rep.mode==='special'){
+  if(!rep.name?.trim()||!rep.ident?.trim()||!rep.address?.trim()||!rep.court?.trim()||!rep.caseNumber?.trim())throw Error(name+'의 특별대리인 성명·등록번호·주소·선임 가정법원·사건번호를 입력해 주세요.');
+  return {...rep,kind:'특별대리인'};
+ }
+ if(rep.mode==='legal'){
+  if(!rep.legalConflictCleared)throw Error(name+'의 법정대리인이 공동상속인인지 등 이해상반 여부를 확인해야 합니다.');
+  if(!rep.name?.trim()||!rep.ident?.trim()||!rep.address?.trim())throw Error(name+'의 법정대리인 성명·등록번호·주소를 입력해 주세요.');
+  return {...rep,kind:'법정대리인'};
+ }
+ if(rep.mode==='exception'){
+  if(!rep.exceptionReason?.trim())throw Error(name+'의 혼인 성년의제 등 예외 적용 근거를 입력하세요.');
+  return {...rep,kind:'성년의제 확인'};
+ }
+ throw Error(name+'의 미성년자 대리 방식을 확인해 주세요.');
+}
+function validateAgreementRepresentatives(c){
+ if(!todayCheck(state.agreementDate))throw Error('협의년월일을 입력해 주세요.');
+ for(const r of c.recipients)agreementRepresentativeFor(r.id);
+}
 function buildDocument(c){
  if(!state.decedent.name?.trim())throw Error('피상속인 성명을 입력하세요.');
  if(!state.decedent.ident?.trim())throw Error('피상속인 등록번호를 입력하세요.');
  if(!state.decedent.address?.trim())throw Error('피상속인 주소를 입력하세요.');
  if(!selectedProperties().length)throw Error('협의서에 사용할 부동산을 먼저 선택하세요.');
- if(!todayCheck(state.agreementDate))throw Error('협의서 작성일을 입력하세요.');
+ if(!todayCheck(state.agreementDate))throw Error('협의년월일을 입력하세요.');
+ validateAgreementRepresentatives(c);
  if(!state.agreementSelected.length)throw Error('협의로 부동산을 취득할 상속인을 체크하세요.');
  for(let r of c.recipients){if(!r.name.trim())throw Error('모든 실제 상속인의 성명을 입력하세요.');let d=state.details[r.id]||{};if(!d.ident?.trim()||!d.address?.trim())throw Error(`${r.name} 상속인의 등록번호와 주소를 입력하세요.`)}
  const selected=new Set(state.agreementSelected);
  for(let p of selectedProperties()){if(!p.label.trim())throw Error('모든 부동산의 정확한 표시를 입력하세요.');let sum=Z;for(let r of c.recipients){let f=frac(p.alloc[r.id]??'0');if(f.lt(Z)||f.gt(O))throw Error('협의분할 배분비율은 0 이상 1 이하여야 합니다.');if(!selected.has(r.id)&&!f.eq(Z))throw Error('체크하지 않은 상속인의 취득지분은 0이어야 합니다.');sum=sum.add(f)}if(!sum.eq(O))throw Error('각 부동산의 협의분할 배분 합계는 1이어야 합니다.')}
  const dateText=s=>String(s).replaceAll('-','. ')+'.';
  const propContent=selectedProperties().map((p,i)=>{let owner=propertyShare(p);let lines=c.recipients.filter(r=>!frac(p.alloc[r.id]??'0').eq(Z)).map(r=>{let rel=frac(p.alloc[r.id]);let full=owner.mul(rel);return `<div>· 상속인 <strong>${esc(r.name)}</strong>이 피상속인 소유지분의 <strong>${rel.str()}</strong>을 취득한다. (부동산 전체 기준 <strong>${full.str()}</strong>)</div>`}).join('');return `<div class="doc-item"><div class="ttl">${i+1}. 부동산의 표시</div><div class="doc-prop">${esc(p.label)}</div><div class="doc-list">피상속인의 소유지분: ${owner.str()}<br>${lines}</div></div>`}).join('');
- const persons=c.recipients.map(r=>{let info=state.details[r.id]||{};return {name:r.name,relation:r.relation,via:r.via,address:info.address,ident:info.ident,id:r.id,nationality:findNode(r.id)?.nationality||'내국인',country:countryName(findNode(r.id))}});
+ const persons=c.recipients.map(r=>{let info=state.details[r.id]||{};return {name:r.name,relation:r.relation,via:r.via,address:info.address,ident:info.ident,id:r.id,nationality:findNode(r.id)?.nationality||'내국인',country:countryName(findNode(r.id)),representative:agreementRepresentativeFor(r.id)}});
  const allNames=persons.map(x=>esc(x.name)).join(', ');
- function sheet(person){let signature=person?[person]:persons;let stamp=signature.map(x=>`<tr><td style="width:36%">상속인: ${esc(x.name)}${x.nationality==='외국인'?'<br><span style="font-size:9pt">국적: '+esc(x.country||'미선택')+'</span>':''} ${x.via?`<span style="font-size:9pt">(${esc(x.via)})</span>`:''}</td><td style="width:54%">등록번호: ${esc(x.ident)}<br>주소: ${esc(x.address)}</td><td class="seal">(인)　　</td></tr>`).join('');
- return `<section class="doc-sheet">${hasSequentialSuccession()?'<p class="doc-notice" style="font-weight:bold;color:#8c2e29">※ 재전상속 관련 검토용 초안 · 각 상속개시별 협의 및 등기 필요서류를 별도 검토해야 합니다.</p>':''}${person?`<div class="doc-individual-header">동일 내용 상속인별 개별 협의서 · 날인자: ${esc(person.name)}</div>`:''}<h1>상속재산분할협의서</h1><p class="doc-meta">피상속인: <b>${esc(state.decedent.name)}</b><br>등록번호: ${esc(state.decedent.ident)}<br>최후 주소: ${esc(state.decedent.address)}<br>사망일: ${dateText(state.decedent.death)}<br>공동상속인: ${allNames}</p><p>위 피상속인의 공동상속인 전원은 아래 상속재산에 관하여 협의한 결과, 다음과 같이 분할하기로 합의한다.</p><div style="font-weight:bold;margin:13px 0 8px">제1조 (상속재산의 표시와 분할 내용)</div>${propContent}<p style="margin-top:20px">제2조 (협의의 확인)<br>상속인 전원은 위 분할 내용에 동의하며, 이 협의의 성립을 확인하기 위하여 본 협의서를 작성한다. 본 협의서에 기재되지 않은 재산은 별도 협의한다.</p>${person?'<p style="font-size:9.5pt">※ 본 서면은 위와 동일한 내용으로 작성된 다른 공동상속인의 협의서와 함께 공동상속인 전원의 분할합의를 증명하기 위한 것이다.</p>':''}<div class="doc-date">${dateText(state.agreementDate)}</div><div style="font-weight:bold;margin:4px 0 8px">공동상속인 ${person?'(아래 날인자)':'전원'}</div><table class="doc-sign">${stamp}</table>${person?`<div class="doc-notice">※ 공동상속인 전원(${persons.length}명)의 분할 내용이 동일하여야 하며, 각 상속인의 의사 확인 및 등기신청에 필요한 서면·인감증명서를 별도로 갖추어야 합니다.</div>`:''}</section>`}
+ function sheet(person){
+ let signature=person?[person]:persons;
+ let stamp=signature.map(x=>{
+  const rep=x.representative,needsRep=rep&&['특별대리인','법정대리인'].includes(rep.kind);
+  const party='<b>상속인: '+esc(x.name)+'</b>'+(x.nationality==='외국인'?'<br><span style="font-size:9pt">국적: '+esc(x.country||'미선택')+'</span>':'')+(x.via?'<br><span style="font-size:9pt">('+esc(x.via)+')</span>':'');
+  const repText=needsRep?'<br><b>미성년 상속인의 '+esc(rep.kind)+': '+esc(rep.name)+'</b>'+(rep.relationship?'<br>대리인 관계: '+esc(rep.relationship):''):rep?.kind==='성년의제 확인'?'<br><span style="font-size:9pt">성년의제 확인: '+esc(rep.exceptionReason)+'</span>':'';
+  const personInfo='상속인 등록번호: '+esc(x.ident)+'<br>주소: '+esc(x.address);
+  const repInfo=needsRep?'<br>대리인 등록번호: '+esc(rep.ident)+'<br>대리인 주소: '+esc(rep.address)+(rep.kind==='특별대리인'?'<br>선임결정: '+esc(rep.court)+' '+esc(rep.caseNumber):''):'';
+  return '<tr><td style="width:40%">'+party+repText+'</td><td style="width:48%">'+personInfo+repInfo+'</td><td class="seal">'+(needsRep?esc(rep.name)+' (인)':'(인)')+'</td></tr>';
+ }).join('');
+ return `<section class="doc-sheet">${hasSequentialSuccession()?'<p class="doc-notice" style="font-weight:bold;color:#8c2e29">※ 재전상속 관련 검토용 초안 · 각 상속개시별 협의 및 등기 필요서류를 별도 검토해야 합니다.</p>':''}${person?`<div class="doc-individual-header">동일 내용 상속인별 개별 협의서 · 날인자: ${esc(person.name)}</div>`:''}<h1>상속재산분할협의서</h1><p class="doc-meta">피상속인: <b>${esc(state.decedent.name)}</b>${state.decedent.nationality==='외국인'?'<br>국적: '+esc(countryName(state.decedent)||'국가 미입력'):''}<br>등록번호: ${esc(state.decedent.ident)}<br>최후 주소: ${esc(state.decedent.address)}<br>사망일: ${dateText(state.decedent.death)}<br>공동상속인: ${allNames}</p><p>위 피상속인의 공동상속인 전원은 아래 상속재산에 관하여 협의한 결과, 다음과 같이 분할하기로 합의한다.</p><div style="font-weight:bold;margin:13px 0 8px">제1조 (상속재산의 표시와 분할 내용)</div>${propContent}<p style="margin-top:20px">제2조 (협의의 확인)<br>상속인 전원은 위 분할 내용에 동의하며, 이 협의의 성립을 확인하기 위하여 본 협의서를 작성한다. 본 협의서에 기재되지 않은 재산은 별도 협의한다.</p>${person?'<p style="font-size:9.5pt">※ 본 서면은 위와 동일한 내용으로 작성된 다른 공동상속인의 협의서와 함께 공동상속인 전원의 분할합의를 증명하기 위한 것이다.</p>':''}<div class="doc-date">${dateText(state.agreementDate)}</div><div style="font-weight:bold;margin:4px 0 8px">공동상속인 ${person?'(아래 날인자)':'전원'}</div><table class="doc-sign">${stamp}</table>${person?`<div class="doc-notice">※ 공동상속인 전원(${persons.length}명)의 분할 내용이 동일하여야 하며, 각 상속인의 의사 확인 및 등기신청에 필요한 서면·인감증명서를 별도로 갖추어야 합니다.</div>`:''}</section>`}
  return state.docMode==='individual'?persons.map(sheet).join(''):sheet(null);
 }
 function outputDocument(saveFile){try{
