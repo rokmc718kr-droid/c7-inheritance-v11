@@ -42,7 +42,7 @@
 .stage-nav::-webkit-scrollbar{display:none}.stage-nav button{padding:10px 17px;background:#fff;border:1px solid #dae2ef;color:#536884;flex:1;min-width:max-content;font-size:13px;border-radius:10px}
 .stage-nav button.active{background:#204eac;border-color:#204eac;color:#fff;box-shadow:0 5px 12px #254d9730}.stage-nav button:disabled{opacity:.47}
 .stage-screen{display:none}.stage-screen.is-active{display:block}
-.method-compact .body{padding-top:13px;padding-bottom:12px}.method-compact .panelhead{padding-top:12px;padding-bottom:10px}.method-compact .segmented label{padding:8px 14px}
+
 .people-compact .panelhead{padding:12px 18px}.people-compact .body{padding:10px 15px 16px}
 .heir-tree-board{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,.94fr);gap:14px;align-items:start}
 .tree-pane{border:1px solid #d9e3f1;background:linear-gradient(180deg,#f7faff 0,#fff 38%);border-radius:14px;overflow:hidden;min-width:0}
@@ -96,7 +96,7 @@
 .tree-editor{position:fixed;z-index:51;bottom:0;left:0;right:0;max-height:84dvh;transform:translateY(110%);border-radius:20px 20px 0 0;border:1px solid #d5e1ef;transition:transform .2s ease;box-shadow:0 -15px 40px #0a204940}
 .tree-editor.open{transform:translateY(0)}.editor-inner{max-height:calc(84dvh - 80px)}.editor-close{display:inline-flex!important;background:#e7edf6;color:#36577e;padding:7px 11px}
 .tree-mobile-shade.show{display:block;position:fixed;z-index:50;inset:0;background:rgba(14,29,52,.47)}
-.editor-form{grid-template-columns:1fr 1fr}.panelhead h2{font-size:15px}.method-compact .body{padding:12px 14px}
+.editor-form{grid-template-columns:1fr 1fr}.panelhead h2{font-size:15px}
 }
 @media(max-width:365px){.editor-form{grid-template-columns:1fr}.editor-form .wide{grid-column:1}.tree-person .tree-avatar{display:none}}
 
@@ -104,12 +104,12 @@
 /* V6 final: root person is editable; no redundant large decedent block above tree */
 .topbar{padding-top:15px;padding-bottom:15px}.topbar h1{font-size:23px}
 .wrap{margin-top:12px}.stage-nav{padding-top:7px;padding-bottom:8px;margin-bottom:8px}
-.method-compact{margin-bottom:11px}.method-compact .panelhead{display:none}.method-compact .body{display:flex;align-items:center;gap:17px;flex-wrap:wrap;padding:10px 17px}
-.method-compact .body:before{content:'상속방법';font-size:13px;font-weight:800;color:#486080}.method-compact #methodHint{margin:0;flex:1;min-width:240px}
+
+
 .people-compact .body{padding:10px 12px 13px}.people-compact .panelhead{padding:10px 15px}
 .tree-root{border:2px solid transparent;cursor:pointer;white-space:normal;text-align:left;font-family:inherit}.tree-root.is-selected{border-color:#a6c5fb;box-shadow:0 0 0 3px #a7c4f747}
 .tree-root:hover{background:#1c437e}.tree-root .node-icon{font-size:14px}
-@media(max-width:820px){.topbar{flex-wrap:wrap;align-items:flex-start;gap:8px;padding:13px 15px}.topbar>div:first-child{min-width:0}.topbar .sub{display:none}.topbar #runtimeStatus{max-width:100%;white-space:normal}.method-compact .body{gap:5px}.method-compact .body:before{margin-right:5px}.method-compact #methodHint{display:none}.stage-nav{max-width:100%}}
+@media(max-width:820px){.topbar{flex-wrap:wrap;align-items:flex-start;gap:8px;padding:13px 15px}.topbar>div:first-child{min-width:0}.topbar .sub{display:none}.topbar #runtimeStatus{max-width:100%;white-space:normal}.stage-nav{max-width:100%}}
 
 /* V7: show explicit relationship status in each tree item, without Chinese-character icons */
 .tree-root{gap:0;display:flex;flex-direction:column;align-items:flex-start;padding:10px 16px}
@@ -344,6 +344,9 @@ button.danger{background:#f5f5f5;color:#434b55}
 .case-list-detail{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .case-list-detail strong{font-size:14px}
 .case-list-detail small{color:#647489;font-size:11px;white-space:normal}
+.case-method{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0;color:#4c5e74;font-size:12px;font-weight:700}
+.case-method select{width:auto;max-width:100%;min-height:34px;font-size:13px}
+.case-list-actions .case-agreement-btn{grid-column:1/-1;background:#eaf2ff;color:#2455a3}
 .case-list-actions{display:flex;gap:5px;flex-wrap:wrap}
 .case-list-actions button{font-size:11px;padding:7px 9px;min-height:34px}
 @media(max-width:700px){.case-list-card{align-items:start;flex-wrap:wrap}.case-list-actions{width:100%;padding-left:41px}.case-list-actions button{flex:1}.case-list-toolbar .actionbar{width:100%;margin:0;display:flex;flex-wrap:wrap}.case-list-toolbar .actionbar button{flex:1}}
@@ -475,11 +478,6 @@ button.danger{background:#f5f5f5;color:#434b55}
 </div></section>
 </div>
 <div class="stage-screen" data-stage="people">
-<section class="panel method-compact" id="methodPanel"><div class="panelhead"><h2>02. 상속방법 선택</h2><small>선택 결과에 따라 필요한 입력 화면이 자동으로 열립니다.</small></div><div class="body"><div class="segmented"><label><input type="radio" name="method" value="statute"> 법정상속</label><label><input type="radio" name="method" value="agreement"> 협의분할상속</label></div><p class="note" id="methodHint"></p></div></section>
-<section class="panel" id="agreementDatePanel">
- <div class="panelhead"><h2>협의분할 연월일</h2><span class="tag">미성년자 판단 기준일</span></div>
- <div class="body"><div class="agreement-date-row"><label>협의년월일 <input type="date" class="cell-input" id="agreementDatePeople"></label><p class="note">이 날짜를 기준으로 상속인 등록번호에서 미성년 여부를 확인합니다. 협의일을 바꾸면 미성년 여부도 다시 계산됩니다. 2013. 7. 1. 이전은 민법상 성년 20세, 이후는 19세가 기준입니다.</p></div><div id="minorPeopleSummary"></div></div>
-</section>
 <section class="panel hidden" id="decedentHiddenPanel"><div class="panelhead"><h2>02. 피상속인 인적사항</h2><small>협의서 작성에 필요한 성명·등록번호·주소를 입력합니다.</small></div><div class="body"><div class="row"><div class="field"><label>피상속인 성명</label><input id="decedentName" placeholder="예: 홍길동" autocomplete="off"></div><div class="field"><label>등록번호 (주민등록번호 등)</label><input id="decedentIdent" data-registration-number="full" placeholder="피상속인 등록번호" autocomplete="off"></div><div class="field"><label>사망년월일 <span style="color:#cf3d3d">*</span></label><input id="decedentDeath" type="date"></div></div><div class="row control-row"><div class="field"><label>피상속인 주소</label><input id="decedentAddress" placeholder="주소 (협의서 기재용)" autocomplete="off"></div></div></div></section>
 
 <section class="panel people-compact"><div class="panelhead"><h2>03. 피상속인 · 상속인 관계 트리 <span id="heirCount" class="tag"></span></h2></div><div class="body"><div id="proxyChronologyWarning" aria-live="polite"></div><div id="heirsView"></div><p class="note">상속인을 선택한 뒤 <b>[피대습자로 선택]</b>을 누르면 대습상속인 추가가 가능합니다. <b>1차 대습상속인을 선택하면 2차 피대습자로 변경</b>할 수 있습니다. 관계인을 선택하면 성명·등록번호·주소·관계를 수정하거나 삭제할 수 있습니다.</p></div></section>
@@ -488,7 +486,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 <section class="panel law-choice-panel" id="lawChoicePanel"><div class="panelhead"><h2>적용 상속법 확인 <span id="lawEraSummary" class="tag"></span></h2><small>기본은 사망일 자동판정 · 예외가 있으면 전문가 선택</small></div><div class="body" id="lawChoiceView"></div></section>
 <div id="calculationGuide" class="panel hidden" aria-live="polite"></div>
 <section class="panel hidden" id="historyPanel"><div class="panelhead"><h2>상속법별 세부사항 · 확인 지분 <span id="eraLabel" class="tag"></span></h2><small>옛 법의 추가 조건 또는 전문가 검증 지분 입력</small></div><div class="body" id="historyView"></div></section>
-<div class="stage-banner">상속관계 트리에서 선택한 관계·사망일을 기준으로 지분을 계산합니다. 오른쪽에 표시된 분수는 실제 상속인 몫입니다.</div>
+<div class="stage-banner">상속관계 트리에서 선택한 관계·사망일을 기준으로 법정상속지분을 계산합니다. 등기 진행 방식은 사건리스트에서 선택할 수 있습니다.</div>
 <section class="panel"><div class="panelhead"><h2>05. 법정상속지분 자동산출</h2><div class="mini-actions"><button class="outline" id="recalc">↻ 다시 계산</button><span class="muted">상속포기 제외 · 선사망 대습만 계산</span></div></div><div class="body" id="resultView"></div></section>
 </div>
 <div class="stage-screen" data-stage="forms">
@@ -514,7 +512,10 @@ button.danger{background:#f5f5f5;color:#434b55}
  </div>
 </section>
 
-<section class="panel" id="agreementEntry"><div class="panelhead"><h2>상속재산분할협의서 자동작성</h2><span class="tag">협의분할상속을 선택한 경우</span></div><div class="body"><p class="note">이미 작성된 상속관계·부동산 자료를 활용합니다. 협의분할상속을 선택하면 아래에 <b>취득자 배분 및 협의서 출력</b> 기능이 열립니다.</p><div class="actionbar"><button type="button" class="outline" id="formSwitchAgreement">협의분할상속으로 변경</button><button type="button" class="light" data-go-stage="people">상속관계 입력 확인</button></div></div></section>
+<section class="panel hidden" id="agreementDatePanel">
+ <div class="panelhead"><h2>협의분할 연월일</h2><span class="tag">미성년자 판단 기준일</span></div>
+ <div class="body"><div class="agreement-date-row"><label for="agreementDate">협의년월일</label><input type="date" class="cell-input" id="agreementDate"><p class="note">협의일을 기준으로 상속인의 미성년 여부를 확인합니다.</p></div><div class="actionbar"><button type="button" class="light" data-go-stage="people">상속관계·대리인 정보 확인</button></div></div>
+</section>
 <section class="panel hidden" id="allocPanel"><div class="panelhead"><h2>06. 협의로 취득할 상속인 선택</h2><span class="tag">취득자 체크 → 지분 자동 배분</span></div><div class="body"><div id="allocationView"></div></div></section>
 <section class="panel hidden" id="docPanel"><div class="panelhead"><h2>07. 상속재산분할협의서 자동작성</h2><span class="tag">통합 1부 / 상속인별 작성 선택</span></div><div class="body"><div id="docView"></div></div></section>
 </div>
@@ -588,7 +589,7 @@ const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Dat
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeProp=()=>({id:ID(),label:'',address:'',share:'1',selected:true,alloc:{}});
-const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:'',heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
+const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:'',heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'unknown',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -627,16 +628,29 @@ function caseShareSignature(st){
   decedent:st.decedent,
   heirs:st.heirs,
   properties:(st.properties||[]).map(p=>({id:p.id,label:p.label,share:p.share,selected:p.selected})),
-  method:st.method,eraMode:st.eraMode,eraOverride:st.eraOverride,
+  eraMode:st.eraMode,eraOverride:st.eraOverride,
   legacyHoju:st.legacyHoju,historicalType:st.historicalType,
   manualShares:st.manualShares,verifiedManual:st.verifiedManual
  });
 }
-function caseStageText(st){return st?.shareCompletedFor&&st.shareCompletedFor===caseShareSignature(st)?'지분산출 확인':'임시저장'}
+function caseStageText(st){
+ if(!st?.shareCompletedFor)return '임시저장';
+ const signature=caseShareSignature(st);
+ if(st.shareCompletedFor===signature)return '지분산출 확인';
+ try{
+  const legacy=JSON.parse(st.shareCompletedFor);
+  if(legacy&&Object.hasOwn(legacy,'method')){
+   delete legacy.method;
+   if(JSON.stringify(legacy)===signature)return '지분산출 확인';
+  }
+ }catch{}
+ return '임시저장';
+}
+const CASE_METHODS={unknown:'미정',statute:'법정상속',agreement:'협의분할상속'};
 function caseMeta(snapshot){return {
  name:String(snapshot.decedent?.name||'').trim()||'피상속인 미입력',
  death:snapshot.decedent?.death||'',
- method:snapshot.method==='agreement'?'협의분할상속':'법정상속',
+ method:Object.hasOwn(CASE_METHODS,snapshot.method)?CASE_METHODS[snapshot.method]:CASE_METHODS.unknown,
  count:(snapshot.properties||[]).filter(p=>p.selected!==false).length,
  status:caseStageText(snapshot)
 }}
@@ -681,17 +695,39 @@ function renderCaseList(){
   return '<article class="case-list-card '+(active?'is-current':'')+'">'
   +'<div class="case-list-no">'+(i+1)+'</div>'
   +'<div class="case-list-detail"><strong>'+esc(m.name)+' 상속사건</strong>'
-  +'<small>사망일 '+esc(m.death?m.death.replaceAll('-','.'):'미입력')+' · '+esc(m.method)+' · 부동산 '+m.count+'건</small>'
+  +'<small>사망일 '+esc(m.death?m.death.replaceAll('-','.'):'미입력')+' · 부동산 '+m.count+'건</small>'
+  +'<label class="case-method">등기 방식 <select class="cell-input" data-case-method="'+attr(row.id)+'" aria-label="'+attr(m.name+' 사건 등기 방식')+'">'
+  +Object.entries(CASE_METHODS).map(([value,label])=>'<option value="'+value+'"'+(m.method===label?' selected':'')+'>'+label+'</option>').join('')+'</select></label>'
   +'<small>최근 저장 '+esc(when)+(active?' · 현재 작업 중':'')+'</small>'
   +'<small class="case-stage-badge '+(m.status==='임시저장'?'draft':'completed')+'">'+esc(m.status)+'</small></div>'
   +'<div class="case-list-actions"><button type="button" class="outline" data-case-open="'+attr(row.id)+'">이어서 입력</button>'
   +'<button type="button" class="outline" data-case-shares="'+attr(row.id)+'">지분계산</button>'
   +'<button type="button" class="outline" data-case-cost="'+attr(row.id)+'" disabled title="C7 비용계산 연동 예정">비용계산(예정)</button>'
   +'<button type="button" class="outline case-write-btn" data-case-forms="'+attr(row.id)+'">서류작성</button>'
+  +(row.state.method==='agreement'?'<button type="button" class="outline case-agreement-btn" data-case-agreement="'+attr(row.id)+'">지분 배분·협의서 작성</button>':'')
   +'<button type="button" class="outline" data-case-guide="'+attr(row.id)+'">준비서류</button>'
   +'<button type="button" class="danger" data-case-delete="'+attr(row.id)+'">삭제</button></div>'
   +'</article>'
  }).join('')+'</div>';
+}
+function caseSetMethod(id,method){
+ const list=caseReadList(),row=list.find(item=>item.id===id);
+ if(!row||!Object.hasOwn(CASE_METHODS,method)){renderCaseList();return;}
+ const active=state.caseId===id,oldMethod=state.method;
+ if(active){
+  try{localStorage.setItem(KEY,JSON.stringify({...state,method}));}
+  catch{showStatus('등기 방식을 저장하지 못했습니다.',true);renderCaseList();return;}
+ }
+ row.state={...row.state,method};
+ row.updatedAt=new Date().toISOString();
+ if(caseWriteList(list)){
+  if(active)state.method=method;
+  showStatus('등기 방식을 '+CASE_METHODS[method]+'으로 저장했습니다.');
+ }else if(active){
+  try{localStorage.setItem(KEY,JSON.stringify({...state,method:oldMethod}));}catch{}
+ }
+ renderCaseList();
+ [...document.querySelectorAll('[data-case-method]')].find(select=>select.dataset.caseMethod===id)?.focus();
 }
 function caseOpenSaved(id,mode='open'){
  const item=caseReadList().find(x=>x.id===id);
@@ -706,12 +742,13 @@ function caseOpenSaved(id,mode='open'){
   if(mode==='guide'){
    syncDocGuideWithCase();
    activeStage='documents';
-  }else if(mode==='forms')activeStage='forms';
+  }else if(mode==='forms'||mode==='agreement')activeStage='forms';
   else if(mode==='shares')activeStage='shares';
   else activeStage='property';
   const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
   renderAll();
   if(mode==='guide')document.querySelector('#docGuideMode').scrollIntoView({block:'center',behavior:'instant'});
+  if(mode==='agreement')document.querySelector('#agreementDatePanel').scrollIntoView({block:'start',behavior:'instant'});
   if(mode==='forms')formMakerFeedback(caseMeta(state).name+' 사건의 인적사항과 저장된 서식을 불러왔습니다.');
   showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
@@ -730,7 +767,7 @@ function caseNew(){
 }
 function showStatus(msg,bad=false){let el=document.querySelector('#status');if(el){el.textContent=msg;el.style.color=bad?'#a62929':'#14744c'}}
 function normalise(){
- if(!['statute','agreement'].includes(state.method))state.method='statute';
+ if(!Object.hasOwn(CASE_METHODS,state.method))state.method='unknown';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??=now();state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
@@ -1399,7 +1436,7 @@ function renderHeirs(){
  }
  const count=(()=>{let x=0;traverseNodes(state.heirs,()=>x++);return x})();
  let actual=numberOfRecipients();try{actual=calculate().recipients.length}catch{}
- document.querySelector('#heirCount').textContent=`관계 ${count}명 · 실제 취득자 ${actual}명`;
+ document.querySelector('#heirCount').textContent=`관계 ${count}명 · 법정지분 산출 대상 ${actual}명`;
  let firstNode=state.heirs[0];
  if(!selectedPersonId||(selectedPersonId!=='__decedent__'&&!findNode(selectedPersonId)))selectedPersonId='__decedent__';
  let byId={};try{byId=calculate().byid||{}}catch(e){}
@@ -1929,7 +1966,9 @@ function navigateStage(name){
  if(name==='agreement')name='forms';
  if(name==='cost'||name==='home')name='files';
  activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
- document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView')?.scrollIntoView({block:'start',behavior:'instant'});
+ const scrollTarget=name==='files'?(document.querySelector('.case-list-card.is-current')||document.getElementById('caseListView'))
+  :document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView');
+ scrollTarget?.scrollIntoView({block:'start',behavior:'instant'});
 }
 // 1차 일반 상속인과 1차·2차 대습상속인을 모두 선택 후 다음 차수의 피대습자로 변경할 수 있습니다.
 function setPersonRole(id,role){
@@ -2077,17 +2116,13 @@ function refreshAllocationSums(c){if(!c)return;for(let p of selectedProperties()
 function allRecipientsSafe(){try{return calculate().recipients}catch{return []}}
 function renderDocs(){let el=document.querySelector('#docView');
  let rec=allRecipientsSafe();let selected=new Set(state.agreementSelected);
- el.innerHTML=`<div class="agreement-doc-summary">${minorityReviewSummary()}</div><div class="segmented"><label><input type="radio" name="docmode" value="combined" ${state.docMode==='combined'?'checked':''}> 통합 협의서 1부</label><label><input type="radio" name="docmode" value="individual" ${state.docMode==='individual'?'checked':''}> 상속인별 개별 협의서</label></div><p class="note">상속인별 출력은 <b>같은 재산분할 내용을 상속인 전원에게 각각 기재하고 해당 상속인의 날인란을 표시</b>합니다. 실제 등기 제출요건은 별도로 확인하세요.</p><div class="row control-row"><div class="field" style="flex:0 1 240px"><label>협의년월일</label><input id="agreementDate" type="date" value="${attr(state.agreementDate)}"></div></div><hr class="divider"><b>협의서 기재인적사항 확인</b><p class="note">성명·등록번호·주소는 위의 피상속인/상속인 입력란에서 수정합니다. 협의로 취득하지 않는 상속인도 협의서에 기재됩니다.</p><div class="info-card"><div class="ident">피상속인 : ${esc(state.decedent.name||'(성명 미입력)')}</div><div class="muted">등록번호: ${esc(state.decedent.ident||'미입력')}　·　주소: ${esc(state.decedent.address||'미입력')}</div></div><div class="signature-data">${rec.map((r,i)=>{let info=state.details[r.id]||{};let ok=!!(r.name.trim()&&info.ident?.trim()&&info.address?.trim());return `<div class="docperson"><b>${i+1}. ${esc(r.name||'(성명 미입력)')}</b> <span class="muted">${esc((findNode(r.id)?.nationality||'내국인')+(findNode(r.id)?.nationality==='외국인'?' ('+(countryName(findNode(r.id))||'국가 미선택')+')':'')+' · '+(r.via||r.relation))}</span> · ${selected.has(r.id)?'<span class="check">협의 취득자</span>':'<span class="muted">취득 없음 · 협의 당사자</span>'}<div class="muted">등록번호: ${esc(info.ident||'미입력')} / 주소: ${esc(info.address||'미입력')}</div><span class="${ok?'check':'missing'}">${ok?'인적사항 확인됨':'인적사항 입력 필요'}</span></div>`}).join('')||'<div class="empty">상속인 정보를 먼저 입력하세요.</div>'}</div><div class="actionbar"><button class="primary" id="printAgreement">협의서 인쇄 / PDF 저장</button><button class="outline" id="downloadAgreement">협의서 HTML 파일 저장</button></div><p class="note">브라우저 인쇄 화면에서 ‘PDF로 저장’을 선택할 수 있습니다. ‘통합 협의서 1부’는 문서 1건을 뜻하며 내용이 많으면 여러 페이지가 될 수 있습니다.</p>`}
+ el.innerHTML=`<div class="agreement-doc-summary">${minorityReviewSummary()}</div><div class="segmented"><label><input type="radio" name="docmode" value="combined" ${state.docMode==='combined'?'checked':''}> 통합 협의서 1부</label><label><input type="radio" name="docmode" value="individual" ${state.docMode==='individual'?'checked':''}> 상속인별 개별 협의서</label></div><p class="note">상속인별 출력은 <b>같은 재산분할 내용을 상속인 전원에게 각각 기재하고 해당 상속인의 날인란을 표시</b>합니다. 실제 등기 제출요건은 별도로 확인하세요.</p><hr class="divider"><b>협의서 기재인적사항 확인</b><p class="note">성명·등록번호·주소는 상속관계 입력에서 수정할 수 있습니다. 협의로 취득하지 않는 상속인도 협의서에 기재됩니다.</p><div class="info-card"><div class="ident">피상속인 : ${esc(state.decedent.name||'(성명 미입력)')}</div><div class="muted">등록번호: ${esc(state.decedent.ident||'미입력')}　·　주소: ${esc(state.decedent.address||'미입력')}</div></div><div class="signature-data">${rec.map((r,i)=>{let info=state.details[r.id]||{};let ok=!!(r.name.trim()&&info.ident?.trim()&&info.address?.trim());return `<div class="docperson"><b>${i+1}. ${esc(r.name||'(성명 미입력)')}</b> <span class="muted">${esc((findNode(r.id)?.nationality||'내국인')+(findNode(r.id)?.nationality==='외국인'?' ('+(countryName(findNode(r.id))||'국가 미선택')+')':'')+' · '+(r.via||r.relation))}</span> · ${selected.has(r.id)?'<span class="check">협의 취득자</span>':'<span class="muted">취득 없음 · 협의 당사자</span>'}<div class="muted">등록번호: ${esc(info.ident||'미입력')} / 주소: ${esc(info.address||'미입력')}</div><span class="${ok?'check':'missing'}">${ok?'인적사항 확인됨':'인적사항 입력 필요'}</span></div>`}).join('')||'<div class="empty">상속인 정보를 먼저 입력하세요.</div>'}</div><div class="actionbar"><button class="primary" id="printAgreement">협의서 인쇄 / PDF 저장</button><button class="outline" id="downloadAgreement">협의서 HTML 파일 저장</button></div><p class="note">브라우저 인쇄 화면에서 ‘PDF로 저장’을 선택할 수 있습니다. ‘통합 협의서 1부’는 문서 1건을 뜻하며 내용이 많으면 여러 페이지가 될 수 있습니다.</p>`}
 function renderAll(){normalise();
  for(let id of ['decedentName','decedentDeath','decedentIdent','decedentAddress']){let key={decedentName:'name',decedentDeath:'death',decedentIdent:'ident',decedentAddress:'address'}[id];document.getElementById(id).value=state.decedent[key]||''}
- document.querySelector(`input[name="method"][value="${state.method}"]`).checked=true;
- document.querySelector('#methodHint').textContent=state.method==='agreement'?'협의로 취득할 상속인을 아래에서 체크한 뒤, 필요한 경우 부동산별 지분을 조정하고 협의서를 출력합니다.':'법정상속지분을 자동 계산하여 각 부동산의 피상속인 소유지분에 적용합니다.';
- document.querySelector('#allocPanel').classList.toggle('hidden',state.method!=='agreement');
- document.querySelector('#docPanel').classList.toggle('hidden',state.method!=='agreement');
- const agreementPanel=document.getElementById('agreementDatePanel');
- if(agreementPanel)agreementPanel.classList.toggle('hidden',state.method!=='agreement');
- const agreementInput=document.getElementById('agreementDatePeople');if(agreementInput)agreementInput.value=state.agreementDate||'';
- const minSum=document.getElementById('minorPeopleSummary');if(minSum)minSum.innerHTML=minorityReviewSummary();
+ const agreement=state.method==='agreement';
+ for(const id of ['agreementDatePanel','allocPanel','docPanel'])
+  document.getElementById(id).classList.toggle('hidden',!agreement);
+ document.getElementById('agreementDate').value=state.agreementDate||'';
  renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocGuide();applyActiveStage();save();renderCaseList()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
@@ -2339,7 +2374,6 @@ document.addEventListener('change',e=>{
   state.formSettings.selectedPeople=[...chosen];save();renderFormMaker();
  }
 });
-document.querySelector('#formSwitchAgreement').addEventListener('click',()=>{state.method='agreement';renderAll();navigateStage('forms');showStatus('협의분할상속으로 변경했습니다. 취득자와 지분 배분을 확인한 뒤 협의서를 작성하세요.');});
 document.querySelector('#formCaseSaveCurrent').addEventListener('click',()=>{
  if(!String(state.decedent?.name||'').trim()){formMakerFeedback('피상속인 성명을 입력한 뒤 사건리스트에 저장해 주세요.',true);return;}
  if(caseSaveCurrent()){renderFormMaker();formMakerFeedback('현재 상속사건과 서류작성 설정을 저장했습니다.');}
@@ -2408,9 +2442,9 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('#successionReviewed')){state.successionReviewed=t.checked;state.successionReviewSignature=t.checked?successionSnapshot():'';renderAll();return}
  if(t.matches('[data-manual-id]')){state.manualShares[t.dataset.manualId]=t.value;renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}save();return}
  if(t.matches('[data-legacy-register]')){let h=state.heirs.find(x=>x.id===t.dataset.legacyRegister);if(h)h.legacyRegister=t.value;renderAll();return}
- if(t.matches('[name="method"]')){state.method=t.value;renderAll();return}
+ if(t.matches('[data-case-method]')){caseSetMethod(t.dataset.caseMethod,t.value);return}
  if(t.matches('[name="docmode"]')){state.docMode=t.value;renderDocs();save();return}
- if(t.matches('#agreementDate')||t.matches('#agreementDatePeople')){
+ if(t.matches('#agreementDate')){
   state.agreementDate=t.value;
   state.successionReviewed=false;
   renderAll();return;
@@ -2518,6 +2552,8 @@ document.addEventListener('click',e=>{
  if(shares){caseOpenSaved(shares.dataset.caseShares,'shares');return;}
  const forms=e.target.closest('[data-case-forms]');
  if(forms){caseOpenSaved(forms.dataset.caseForms,'forms');return;}
+ const agreement=e.target.closest('[data-case-agreement]');
+ if(agreement){caseOpenSaved(agreement.dataset.caseAgreement,'agreement');return;}
  const guide=e.target.closest('[data-case-guide]');
  if(guide){caseOpenSaved(guide.dataset.caseGuide,'guide');return;}
  const del=e.target.closest('[data-case-delete]');
