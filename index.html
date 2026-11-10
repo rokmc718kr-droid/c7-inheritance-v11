@@ -2191,10 +2191,9 @@ function formatRegistrationNumber(input,inputType){
  const raw=input.value;
  // Shared identification fields can also contain passport numbers and other IDs.
  const partial=input.dataset.registrationNumber==='partial';
- const pattern=partial?/^\d+[ -]?\d+$/:/^\d{6}[ -]?\d{7}$/;
+ const pattern=partial?/^\d+[ -]?\d+$/:/^\d{6}[ -]?\d{7,}$/;
  if(!pattern.test(raw))return;
- const digits=raw.replace(/[ -]/g,'');
- if(digits.length>13)return;
+ const digits=raw.replace(/[ -]/g,'').slice(0,13);
  const formatted=digits.length>6?digits.slice(0,6)+'-'+digits.slice(6):digits;
  if(raw===formatted)return;
 
@@ -2205,10 +2204,17 @@ function formatRegistrationNumber(input,inputType){
  if(position===null||end===null)return;
  const offset=index=>{
   const count=raw.slice(0,index).replace(/[ -]/g,'').length;
-  return count>6||(count===6&&inputType==='deleteContentForward')?count+1:count;
+  const position=count>6||(count===6&&inputType==='deleteContentForward')?count+1:count;
+  return Math.min(position,formatted.length);
  };
  input.setSelectionRange(offset(position),offset(end),direction);
 }
+document.addEventListener('beforeinput',e=>{
+ const input=e.target.closest('[data-registration-number]');
+ if(!input||e.isComposing||!/^\d+$/.test(e.data??''))return;
+ // Keep all existing digits when typing at the limit, including mid-field.
+ if(input.selectionStart===input.selectionEnd&&/^\d{6}-?\d{7}$/.test(input.value))e.preventDefault();
+});
 document.addEventListener('input',e=>{
  const registration=e.target.closest('[data-registration-number]');
  if(registration){
