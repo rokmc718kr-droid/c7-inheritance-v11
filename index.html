@@ -439,7 +439,10 @@ button.danger{background:#f5f5f5;color:#434b55}
 #addressSearchDialog::backdrop{background:#16253c80}
 .address-search-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px}
 #addressSearchStatus{margin:0;padding:0 12px 8px}
-#addressSearchFrame{display:block;width:100%;height:min(510px,calc(100dvh - 105px));border:0}
+#addressSearchFrame{display:block;width:100%;height:min(510px,calc(100dvh - 130px));border:0}
+#addressSearchFrame[hidden],#addressSearchFallback[hidden]{display:none}
+#addressSearchFallback{padding:0 12px 12px}
+#addressSearchFallback button{margin-right:8px}
 @media print{#addressSearchDialog{display:none!important}}
 </style>
 </head><body>
@@ -570,7 +573,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 <dialog id="addressSearchDialog" aria-labelledby="addressSearchTitle">
  <div class="address-search-head"><strong id="addressSearchTitle">국내 주소검색</strong><button type="button" class="outline" id="closeAddressSearch">닫기</button></div>
  <p class="note" id="addressSearchStatus" role="status"></p>
- <iframe id="addressSearchFrame" title="카카오 국내 주소검색" referrerpolicy="no-referrer"></iframe>
+ <div id="addressSearchFallback" hidden>
+  <button type="button" class="outline" id="openAddressSearchTab">새 탭에서 주소검색</button>
+  <a href="https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=local2" target="_blank" rel="noopener noreferrer">검색 페이지 직접 열기</a>
+ </div>
+ <iframe id="addressSearchFrame" title="카카오 국내 주소검색" referrerpolicy="no-referrer" hidden></iframe>
 </dialog>
 <script>
 'use strict';
@@ -2185,12 +2192,21 @@ document.addEventListener('click',e=>{
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
 
-const addressSearchURL=new URL('https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html');
+const addressSearchURL=new URL('https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=local2');
 const addressDialog=document.getElementById('addressSearchDialog');
 const addressFrame=document.getElementById('addressSearchFrame');
 const addressStatus=document.getElementById('addressSearchStatus');
-let addressTarget=null,addressLoadTimer;
-const addressUnavailable='주소검색에 연결하지 못했습니다. 검색창을 닫고 주소를 직접 입력해 주세요.';
+const addressFallback=document.getElementById('addressSearchFallback');
+const downloadedAddressPage=!['http:','https:'].includes(location.protocol);
+let addressTarget=null,addressPopup=null,addressLoadTimer;
+const addressTabInstructions='새 탭에서 주소를 선택하세요. 자동 입력이 되지 않으면 주소를 복사한 뒤 이 화면의 주소칸에 붙여넣으세요.';
+function showAddressTabFallback(message){
+ clearTimeout(addressLoadTimer);
+ addressFrame.hidden=true;
+ addressFrame.removeAttribute('src');
+ addressFallback.hidden=false;
+ addressStatus.textContent=message;
+}
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-address-search]');
  if(!button)return;
@@ -2198,24 +2214,47 @@ document.addEventListener('click',e=>{
  if(!input)return;
  if(typeof addressDialog.showModal!=='function'){input.focus();return}
  addressTarget=input;
- addressStatus.textContent='주소검색을 불러오는 중입니다.';
- addressFrame.src=addressSearchURL.href;
  addressDialog.showModal();
- addressLoadTimer=setTimeout(()=>{addressStatus.textContent=addressUnavailable},15000);
+ if(downloadedAddressPage){
+  showAddressTabFallback(addressTabInstructions);
+  return;
+ }
+ addressStatus.textContent='주소검색을 불러오는 중입니다.';
+ addressFallback.hidden=true;
+ addressFrame.hidden=false;
+ addressFrame.src=addressSearchURL.href;
+ addressLoadTimer=setTimeout(()=>showAddressTabFallback('검색창에 연결되지 않았습니다. '+addressTabInstructions),15000);
+});
+document.getElementById('openAddressSearchTab').addEventListener('click',()=>{
+ addressPopup=window.open(addressSearchURL.href,'_blank');
+ addressStatus.textContent=addressPopup?addressTabInstructions:'새 탭이 차단되었습니다. [검색 페이지 직접 열기]를 누른 뒤 주소를 복사해 붙여넣으세요.';
 });
 document.getElementById('closeAddressSearch').addEventListener('click',()=>addressDialog.close());
 addressDialog.addEventListener('close',()=>{
  if(addressDialog.open)return;
  clearTimeout(addressLoadTimer);
  addressTarget=null;
+ addressPopup=null;
+ addressFrame.hidden=true;
  addressFrame.removeAttribute('src');
 });
 window.addEventListener('message',e=>{
- if(!addressDialog.open||e.origin!==addressSearchURL.origin||e.source!==addressFrame.contentWindow||e.data?.channel!=='c7-address-search')return;
+ if(!addressDialog.open||e.origin!==addressSearchURL.origin||e.data?.channel!=='c7-address-search')return;
+ const fromFrame=!addressFrame.hidden&&e.source===addressFrame.contentWindow;
+ const fromPopup=!!addressPopup&&e.source===addressPopup;
+ if(!fromFrame&&!fromPopup)return;
  const {type,address}=e.data;
- if(type==='ready'||type==='unavailable'){
+ if(fromPopup&&type==='ready'){
+  e.source.postMessage({channel:'c7-address-search',type:'init'},addressSearchURL.origin);
+  return;
+ }
+ if(fromFrame&&type==='unavailable'){
+  showAddressTabFallback('검색창에 연결되지 않았습니다. '+addressTabInstructions);
+  return;
+ }
+ if(fromFrame&&type==='ready'){
   clearTimeout(addressLoadTimer);
-  addressStatus.textContent=type==='ready'?'도로명, 건물명 또는 지번으로 검색하세요.':addressUnavailable;
+  addressStatus.textContent='도로명, 건물명 또는 지번으로 검색하세요.';
   return;
  }
  if(type!=='selected'||typeof address!=='string'||!address.trim()||address.length>300||!addressTarget?.isConnected)return;
@@ -2223,6 +2262,7 @@ window.addEventListener('message',e=>{
  addressDialog.close();
  input.value=address.trim();
  input.dispatchEvent(new Event('change',{bubbles:true}));
+ if(fromPopup)e.source.postMessage({channel:'c7-address-search',type:'applied'},addressSearchURL.origin);
  const current=document.getElementById(input.id);
  current?.focus();
  current?.setSelectionRange(current.value.length,current.value.length);
