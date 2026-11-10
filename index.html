@@ -299,15 +299,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 @media(max-width:520px){.docguide-form{grid-template-columns:1fr}.docguide-form>.field:last-of-type{grid-column:auto}}
 
 
-/* 발급처를 모든 고객 준비서류명 바로 아래에 표시 */
-.docguide-list{display:flex;flex-direction:column;gap:0}
-.docguide-item{border-bottom:1px solid #e7ecf2;padding:9px 0}
-.docguide-item:last-child{border-bottom:none}
-.docguide-document{font-weight:650;color:#25354b;line-height:1.55}
-.docguide-issuer{color:#65748a;font-size:12px;line-height:1.6;margin:4px 0 0;padding-left:9px;border-left:2px solid #d6dde8}
-
-
-.docguide-advice{border:1px solid #dce7ef;background:#f3f7fb;color:#44566c;padding:11px 12px;border-radius:8px;line-height:1.7;margin:7px 0;font-size:13px}
+.docguide-subject{color:#526581;font-size:12px;font-weight:650;margin:12px 0 3px}
+.docguide-block .docguide-checklist{margin:0 0 8px;line-height:1.65}
+.docguide-checklist li{padding:3px 0}
+.docguide-item-detail,.docguide-group-note{color:#53657d;font-size:12px}
+.docguide-group-note{margin:10px 0 0;padding-top:8px;border-top:1px solid #e7ecf2}
 
 /* C7 AI 상속 토탈: 도구별 직행 허브 */
 .total-hub{border-radius:14px;border:1px solid #dde5f0;background:#fff;margin:8px 0 16px;padding:14px}
@@ -1490,36 +1486,38 @@ const DOCS_EXTRA=[
  '미성년자 등 이해상반관계 시 특별대리인 선임심판서 등본(해당하는 경우)',
  '재외국민·외국인 상속인의 국적·주소 또는 서명·인감 관련 증명서(상황별 별도 안내)'
 ];
-function docGuideIssuer(name){
- if(name.includes('발급서류 아님'))return '발급 대상 없음 (안내사항)';
- if(name.includes('인감도장'))return '발급처 없음 · 본인이 직접 준비';
- if(name.includes('신분증'))return '발급처 없음 · 본인이 직접 지참 (없다면 신분증 발급기관에 문의)';
- if(name.includes('인감증명서'))return '읍·면·동 행정복지센터 또는 시·군·구 민원창구 방문 (부동산 등기 관련 용도는 정부24 온라인 발급 대상 아님)';
- if(name.includes('특별대리인')||name.includes('심판서'))return '관할 가정법원 (선임절차·발급사항 법무사 확인)';
- if(name.includes('재외국민')||name.includes('외국인'))return '해당 국가의 증명서 발급기관·대한민국 재외공관 등 (국적·서류에 따라 다름)';
- if(name.includes('주민등록'))return '정부24(www.gov.kr) 또는 읍·면·동 행정복지센터 / 말소자·제3자 발급은 주민센터에서 신청자격 확인';
- if(name.includes('제적')||name.includes('호적'))return '대법원 전자가족관계등록시스템(efamily.scourt.go.kr, 해당 기록이 전산화된 경우) 또는 시·구·읍·면 가족관계등록 민원창구';
- if(/가족관계증명서|기본증명서|혼인관계증명서|입양관계증명서|친양자입양관계증명서/.test(name))return '대법원 전자가족관계등록시스템(efamily.scourt.go.kr) 또는 시·구·읍·면 가족관계등록 민원창구';
- return '해당 증명서 발급기관에 별도 확인';
+const DOC_GUIDE_LOCAL_OFFICE='구청 또는 동사무소(주민센터)에서 발급 가능한 서류';
+function docGuideRoute(item){
+ if(typeof item!=='string')return {title:item.issuer};
+ if(item.includes('발급서류 아님')||item.startsWith('협의분할을 선택할 경우')||item.endsWith('특별대리인 검토'))
+  return {title:'참고사항'};
+ if(item.includes('인감도장')&&!item.includes('인감증명서')||item.includes('신분증'))
+  return {title:'직접 지참할 것'};
+ if(item.includes('인감증명서'))return {title:DOC_GUIDE_LOCAL_OFFICE,detail:'상속등기 제출용은 민원창구 방문 발급'};
+ if(/특별대리인|심판서/.test(item))return {title:'관할 가정법원',note:'선임절차와 발급사항은 담당 법무사에게 확인하세요.'};
+ if(/재외국민|외국인/.test(item))return {title:'해당 국가의 증명서 발급기관·대한민국 재외공관 등',note:'국적과 서류에 따라 담당 기관이 달라집니다.'};
+ if(item.includes('주민등록'))return {title:DOC_GUIDE_LOCAL_OFFICE,
+  note:'온라인 · 주민등록표 등·초본은 정부24를 확인하세요. 제3자 발급은 주민센터에 신청자격을 확인하세요.',
+  detail:item.includes('말소자')?'말소자 초본은 방문할 주민센터에 신청자격을 확인하세요.':''};
+ if(/제적|호적|가족관계증명서|기본증명서|혼인관계증명서|입양관계증명서|가족관계등록사항별 증명서/.test(item))
+  return {title:DOC_GUIDE_LOCAL_OFFICE,note:'온라인 · 가족관계등록 증명서와 전산화된 제적등본은 대법원 전자가족관계등록시스템에서 확인하세요.'};
+ return {title:'해당 증명서 발급기관에 별도 확인'};
 }
 function docGuideGroupsByIssuer(guide){
  const groups=new Map();
- const order=['가족관계등록 민원창구','주민등록·인감 민원창구','관할 가정법원'];
+ const order=[DOC_GUIDE_LOCAL_OFFICE,'관할 가정법원'];
  function add(items,subject){
   for(const item of items){
    const name=typeof item==='string'?item:item.name;
-   const issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
-   const notice=issuer.startsWith('발급 대상 없음')||name.startsWith('협의분할을 선택할 경우')||name.endsWith('특별대리인 검토');
-   const direct=issuer.startsWith('발급처 없음');
-   const title=notice?'참고사항':direct?'직접 지참할 것':
-    issuer.startsWith('대법원 전자')?order[0]:
-    issuer.startsWith('정부24')||issuer.startsWith('읍·면·동')?order[1]:
-    issuer.startsWith('관할 가정법원')?order[2]:issuer;
-   if(!groups.has(title))groups.set(title,{title,items:[]});
-   const rows=groups.get(title).items;
-   const detail=notice||direct||title===issuer?'':issuer;
-   if(!rows.some(row=>row.name===name&&row.subject===subject))
-    rows.push({name:name.replace(' (발급서류 아님 · 안내사항)',''),subject,detail});
+   const {title,note,detail}=docGuideRoute(item);
+   if(!groups.has(title))groups.set(title,{title,subjects:new Map(),notes:new Set()});
+   const group=groups.get(title);
+   if(note)group.notes.add(note);
+   if(title===DOC_GUIDE_LOCAL_OFFICE&&/제적|호적/.test(name))
+    group.notes.add('제적등본 방문 발급 · 구청 등 시·구·읍·면 가족관계등록 창구에 확인하세요.');
+   if(!group.subjects.has(subject))group.subjects.set(subject,new Map());
+   const rows=group.subjects.get(subject);
+   rows.set(name.replace(' (발급서류 아님 · 안내사항)',''),detail||'');
   }
  }
  add(guide.decedent,'피상속인');
@@ -1530,7 +1528,7 @@ function docGuideGroupsByIssuer(guide){
  add(guide.extra,'해당하는 경우');
  for(const group of guide.foreignGroups)add(group.items,group.title);
  add(guide.foreignMaterials,'외국 서류 관련');
- const priority=title=>order.includes(title)?order.indexOf(title):title==='직접 지참할 것'?4:title==='참고사항'?5:3;
+ const priority=title=>order.includes(title)?order.indexOf(title):title==='직접 지참할 것'?3:title==='참고사항'?4:2;
  return [...groups.values()].sort((a,b)=>priority(a.title)-priority(b.title));
 }
 
@@ -1678,9 +1676,11 @@ function docGuideMetadata(guide){
 }
 function docGuideOutputMarkup(expand=false){
  const guide=docGuideItems(),sections=docGuideSections(guide);
- const grouped=group=>'<section class="docguide-block"><h3>'+esc(group.title)+'</h3><div class="docguide-list">'+group.items.map(item=>
-  '<div class="docguide-item"><div class="docguide-document">'+esc(item.name)+'</div><div class="docguide-issuer">대상 · '+esc(item.subject)+(item.detail?'<br>발급 · '+esc(item.detail):'')+'</div></div>'
- ).join('')+'</div></section>';
+ const grouped=group=>'<section class="docguide-block"><h3>'+esc(group.title)+'</h3>'+[...group.subjects].map(([subject,items])=>
+  '<p class="docguide-subject">'+esc(subject)+'</p><ul class="docguide-checklist">'+[...items].map(([name,detail])=>
+   '<li>'+esc(name)+(detail?'<br><span class="docguide-item-detail">'+esc(detail)+'</span>':'')+'</li>'
+  ).join('')+'</ul>'
+ ).join('')+(group.notes.size?'<p class="docguide-group-note">'+[...group.notes].map(esc).join('<br>')+'</p>':'')+'</section>';
  return '<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
   +'<div class="docguide-alert"><strong>중요 · '+(guide.foreign?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
   +sections.map((section,i)=>{
@@ -1718,7 +1718,11 @@ function docGuideText(){
  for(const section of docGuideSections(guide)){
   text+='\n\n■ '+section.label;
   for(const group of section.groups){
-   text+='\n\n['+group.title+']\n'+group.items.map((item,i)=>(i+1)+'. '+item.name+'\n   대상 · '+item.subject+(item.detail?'\n   발급 · '+item.detail:'')).join('\n');
+   text+='\n\n['+group.title+']';
+   for(const [subject,items] of group.subjects){
+    text+='\n'+subject+'\n'+[...items].map(([name,detail])=>'• '+name+(detail?' · '+detail:'')).join('\n');
+   }
+   if(group.notes.size)text+='\n'+[...group.notes].join('\n');
   }
   if(section.note)text+='\n\n안내: '+section.note;
  }
