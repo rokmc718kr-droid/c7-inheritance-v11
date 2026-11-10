@@ -288,14 +288,13 @@ button.danger{background:#f5f5f5;color:#434b55}
 /* 단독 필요서류 안내 — 체크박스가 아닌 텍스트 안내문 */
 .docguide-form{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:11px;margin:14px 0 20px}
 .docguide-form>.field{min-width:0}.docguide-dates{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:6px}
-.docguide-util{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .docguide-block{margin:12px 0;padding:16px;border:1px solid #dfe5ef;border-radius:12px;background:#fff}
 .docguide-block h3{margin:0 0 8px;font-size:15px;color:#1f3048}.docguide-block ul{margin:7px 0;padding-left:21px;line-height:1.85}
 .docguide-alert{background:#fff8eb;border:1px solid #e8c78e;border-radius:10px;padding:13px 14px;margin:12px 0;color:#7b5117;line-height:1.8}
 .docguide-meta{background:#f3f6fa;border:1px solid #e2e6ed;padding:12px;border-radius:10px;line-height:1.7}
 .docguide-source{font-size:12px;color:#6c7787;margin:15px 0 5px;line-height:1.8}
 @media(max-width:800px){.docguide-form{grid-template-columns:1fr 1fr}.docguide-form>.field:last-of-type{grid-column:1/-1}}
-@media(max-width:520px){.docguide-form{grid-template-columns:1fr}.docguide-form>.field:last-of-type{grid-column:auto}.docguide-dates{grid-template-columns:1.25fr .85fr .85fr}.docguide-util{gap:6px}}
+@media(max-width:520px){.docguide-form{grid-template-columns:1fr}.docguide-form>.field:last-of-type{grid-column:auto}.docguide-dates{grid-template-columns:1.25fr .85fr .85fr}}
 
 
 /* 발급처를 모든 고객 준비서류명 바로 아래에 표시 */
@@ -511,9 +510,9 @@ button.danger{background:#f5f5f5;color:#434b55}
 
 <div class="stage-screen" data-stage="documents">
  <section class="panel">
-  <div class="panelhead"><h2>상속 준비서류 안내</h2><small>지분계산·부동산 입력 없이 바로 이용</small></div>
+  <div class="panelhead"><h2>상속등기 준비서류 안내</h2><small id="docGuideMode">사건 없이 안내</small></div>
   <div class="body"><div class="actionbar" style="margin-top:0"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button></div>
-   <p class="choice-info"><b>망자의 사망일을 선택하면 필요한 준비서류와 발급처를 바로 안내합니다.</b><br>부동산 선택이나 상속지분 계산은 필요하지 않습니다. 법무사가 작성하는 상속재산분할협의서·등기신청서·위임장 등은 고객 준비서류에서 제외했습니다.</p>
+   <p class="choice-info"><b>망자의 사망일을 선택하면 필요한 준비서류와 발급처를 바로 안내합니다.</b><br>발급기관별로 묶어 안내하며, 직접 지참할 항목은 따로 표시합니다. 법무사가 작성하는 상속재산분할협의서·등기신청서·위임장 등은 고객 준비서류에서 제외했습니다.</p>
    <div class="docguide-form">
     <div class="field"><label for="docGuideName">망자 성명 (선택)</label><input id="docGuideName" class="cell-input" placeholder="예: 홍길동" autocomplete="off"></div>
     <div class="field"><label>망자 사망일 (필수)</label><div class="docguide-dates">
@@ -534,16 +533,12 @@ button.danger{background:#f5f5f5;color:#434b55}
     <div class="field"><label for="docGuideForeignHeirCountry">외국국적 상속인 (일반 안내)</label>
      <select class="cell-input" id="docGuideForeignHeirCountry"></select>
      <input class="cell-input" style="margin-top:6px" type="text" id="docGuideHeirCountryOther" aria-label="상속인 국가명 직접입력" placeholder="국가명 직접입력" maxlength="80" hidden></div>
-    <div class="docguide-util">
-      <button type="button" class="outline" id="docGuideUseCase">현재 사건의 망자 정보 가져오기</button>
-      <span class="muted">현재 사건이 없어도 안내문을 만들 수 있습니다.</span>
-    </div>
    </div>
    <div id="docGuideOutput" aria-live="polite"></div>
    <div class="actionbar" id="docGuideActions">
     <button type="button" class="primary" id="docGuideCopy">준비서류 안내문 복사</button>
     <button type="button" class="outline" id="docGuideShare">휴대전화로 공유</button>
-    <button type="button" class="light" id="docGuidePrint">안내문 인쇄</button>
+    <button type="button" class="light" id="docGuidePrint">인쇄 / PDF 저장</button>
    </div>
    <p id="docGuideStatus" class="note" role="status"></p>
    <div class="docguide-source">기준: 「상속등기에 관한 업무처리지침」(대법원 등기예규 제1871호), 가족관계등록제도 및 등기 실무. 발급 가능 여부와 신청자격은 발급기관마다 확인하세요. 사망 연도는 분류 기준이며, <b>전호적(전적 전 제적등본) 확인을 반드시 안내하되 실제 기록이 없는 경우에는 예외로 처리합니다.</b><br><a href="https://efamily.scourt.go.kr" target="_blank" rel="noopener noreferrer">대법원 전자가족관계등록시스템</a> · <a href="https://www.gov.kr" target="_blank" rel="noopener noreferrer">정부24</a></div>
@@ -555,7 +550,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="body">
  <div class="case-list-toolbar">
   <div class="case-current"><b>상속 사건리스트</b> <span id="caseActiveLabel">입력 중인 사건 없음</span></div>
-  <div class="actionbar"><button type="button" class="outline" id="caseSaveToList">현재 사건 저장</button><button type="button" class="primary" id="caseNewItem">＋ 신규</button></div>
+  <div class="actionbar"><button type="button" class="outline" id="caseSaveToList">현재 사건 저장</button><button type="button" class="primary" id="caseNewItem">＋ 신규</button><button type="button" class="outline" id="openQuickDocGuide">준비서류 간편 안내</button></div>
  </div>
  <div id="caseListView"></div>
  <p class="note">임시저장 사건도 후속업무를 시작할 수 있습니다. 사건별 [비용계산(연동 예정)] · [서류작성] · [준비서류]를 이용하세요. 먼저 입력한 정보는 자동으로 불러오고 부족한 항목만 추가 입력합니다.</p>
@@ -701,6 +696,7 @@ function caseOpenSaved(id,mode='open'){
   else activeStage='property';
   const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
   renderAll();
+  if(mode==='guide')document.querySelector('#docGuideMode').scrollIntoView({block:'center',behavior:'instant'});
   if(mode==='forms')formMakerFeedback(caseMeta(state).name+' 사건의 인적사항과 저장된 서식을 불러왔습니다.');
   showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
@@ -1439,7 +1435,8 @@ function renderHeirs(){
 }
 
 // 독립적인 상속 필요서류 안내 (계산/부동산 상태와 별도).
-const docGuide={name:'',year:'',month:'',day:'',method:'unknown',decedent:{nationality:'내국인',country:'',countryCustom:''},foreignHeirs:[],manualHeir:{nationality:'외국인',country:'',countryCustom:''},sourceCaseId:null};
+const freshDocGuide=()=>({name:'',year:'',month:'',day:'',method:'unknown',decedent:{nationality:'내국인',country:'',countryCustom:''},foreignHeirs:[],domesticHeirNames:[],manualHeir:{nationality:'외국인',country:'',countryCustom:''},sourceCaseId:null});
+let docGuide=freshDocGuide();
 const DOCS_BY_PERIOD=[
  {start:1900,end:1959,label:'1900~1959년 · 구관습법 시기',docs:[
   '피상속인이 기재된 제적등본(구호적 포함, 출생·혼인·사망까지 연결되는 기록)',
@@ -1508,13 +1505,36 @@ function docGuideIssuer(name){
  if(/가족관계증명서|기본증명서|혼인관계증명서|입양관계증명서|친양자입양관계증명서/.test(name))return '대법원 전자가족관계등록시스템(efamily.scourt.go.kr) 또는 시·구·읍·면 가족관계등록 민원창구';
  return '해당 증명서 발급기관에 별도 확인';
 }
-function docGuideSectionRows(a){
- return '<div class="docguide-list">'+a.map(item=>{
-  const name=typeof item==='string'?item:item.name,issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
-  const isNotice=name.includes('(발급서류 아님')||name.startsWith('협의분할을 선택할 경우');
-  if(isNotice)return '<div class="docguide-advice">'+esc(name.replace(' (발급서류 아님 · 안내사항)',''))+'</div>';
-  return '<div class="docguide-item"><div class="docguide-document">'+esc(name)+'</div><div class="docguide-issuer">발급·준비: '+esc(issuer)+'</div></div>';
- }).join('')+'</div>';
+function docGuideGroupsByIssuer(guide){
+ const groups=new Map();
+ const order=['가족관계등록 민원창구','주민등록·인감 민원창구','관할 가정법원'];
+ function add(items,subject){
+  for(const item of items){
+   const name=typeof item==='string'?item:item.name;
+   const issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
+   const notice=issuer.startsWith('발급 대상 없음')||name.startsWith('협의분할을 선택할 경우')||name.endsWith('특별대리인 검토');
+   const direct=issuer.startsWith('발급처 없음');
+   const title=notice?'참고사항':direct?'직접 지참할 것':
+    issuer.startsWith('대법원 전자')?order[0]:
+    issuer.startsWith('정부24')||issuer.startsWith('읍·면·동')?order[1]:
+    issuer.startsWith('관할 가정법원')?order[2]:issuer;
+   if(!groups.has(title))groups.set(title,{title,items:[]});
+   const rows=groups.get(title).items;
+   const detail=notice||direct||title===issuer?'':issuer;
+   if(!rows.some(row=>row.name===name&&row.subject===subject))
+    rows.push({name:name.replace(' (발급서류 아님 · 안내사항)',''),subject,detail});
+  }
+ }
+ add(guide.decedent,'피상속인');
+ const domesticSubject=docGuide.domesticHeirNames.length
+  ?'국내 상속인 · '+docGuide.domesticHeirNames.join(', '):'국내 상속인 (해당자)';
+ add(guide.heirs,domesticSubject);
+ add(guide.method,'상속방법에 따른 준비');
+ add(guide.extra,'해당하는 경우');
+ for(const group of guide.foreignGroups)add(group.items,group.title);
+ add(guide.foreignMaterials,'외국 서류 관련');
+ const priority=title=>order.includes(title)?order.indexOf(title):title==='직접 지참할 것'?4:title==='참고사항'?5:3;
+ return [...groups.values()].sort((a,b)=>priority(a.title)-priority(b.title));
 }
 
 /* 외국국적 망자와 상속인은 한국 호적서류를 일률 적용하지 않습니다.
@@ -1585,6 +1605,8 @@ function additionalForeignDocs(){
  ];
 }
 function syncDocGuideWithCase(){
+ docGuide=freshDocGuide();
+ docGuideFeedback('');
  const d=String(state.decedent.death||'');
  docGuide.name=state.decedent.name||'';
  [docGuide.year,docGuide.month,docGuide.day]=todayCheck(d)?d.split('-'):['','',''];
@@ -1593,9 +1615,10 @@ function syncDocGuideWithCase(){
  docGuide.decedent={nationality,country,countryCustom};
  const heirs=[];
  traverseNodes(state.heirs,n=>{
-  if(n.proxy||n.postDeath||n.nationality!=='외국인')return;
-  const country=countryName(n)||'국가 미선택';
-  if(!heirs.some(x=>x.name===n.name&&x.country===country))heirs.push({name:n.name||'상속인 성명 미입력',country});
+  if(n.proxy||n.postDeath)return;
+  const name=String(n.name||'').trim();
+  if(n.nationality==='외국인')heirs.push({name:name||'상속인 성명 미입력',country:countryName(n)||'국가 미선택'});
+  else if(name)docGuide.domesticHeirNames.push(name);
  });
  docGuide.foreignHeirs=heirs;
  docGuide.sourceCaseId=state.caseId||null;
@@ -1675,32 +1698,27 @@ function renderDocGuide(){
  heirOther.value=heirOther.hidden?'':guideCountryInput(docGuide.manualHeir);
  const guide=docGuideItems();
  document.getElementById('docGuideActions').style.display=guide?'flex':'none';
- const list=docGuideSectionRows;
+ const mode=document.getElementById('docGuideMode');
+ mode.textContent=docGuide.sourceCaseId?(caseMeta(state).name+' 상속사건'):'사건 없이 안내';
  if(!guide){
   out.innerHTML='<div class="empty">망자의 사망 연도·월·일을 선택하면 해당 사망 시기의 필요서류 안내가 바로 표시됩니다.<br>상속지분 계산이나 부동산 입력은 필요하지 않습니다.</div>';
   return;
  }
  out.innerHTML='<div class="docguide-meta"><b>망자:</b> '+esc(docGuide.name||'성명 미기재')+' &nbsp; <b>사망일:</b> '+esc(guide.date.replaceAll('-','.'))+'<br><b>적용기간:</b> '+esc(guide.period.label)+'<br><b>상속방법:</b> '+esc(guide.methodText)+'<br><b>망자 국적:</b> '+esc(docGuide.decedent.nationality||'내국인')+(docGuide.decedent.nationality==='외국인'?' ('+esc(countryName(docGuide.decedent)||'국가 미입력')+')':'')+'</div>'
  +'<div class="docguide-alert"><strong>중요 · '+(docGuide.decedent.nationality==='외국인'?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
- +'<section class="docguide-block"><h3>① 망자(피상속인) 준비서류</h3>'+list(guide.decedent)+'<p class="note">'+esc(guide.versionWarning)+'</p></section>'
- +'<section class="docguide-block"><h3>② 내국인 상속인 기본 준비서류 (외국국적자는 아래 국가별 안내 참조)</h3>'+list(guide.heirs)+'</section>'
- +'<section class="docguide-block"><h3>③ '+esc(guide.methodText)+' 준비서류 차이</h3>'+list(guide.method)+'</section>'
- +'<section class="docguide-block"><h3>④ 해당하는 경우 추가 준비서류</h3>'+list(guide.extra)+'</section>'
- +(guide.foreignGroups||[]).map(x=>'<section class="docguide-block"><h3>⑤ '+esc(x.title)+'</h3>'+list(x.items)+'</section>').join('')
- +(guide.foreignMaterials?.length?'<section class="docguide-block"><h3>⑥ 외국 공문서 인증·번역 및 동일인 확인</h3>'+list(guide.foreignMaterials)+'</section>':'')
+ +docGuideGroupsByIssuer(guide).map(group=>'<section class="docguide-block"><h3>'+esc(group.title)+'</h3><div class="docguide-list">'+group.items.map(item=>
+  '<div class="docguide-item"><div class="docguide-document">'+esc(item.name)+'</div><div class="docguide-issuer">대상 · '+esc(item.subject)+(item.detail?'<br>발급 · '+esc(item.detail):'')+'</div></div>'
+ ).join('')+'</div></section>').join('')
+ +'<p class="note">'+esc(guide.versionWarning)+'</p>'
  +(guide.foreignMaterials?.length?'<div class="docguide-alert"><b>외국국적 사건 주의</b><br>문서의 적법한 발급기관·아포스티유 협약 발효일·영사확인·한국어 번역문, 사망 당시 적용 상속법과 반정 여부는 사건별로 확인해야 합니다. 예시는 모든 사건의 확정 제출서류 목록이 아닙니다.</div>':'');
 }
 function docGuideText(){
  const guide=docGuideItems();if(!guide)return '';
- const line=items=>items.map((item,i)=>{
-  const name=typeof item==='string'?item:item.name,issuer=typeof item==='string'?docGuideIssuer(name):item.issuer;
-  return (i+1)+'. '+name+'\n   발급·준비: '+issuer;
- }).join('\n');
  let text='상속등기 준비서류 안내\n망자: '+(docGuide.name||'(성명 미기재)')+'\n사망일: '+guide.date.replaceAll('-','.')+'\n사망 시기: '+guide.period.label+'\n상속방법: '+guide.methodText+'\n망자 국적: '+(docGuide.decedent.nationality||'내국인')+(docGuide.decedent.nationality==='외국인'?' ('+(countryName(docGuide.decedent)||'미입력')+')':'')+'\n\n'
- +'[중요] '+guide.oldRegNote+'\n\n[망자 준비서류]\n'+line(guide.decedent)+'\n\n[내국인 상속인 기본 준비서류]\n'+line(guide.heirs)+'\n\n[상속방법별 준비서류]\n'+line(guide.method)
- +'\n\n[상황별 추가 준비서류]\n'+line(guide.extra);
- for(const group of guide.foreignGroups||[])text+='\n\n['+group.title+']\n'+line(group.items);
- if(guide.foreignMaterials?.length)text+='\n\n[외국문서 인증·번역]\n'+line(guide.foreignMaterials);
+ +'[중요] '+guide.oldRegNote;
+ for(const group of docGuideGroupsByIssuer(guide)){
+  text+='\n\n['+group.title+']\n'+group.items.map((item,i)=>(i+1)+'. '+item.name+'\n   대상 · '+item.subject+(item.detail?'\n   발급 · '+item.detail:'')).join('\n');
+ }
  return text+'\n\n안내: '+guide.versionWarning+'\n제출서류는 실제 가족관계·국적·외국법·발급기관과 해당 등기사건에 따라 달라질 수 있습니다.';
 }
 function docGuideFeedback(text,isError=false){const el=document.getElementById('docGuideStatus');if(el){el.textContent=text;el.style.color=isError?'#a62929':'#14744c';}}
@@ -2255,11 +2273,12 @@ document.querySelector('#docGuideHeirCountryOther').addEventListener('input',e=>
  renderDocGuide();
 });
 for(const part of ['year','month','day'])document.getElementById('docGuide'+part[0].toUpperCase()+part.slice(1)).addEventListener('change',e=>updateDocGuideDatePart(part,e.target.value));
-document.querySelector('#docGuideUseCase').addEventListener('click',()=>{
- const d=state.decedent.death;
- if(!todayCheck(d)){docGuideFeedback('현재 사건에 망자 사망일이 없습니다. 직접 사망일을 선택해 주세요.',true);return;}
- syncDocGuideWithCase();
- renderDocGuide();docGuideFeedback('현재 사건 정보를 가져왔습니다. 상속지분 계산은 필요하지 않습니다.');
+document.querySelector('#openQuickDocGuide').addEventListener('click',()=>{
+ docGuide=freshDocGuide();
+ docGuideFeedback('');
+ renderDocGuide();
+ navigateStage('documents');
+ document.querySelector('#docGuideMode').scrollIntoView({block:'center',behavior:'instant'});
 });
 document.querySelector('#docGuideCopy').addEventListener('click',copyDocGuide);
 document.querySelector('#docGuideShare').addEventListener('click',shareDocGuide);
