@@ -319,15 +319,8 @@ button.danger{background:#f5f5f5;color:#434b55}
 .total-cost-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .total-cost-card{border:1px solid #e0e6ed;background:#fafcff;padding:14px;border-radius:9px;display:flex;flex-direction:column;gap:6px}
 .total-cost-card small{color:#61758c}
-.form-maker-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .form-maker-group{border:1px solid #e0e7f0;background:#fafcff;padding:13px;border-radius:10px;margin-bottom:12px;min-width:0}
 .form-maker-group h3{font-size:14px;margin:0 0 11px}
-.form-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.form-field-grid label{font-size:11px;color:#5c7089;font-weight:600;display:flex;flex-direction:column;gap:4px;min-width:0}
-.form-field-grid input{width:100%;font-size:13px;min-width:0}
-.form-field-grid .form-full{grid-column:1/-1}
-.form-manual{border-top:1px solid #dce3ec;margin-top:13px;padding-top:11px}
-.form-muted{font-size:11px;color:#687d93;margin-bottom:7px}
 .form-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .form-check-row{border:1px solid #e1e7f0;border-radius:8px;background:#fff;padding:9px;display:flex;align-items:start;gap:8px;cursor:pointer;font-size:12px;line-height:1.5}
 .form-check-row input{width:17px;height:17px;flex:0 0 auto;margin-top:1px;accent-color:#245ddd}
@@ -339,7 +332,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 .form-doc-paragraph{line-height:2.2;margin:22px 0!important;white-space:pre-wrap}
 .form-doc-printnotes{font-size:9pt;color:#565656;line-height:1.6;padding-top:8px;border-top:1px solid #aaa;margin-top:26px}
 .form-template-warning{background:#fff5df;color:#745c23;padding:9px 10px;border-radius:7px;font-size:11px;margin-top:8px}
-@media(max-width:800px){.total-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}.form-maker-grid{grid-template-columns:1fr}.total-cost-grid{grid-template-columns:1fr}}
+@media(max-width:800px){.total-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}.total-cost-grid{grid-template-columns:1fr}}
 @media(max-width:480px){.total-hub{padding:10px}.total-hub-links{gap:6px}.total-hub-links button{padding:10px}.form-check-grid{grid-template-columns:1fr}}
 @media print{.form-doc-table th,.form-doc-table td{border-color:#555}.form-doc-printnotes{color:#333}.doc-sheet{page-break-inside:auto}}
 
@@ -495,33 +488,12 @@ button.danger{background:#f5f5f5;color:#434b55}
   <div id="formCaseContext" class="form-case-context"></div>
   <div class="form-case-nav"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="light" id="formCaseSaveCurrent">현재 사건 저장</button></div>
   <div class="choice-info"><strong>선택한 사건의 상속인 인적사항을 재사용하여 서식을 일괄 작성합니다.</strong><br>지분계산 없이도 위임장 작성이 가능합니다. 발급기관의 지정 양식과 위임 요건을 확인해 제출하세요. 생성 문서는 <b>작성·날인 전 검토용 초안</b>입니다.</div>
-  <div class="form-maker-grid">
-   <div class="form-maker-group">
-    <h3>① 수임인(대리인) 정보</h3>
-    <div class="form-field-grid">
-     <label>법무사 / 대리인 성명<input class="cell-input" data-form-info="agentName" placeholder="예: 홍길동"></label>
-     <label>법무사 사무소 명칭<input class="cell-input" data-form-info="officeName" placeholder="예: ○○법무사 사무소"></label>
-     <label>대리인 등록번호<input class="cell-input" data-form-info="agentIdent" data-registration-number="full" placeholder="필요한 서식에 기재"></label>
-     <label>사무소 연락처<input class="cell-input" data-form-info="officePhone" placeholder="연락처"></label>
-     <label class="form-full">대리인 주소 / 사무소 주소<input class="cell-input" data-form-info="officeAddress" placeholder="주소"></label>
-     <label>위임일자<input class="cell-input" data-form-info="issueDate" type="date"></label>
-    </div>
-   </div>
-   <div class="form-maker-group">
-    <h3>② 위임인 선택</h3>
-    <div id="formPeopleList"></div>
-    <div class="form-manual">
-     <div class="form-muted">상속인 등록 없이 위임장만 작성할 경우</div>
-     <div class="form-field-grid">
-      <label>위임인 성명<input class="cell-input" data-form-info="manualName" placeholder="성명"></label>
-      <label>위임인 등록번호<input class="cell-input" data-form-info="manualIdent" data-registration-number="full" placeholder="주민등록번호 등"></label>
-      <label class="form-full">위임인 주소<input class="cell-input" data-form-info="manualAddress" placeholder="주소"></label>
-     </div>
-    </div>
-   </div>
+  <div class="form-maker-group">
+   <h3>① 위임인 선택</h3>
+   <div id="formPeopleList"></div>
   </div>
   <div class="form-maker-group">
-   <h3>③ 작성할 서식 선택</h3>
+   <h3>② 작성할 서식 선택</h3>
    <div id="formTemplateList"></div>
    <p class="note">법정상속 방식에서도 위임장은 작성할 수 있습니다. 실제 제출용 서류는 발급기관이 정한 최신 서식 및 위임인 적격 여부와 대조하십시오.</p>
    <p class="note">법정 양식 확인: <a href="https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015" target="_blank" rel="noopener noreferrer">주민등록표 등·초본 교부신청 위임장(별지 제9호)</a> · <a href="https://www.seo.incheon.kr/open_content/main/peti/petiDetail.do?cate=1&amp;seq=259" target="_blank" rel="noopener noreferrer">가족관계등록부 증명서 교부 위임장(별지 제12호)</a></p>
@@ -749,7 +721,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!['statute','agreement'].includes(state.method))state.method='statute';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??=now();state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??=now();state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
+ state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??=now();state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -1771,7 +1743,7 @@ function updateDocGuideDatePart(part,value){
 }
 
 
-/* C7 폼픽 공통 서식 초안: 상속지분 계산과 독립적으로 상속인/직접입력 정보를 재사용합니다.
+/* C7 폼픽 공통 서식 초안: 상속지분 계산과 독립적으로 사건에 저장된 인적사항을 재사용합니다.
    법정 양식은 서식 번호가 있으므로 최신 별지 원본과 필수 항목을 반드시 대조해야 합니다. */
 const FORM_TEMPLATES=[
  {id:'registration',name:'상속등기 위임장',category:'등기',note:'상속등기 위임문서 작성 초안'},
@@ -1810,15 +1782,11 @@ function renderFormMaker(){
  }
  const currentSave=document.getElementById('formCaseSaveCurrent');
  if(currentSave)currentSave.textContent=state.caseId?'현재 사건 변경사항 저장':'현재 사건 목록에 저장';
- for(const key of ['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress']){
-  const input=group.querySelector('[data-form-info="'+key+'"]');
-  if(input&&input!==document.activeElement)input.value=f[key]||'';
- }
  const available=formAvailablePeople(),selected=new Set(formSelectedIds());
  const list=document.getElementById('formPeopleList');
  list.innerHTML=available.length?'<div class="form-check-grid">'+available.map(p=>
   '<label class="form-check-row"><input type="checkbox" data-form-person="'+attr(p.id)+'" '+(selected.has(p.id)?'checked':'')+'><span><b>'+esc(p.name)+'</b><br><small>'+esc(p.nationality)+(p.ident?' · '+esc(p.ident):' · 등록번호 미입력')+'</small></span></label>'
- ).join('')+'</div>':'<div class="empty">상속관계에 성명을 입력하거나 아래 간편 위임인 정보를 입력하세요. 지분 계산은 필요하지 않습니다.</div>';
+ ).join('')+'</div>':'<div class="empty">상속관계 입력에서 위임할 상속인의 성명을 등록해 주세요. 지분 계산은 필요하지 않습니다.</div>';
  document.getElementById('formTemplateList').innerHTML='<div class="form-check-grid">'+FORM_TEMPLATES.map(t=>
  '<label class="form-check-row"><input type="checkbox" data-form-doc="'+attr(t.id)+'" '+((f.selectedDocs||[]).includes(t.id)?'checked':'')+'><span><b>'+esc(t.name)+'</b><br><small>'+esc(t.note)+'</small></span></label>'
  ).join('')+'</div>';
@@ -1888,7 +1856,7 @@ function formGeneratedHTML(){
  const f=formSettings(),docs=FORM_TEMPLATES.filter(t=>(f.selectedDocs||[]).includes(t.id));
  const selected=new Set(formSelectedIds()),people=formAvailablePeople().filter(p=>selected.has(p.id));
  if(!docs.length)throw Error('작성할 서식을 한 개 이상 선택하세요.');
- if(!people.length)throw Error('위임할 상속인을 선택하거나 간편 위임인의 성명을 입력하세요.');
+ if(!people.length)throw Error('위임인을 한 명 이상 선택하세요.');
  const body=docs.map(t=>people.map(p=>formDocSheet(t,p,f)).join('')).join('');
  return {html:body,count:docs.length*people.length};
 }
@@ -2242,15 +2210,8 @@ document.addEventListener('input',e=>{
   save();
   return;
  }
- const field=e.target.closest('[data-form-info]');if(!field)return;
- const key=field.dataset.formInfo;
- if(!['agentName','officeName','agentIdent','officePhone','officeAddress','issueDate','manualName','manualIdent','manualAddress'].includes(key))return;
- state.formSettings[key]=field.value;
- save();
 });
 document.addEventListener('change',e=>{
- const field=e.target.closest('[data-form-info]');
- if(field){state.formSettings[field.dataset.formInfo]=field.value;save();renderFormMaker();return;}
  const doc=e.target.closest('[data-form-doc]');
  if(doc){
   const id=doc.dataset.formDoc;if(!FORM_TEMPLATES.some(t=>t.id===id))return;
