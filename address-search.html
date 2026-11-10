@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://t1.kakaocdn.net 'sha256-YBW9+izhB9aYhvz/aK+o4aTkDKIhiLNvYROv5P2WjRY='; frame-src https://postcode.map.kakao.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>국내 주소검색</title>
+<style>html,body,#postcode{margin:0;width:100%;height:100%;background:#fff}#message{padding:12px;font:14px system-ui,sans-serif}</style>
+</head>
+<body>
+<div id="postcode"><p id="message" role="status">주소검색을 불러오는 중입니다.</p></div>
+<script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" integrity="sha384-HinPpmc1kpW8Z7/w1AbyzfnSjWYE5IGUEiQ/5F4s61Zudq2H9SCQLr4WLaXGqXJ9" crossorigin="anonymous"></script>
+<script>
+'use strict';
+const container=document.getElementById('postcode');
+const report=(type,address)=>parent.postMessage({channel:'c7-address-search',type,address},'*');
+try{
+ if(!window.kakao?.Postcode)throw new Error('주소검색 연결 실패');
+ container.replaceChildren();
+ new kakao.Postcode({
+  width:'100%',height:'100%',
+  onresize:()=>report('ready'),
+  oncomplete:data=>{
+   const address=data.address;
+   if(typeof address==='string'&&address.trim())report('selected',address.trim());
+  }
+ }).embed(container);
+}catch{
+ container.textContent='주소검색에 연결하지 못했습니다. 검색창을 닫고 직접 입력해 주세요.';
+ report('unavailable');
+}
+</script>
+</body>
+</html>
