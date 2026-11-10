@@ -477,7 +477,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <div class="panelhead"><h2>협의분할 연월일</h2><span class="tag">미성년자 판단 기준일</span></div>
  <div class="body"><div class="agreement-date-row"><label>협의년월일 <input type="date" class="cell-input" id="agreementDatePeople"></label><p class="note">이 날짜를 기준으로 상속인 등록번호에서 미성년 여부를 확인합니다. 협의일을 바꾸면 미성년 여부도 다시 계산됩니다. 2013. 7. 1. 이전은 민법상 성년 20세, 이후는 19세가 기준입니다.</p></div><div id="minorPeopleSummary"></div></div>
 </section>
-<section class="panel hidden" id="decedentHiddenPanel"><div class="panelhead"><h2>02. 피상속인 인적사항</h2><small>협의서 작성에 필요한 성명·등록번호·주소를 입력합니다.</small></div><div class="body"><div class="row"><div class="field"><label>피상속인 성명</label><input id="decedentName" placeholder="예: 홍길동" autocomplete="off"></div><div class="field"><label>등록번호 (주민등록번호 등)</label><input id="decedentIdent" placeholder="피상속인 등록번호" autocomplete="off"></div><div class="field"><label>사망년월일 <span style="color:#cf3d3d">*</span></label><input id="decedentDeath" type="date"></div></div><div class="row control-row"><div class="field"><label>피상속인 주소</label><input id="decedentAddress" placeholder="주소 (협의서 기재용)" autocomplete="off"></div></div></div></section>
+<section class="panel hidden" id="decedentHiddenPanel"><div class="panelhead"><h2>02. 피상속인 인적사항</h2><small>협의서 작성에 필요한 성명·등록번호·주소를 입력합니다.</small></div><div class="body"><div class="row"><div class="field"><label>피상속인 성명</label><input id="decedentName" placeholder="예: 홍길동" autocomplete="off"></div><div class="field"><label>등록번호 (주민등록번호 등)</label><input id="decedentIdent" data-registration-number="full" placeholder="피상속인 등록번호" autocomplete="off"></div><div class="field"><label>사망년월일 <span style="color:#cf3d3d">*</span></label><input id="decedentDeath" type="date"></div></div><div class="row control-row"><div class="field"><label>피상속인 주소</label><input id="decedentAddress" placeholder="주소 (협의서 기재용)" autocomplete="off"></div></div></div></section>
 
 <section class="panel people-compact"><div class="panelhead"><h2>03. 피상속인 · 상속인 관계 트리 <span id="heirCount" class="tag"></span></h2></div><div class="body"><div id="proxyChronologyWarning" aria-live="polite"></div><div id="heirsView"></div><p class="note">상속인을 선택한 뒤 <b>[피대습자로 선택]</b>을 누르면 대습상속인 추가가 가능합니다. <b>1차 대습상속인을 선택하면 2차 피대습자로 변경</b>할 수 있습니다. 관계인을 선택하면 성명·등록번호·주소·관계를 수정하거나 삭제할 수 있습니다.</p></div></section>
 </div>
@@ -501,7 +501,7 @@ button.danger{background:#f5f5f5;color:#434b55}
     <div class="form-field-grid">
      <label>법무사 / 대리인 성명<input class="cell-input" data-form-info="agentName" placeholder="예: 홍길동"></label>
      <label>법무사 사무소 명칭<input class="cell-input" data-form-info="officeName" placeholder="예: ○○법무사 사무소"></label>
-     <label>대리인 등록번호<input class="cell-input" data-form-info="agentIdent" placeholder="필요한 서식에 기재"></label>
+     <label>대리인 등록번호<input class="cell-input" data-form-info="agentIdent" data-registration-number="full" placeholder="필요한 서식에 기재"></label>
      <label>사무소 연락처<input class="cell-input" data-form-info="officePhone" placeholder="연락처"></label>
      <label class="form-full">대리인 주소 / 사무소 주소<input class="cell-input" data-form-info="officeAddress" placeholder="주소"></label>
      <label>위임일자<input class="cell-input" data-form-info="issueDate" type="date"></label>
@@ -514,7 +514,7 @@ button.danger{background:#f5f5f5;color:#434b55}
      <div class="form-muted">상속인 등록 없이 위임장만 작성할 경우</div>
      <div class="form-field-grid">
       <label>위임인 성명<input class="cell-input" data-form-info="manualName" placeholder="성명"></label>
-      <label>위임인 등록번호<input class="cell-input" data-form-info="manualIdent" placeholder="주민등록번호 등"></label>
+      <label>위임인 등록번호<input class="cell-input" data-form-info="manualIdent" data-registration-number="full" placeholder="주민등록번호 등"></label>
       <label class="form-full">위임인 주소<input class="cell-input" data-form-info="manualAddress" placeholder="주소"></label>
      </div>
     </div>
@@ -1112,7 +1112,7 @@ function calculate(){
 }
 function propertyShare(p){let f=frac(p.share);if(f.eq(Z)||f.gt(O))throw Error('피상속인 부동산 소유지분은 0보다 크고 1 이하여야 합니다.');return f}
 function fullValidate(){let props=selectedProperties();if(!props.length)throw Error('① 부동산 입력 단계에서 상속할 부동산을 1건 이상 체크해 주세요.');let c=calculate();for(let p of props){propertyShare(p)}return c}
-function identityInput(id){let info=state.details[id]||{};return `<div class="identity-row"><div class="row"><div class="field" style="flex:1;min-width:195px"><label>등록번호 (주민등록번호 / 외국인등록번호)</label><input data-detail="${attr(id)}" data-key="ident" value="${attr(info.ident||'')}" placeholder="등록번호 입력" autocomplete="off"></div><div class="field" style="flex:2;min-width:230px"><label>주소</label><input data-detail="${attr(id)}" data-key="address" value="${attr(info.address||'')}" placeholder="주소 입력" autocomplete="off"></div></div></div>`}
+function identityInput(id){let info=state.details[id]||{};return `<div class="identity-row"><div class="row"><div class="field" style="flex:1;min-width:195px"><label>등록번호 (주민등록번호 / 외국인등록번호)</label><input data-detail="${attr(id)}" data-key="ident" data-registration-number="full" value="${attr(info.ident||'')}" placeholder="등록번호 입력" autocomplete="off"></div><div class="field" style="flex:2;min-width:230px"><label>주소</label><input data-detail="${attr(id)}" data-key="address" value="${attr(info.address||'')}" placeholder="주소 입력" autocomplete="off"></div></div></div>`}
 function renderHistory(){
  const el=document.querySelector('#historyPanel'),body=document.querySelector('#historyView'),era=effectiveEra(state.decedent.death||'2000-01-01');
  const show=era!=='modern'&&era!=='unsupported'||state.eraMode==='choose'||state.verifiedManual||state.decedent.nationality==='외국인';
@@ -1376,7 +1376,7 @@ function minorRepresentativeMarkup(n){
  if(age.status==='adult')return '<div class="minor-review adult"><b>협의일 기준 성년 · 만 '+age.age+'세</b>'+(n.nationality==='외국인'?'<p class="note">외국국적 상속인은 본국법상 법률행위능력 및 국내 협의분할 대리 요건을 별도로 확인해야 합니다.</p>':'')+'</div>';
  const rep=ensureRepresentativeData(n.id),id=attr(n.id);
  const opts=(val,name)=>'<option value="'+val+'"'+(rep.mode===val?' selected':'')+'>'+name+'</option>';
- const field=(label,key,placeholder)=>'<label>'+label+'<input class="cell-input" data-rep-id="'+id+'" data-rep-field="'+key+'" value="'+attr(rep[key]||'')+'" placeholder="'+attr(placeholder)+'" autocomplete="off"></label>';
+ const field=(label,key,placeholder)=>'<label>'+label+'<input class="cell-input" data-rep-id="'+id+'" data-rep-field="'+key+'"'+(key==='ident'?' data-registration-number="full"':'')+' value="'+attr(rep[key]||'')+'" placeholder="'+attr(placeholder)+'" autocomplete="off"></label>';
  let details='';
  if(rep.mode==='special'||rep.mode==='legal'){
   details='<div class="minor-rep-fields">'+field(rep.mode==='special'?'특별대리인 성명':'법정대리인 성명','name','대리인 성명')
@@ -1452,14 +1452,14 @@ function renderHeirs(){
   <div class="editor-form">
   ${nationalityMarkup(person,person.id,'국적/신분')}
   <div class="field"><label>성명</label><input class="cell-input" data-node-id="${id}" data-node-prop="name" value="${attr(person.name)}" placeholder="성명" autocomplete="off"></div>
-  <div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-detail="${id}" data-key="ident" value="${attr(info.ident||'')}" placeholder="등록번호" autocomplete="off"></div>
+  <div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-detail="${id}" data-key="ident" data-registration-number="${person.nationality==='내국인'?'partial':'full'}" value="${attr(info.ident||'')}" placeholder="등록번호" autocomplete="off"></div>
   <div class="field wide"><label>주소</label><input class="cell-input" data-detail="${id}" data-key="address" value="${attr(info.address||'')}" placeholder="주소" autocomplete="off"></div></div>
   ${minorRepresentativeMarkup(person)}
   ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (연·월·일 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
  ${nationalityMarkup(state.decedent,'__decedent__','피상속인 국적/신분')}
- <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
+ <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" data-registration-number="${state.decedent.nationality==='내국인'?'partial':'full'}" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 재전상속 피상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
  <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
@@ -2187,7 +2187,46 @@ document.addEventListener('click',e=>{
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
 
+function formatRegistrationNumber(input,inputType){
+ const raw=input.value;
+ // Shared identification fields can also contain passport numbers and other IDs.
+ const partial=input.dataset.registrationNumber==='partial';
+ const pattern=partial?/^\d+[ -]?\d+$/:/^\d{6}[ -]?\d{7}$/;
+ if(!pattern.test(raw))return;
+ const digits=raw.replace(/[ -]/g,'');
+ if(digits.length>13)return;
+ const formatted=digits.length>6?digits.slice(0,6)+'-'+digits.slice(6):digits;
+ if(raw===formatted)return;
+
+ const position=input.selectionStart;
+ const end=input.selectionEnd;
+ const direction=input.selectionDirection;
+ input.value=formatted;
+ if(position===null||end===null)return;
+ const offset=index=>{
+  const count=raw.slice(0,index).replace(/[ -]/g,'').length;
+  return count>6||(count===6&&inputType==='deleteContentForward')?count+1:count;
+ };
+ input.setSelectionRange(offset(position),offset(end),direction);
+}
 document.addEventListener('input',e=>{
+ const registration=e.target.closest('[data-registration-number]');
+ if(registration){
+  if(e.isComposing)return;
+  formatRegistrationNumber(registration,e.inputType);
+  if(registration.dataset.decedentEdit==='ident'){
+   state.decedent.ident=registration.value;
+   save();
+   return;
+  }
+  const personId=registration.dataset.detail;
+  if(personId){
+   state.details[personId]??={};
+   state.details[personId].ident=registration.value;
+   save();
+   return;
+  }
+ }
  const countryInput=e.target.closest('[data-country-other]');
  if(countryInput){
   const person=countryInput.dataset.nodeId==='__decedent__'?state.decedent:findNode(countryInput.dataset.nodeId);
