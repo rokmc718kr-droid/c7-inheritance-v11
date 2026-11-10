@@ -431,6 +431,16 @@ button.danger{background:#f5f5f5;color:#434b55}
 .minor-legal-check{grid-column:1/-1;display:flex!important;flex-direction:row!important;align-items:start;gap:8px;font-weight:600}
 .minor-legal-check input{min-width:18px;width:18px;height:18px}
 @media(max-width:490px){.minor-rep-fields{grid-template-columns:1fr}}
+.address-entry{display:flex;gap:6px;align-items:center}
+.address-entry input{flex:1;min-width:0}
+.address-entry button{flex:none;white-space:nowrap;padding-inline:10px}
+.property-address{margin:8px 0 10px}
+#addressSearchDialog{width:min(540px,calc(100% - 16px));max-width:none;max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--border);border-radius:12px;color:var(--ink)}
+#addressSearchDialog::backdrop{background:#16253c80}
+.address-search-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px}
+#addressSearchStatus{margin:0;padding:0 12px 8px}
+#addressSearchFrame{display:block;width:100%;height:min(510px,calc(100dvh - 105px));border:0}
+@media print{#addressSearchDialog{display:none!important}}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -557,6 +567,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
 </main>
 <div id="printRoot"></div>
+<dialog id="addressSearchDialog" aria-labelledby="addressSearchTitle">
+ <div class="address-search-head"><strong id="addressSearchTitle">국내 주소검색</strong><button type="button" class="outline" id="closeAddressSearch">닫기</button></div>
+ <p class="note" id="addressSearchStatus" role="status"></p>
+ <iframe id="addressSearchFrame" title="카카오 국내 주소검색" referrerpolicy="no-referrer"></iframe>
+</dialog>
 <script>
 'use strict';
 const KEY='inheritance_mvp_local_20261104_v1'; // 이전 사건 데이터 유지
@@ -565,7 +580,7 @@ const ID=()=> 'r'+Math.random().toString(36).slice(2,10);
 const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Date(d.getTime()-off*60000).toISOString().slice(0,10)};
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
-const makeProp=()=>({id:ID(),label:'',share:'1',selected:true,alloc:{}});
+const makeProp=()=>({id:ID(),label:'',address:'',share:'1',selected:true,alloc:{}});
 const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:'',heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'statute',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
@@ -595,7 +610,7 @@ function caseWriteList(list){
 function caseHasEnteredData(st){
  const d=st.decedent||{};
  if([d.name,d.death,d.ident,d.address].some(v=>String(v||'').trim()))return true;
- if((st.properties||[]).some(p=>String(p.label||'').trim()))return true;
+ if((st.properties||[]).some(p=>String(p.label||'').trim()||String(p.address||'').trim()))return true;
  const visit=nodes=>(nodes||[]).some(n=>String(n.name||'').trim()||visit(n.sub||[]));
  if(visit(st.heirs))return true;
  return !!String(st.formSettings?.manualName||'').trim();
@@ -712,7 +727,7 @@ function normalise(){
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??=now();state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
- state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.selected??=true });
+ state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.address??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
   const ids=new Set();state.properties.forEach(p=>Object.entries(p.alloc||{}).forEach(([id,v])=>{if(/^\s*[1-9]\d*(?:\/\d+)?\s*$/.test(String(v)))ids.add(id)}));state.agreementSelected=[...ids];
  }
@@ -1414,13 +1429,13 @@ function renderHeirs(){
   ${nationalityMarkup(person,person.id,'국적/신분')}
   <div class="field"><label>성명</label><input class="cell-input" data-node-id="${id}" data-node-prop="name" value="${attr(person.name)}" placeholder="성명" autocomplete="off"></div>
   <div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-detail="${id}" data-key="ident" data-registration-number="${person.nationality==='내국인'?'partial':'full'}" value="${attr(info.ident||'')}" placeholder="등록번호" autocomplete="off"></div>
-  <div class="field wide"><label>주소</label><input class="cell-input" data-detail="${id}" data-key="address" value="${attr(info.address||'')}" placeholder="주소" autocomplete="off"></div></div>
+  <div class="field wide">${addressInputMarkup('heir-address-'+person.id,'주소',info.address,'data-detail="'+id+'" data-key="address"')}</div></div>
   ${minorRepresentativeMarkup(person)}
   ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (연·월·일 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
  ${nationalityMarkup(state.decedent,'__decedent__','피상속인 국적/신분')}
- <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" data-registration-number="${state.decedent.nationality==='내국인'?'partial':'full'}" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide"><label>주소</label><input class="cell-input" data-decedent-edit="address" value="${attr(state.decedent.address||'')}" placeholder="주소"></div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
+ <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (연도·월·일 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" data-registration-number="${state.decedent.nationality==='내국인'?'partial':'full'}" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide">${addressInputMarkup('decedent-address','피상속인 주소',state.decedent.address,'data-decedent-edit="address"')}</div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 재전상속 피상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button><button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
  <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
@@ -1990,12 +2005,18 @@ function renderResults(){
   el.innerHTML=`<div class="errorbox"><b>계산 전 확인 사항</b><br>${esc(e.message)}${shortcut}</div>`;
 }
 }
+function addressInputMarkup(id,label,value,binding){
+ return '<label for="'+attr(id)+'">'+esc(label)+'</label><div class="address-entry">'
+  +'<input id="'+attr(id)+'" class="cell-input" '+binding+' value="'+attr(value||'')+'" placeholder="주소 직접 입력" autocomplete="off">'
+  +'<button type="button" class="outline" data-address-search="'+attr(id)+'" aria-label="'+esc(label+' 검색')+'">주소검색</button></div>';
+}
 function renderProperties(){
  const el=document.querySelector('#propertiesView');
  document.querySelector('#selectedPropertyCount').textContent='선택 '+selectedProperties().length+' / 전체 '+state.properties.length+'건';
  if(!state.properties.length){el.innerHTML='<div class="empty">부동산을 먼저 추가하고 선택해 주세요.</div>';return}
  el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
  <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><span class="muted">${p.selected!==false?'상속지분·협의서 반영 대상':'미선택 · 계산 제외'}</span></div>
+ <div class="field property-address">${addressInputMarkup('property-address-'+p.id,'부동산 소재지 주소',p.address,'data-path="properties.'+i+'.address"')}</div>
  <div class="row" style="align-items:start"><div class="field" style="flex:4;min-width:230px"><label>부동산의 표시 (등기부 기준)</label><textarea data-path="properties.${i}.label" placeholder="예: 서울특별시 ○○구 ○○동 100-1 토지...">${esc(p.label)}</textarea></div><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
  </div>`).join('');
 }
@@ -2163,6 +2184,49 @@ document.addEventListener('click',e=>{
  const mini=e.target.closest('[data-tree-mini]');if(mini){treeMini=!treeMini;renderHeirs();return}
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
+
+const addressSearchURL=new URL('https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html');
+const addressDialog=document.getElementById('addressSearchDialog');
+const addressFrame=document.getElementById('addressSearchFrame');
+const addressStatus=document.getElementById('addressSearchStatus');
+let addressTarget=null,addressLoadTimer;
+const addressUnavailable='주소검색에 연결하지 못했습니다. 검색창을 닫고 주소를 직접 입력해 주세요.';
+document.addEventListener('click',e=>{
+ const button=e.target.closest('[data-address-search]');
+ if(!button)return;
+ const input=document.getElementById(button.dataset.addressSearch);
+ if(!input)return;
+ if(typeof addressDialog.showModal!=='function'){input.focus();return}
+ addressTarget=input;
+ addressStatus.textContent='주소검색을 불러오는 중입니다.';
+ addressFrame.src=addressSearchURL.href;
+ addressDialog.showModal();
+ addressLoadTimer=setTimeout(()=>{addressStatus.textContent=addressUnavailable},15000);
+});
+document.getElementById('closeAddressSearch').addEventListener('click',()=>addressDialog.close());
+addressDialog.addEventListener('close',()=>{
+ if(addressDialog.open)return;
+ clearTimeout(addressLoadTimer);
+ addressTarget=null;
+ addressFrame.removeAttribute('src');
+});
+window.addEventListener('message',e=>{
+ if(!addressDialog.open||e.origin!==addressSearchURL.origin||e.source!==addressFrame.contentWindow||e.data?.channel!=='c7-address-search')return;
+ const {type,address}=e.data;
+ if(type==='ready'||type==='unavailable'){
+  clearTimeout(addressLoadTimer);
+  addressStatus.textContent=type==='ready'?'도로명, 건물명 또는 지번으로 검색하세요.':addressUnavailable;
+  return;
+ }
+ if(type!=='selected'||typeof address!=='string'||!address.trim()||address.length>300||!addressTarget?.isConnected)return;
+ const input=addressTarget;
+ addressDialog.close();
+ input.value=address.trim();
+ input.dispatchEvent(new Event('change',{bubbles:true}));
+ const current=document.getElementById(input.id);
+ current?.focus();
+ current?.setSelectionRange(current.value.length,current.value.length);
+});
 
 function formatRegistrationNumber(input,inputType){
  const raw=input.value;
