@@ -438,6 +438,13 @@ button.danger{background:#f5f5f5;color:#434b55}
 .address-entry input{flex:1;min-width:0}
 .address-entry button{flex:none;white-space:nowrap;padding-inline:10px}
 .property-address{margin:8px 0 10px}
+.property-select-line .property-source{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.property-source label{display:flex;align-items:center;gap:3px;white-space:nowrap;font-size:12px}
+.property-source input{width:16px;height:16px;margin:0}
+.property-registry-file{display:block;max-width:100%;font-size:12px}
+.property-registry-fields{display:grid;gap:8px;margin:8px 0}
+.property-registry-fields summary{cursor:pointer}
+.property-registry-fields code{overflow-wrap:anywhere}
 .document-property{border:1px solid var(--border);border-radius:9px;margin:8px 0;padding:8px 10px}
 .document-property summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none}
 .document-property summary::-webkit-details-marker{display:none}
@@ -478,9 +485,9 @@ button.danger{background:#f5f5f5;color:#434b55}
 </nav>
 <div class="stage-screen" data-stage="property">
 <section class="panel"><div class="panelhead"><h2>01. 부동산 입력 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
-<div class="choice-info"><b>C7 연동 시 공통 부동산 리스트에서 선택한 부동산을 가져오는 화면입니다.</b><br>현재 오프라인 시제품에서는 부동산을 직접 등록하고 체크해 선택합니다. 여러 부동산을 선택할 수 있으며, 선택된 부동산의 피상속인 소유지분만 계산·협의서에 반영됩니다.</div>
+<div class="choice-info"><b>부동산별로 등기부 또는 주소를 선택하세요.</b><br>등기부는 가져온 데이터의 주소와 선택한 소유자의 지분을 반영합니다. 주소는 소재지와 대상지분을 입력합니다. 체크한 부동산만 계산·서류에 반영됩니다.</div>
 <div id="propertiesView"></div>
-<p class="note">피상속인 소유지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
+<p class="note">주소 방식의 대상지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
 <div class="actionbar"><button type="button" class="primary" id="proceedAfterProperty">입력 완료 · 상속관계 입력 →</button></div>
 </div></section>
 </div>
@@ -601,7 +608,7 @@ const ID=()=> 'r'+Math.random().toString(36).slice(2,10);
 const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Date(d.getTime()-off*60000).toISOString().slice(0,10)};
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
 const makeSub=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
-const makeProp=()=>({id:ID(),label:'',address:'',share:'1',selected:true,alloc:{}});
+const makeProp=()=>({id:ID(),source:'address',label:'',address:'',share:'1',selected:true,alloc:{}});
 const fresh=()=>({version:3,caseId:null,shareCompletedFor:'',decedent:{name:'',death:'',ident:'',address:'',sex:'',nationality:'내국인',country:'',countryCustom:''},historicalType:'',historicalSuccessor:'',legacyHoju:'',verifiedManual:false,oldProxyVerified:false,successionReviewed:false,successionReviewSignature:'',manualShares:{},eraMode:'auto',eraOverride:'',eraReasonType:'',eraReasonNote:'',eraVerified:false,agreementDate:'',heirs:[makeHeir('배우자'),makeHeir('아들'),makeHeir('딸')],properties:[makeProp()],method:'unknown',docMode:'combined',details:{},agreementSelected:[]});
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 if(!state||!Array.isArray(state.heirs)||!Array.isArray(state.properties)||!state.details)state=fresh();
@@ -1144,7 +1151,7 @@ function calculate(){
  if(!total.eq(O))throw Error('후속상속 지분 합계가 1/1이 아닙니다. 가족관계를 확인하세요.');
  return {...initial,recipients:distributed,byid,kind:'sequential',sequential:true,stages,intermediate};
 }
-function propertyShare(p){let f=frac(p.share);if(f.eq(Z)||f.gt(O))throw Error('피상속인 부동산 소유지분은 0보다 크고 1 이하여야 합니다.');return f}
+function propertyShare(p){if(p.source==='registry'&&!registryOwner(p))throw Error('부동산 입력에서 등기부를 불러오고 피상속인에 해당하는 소유자를 선택하세요.');let f=frac(p.share);if(f.eq(Z)||f.gt(O))throw Error('피상속인 부동산 소유지분은 0보다 크고 1 이하여야 합니다.');return f}
 function fullValidate(){let props=selectedProperties();if(!props.length)throw Error('① 부동산 입력 단계에서 상속할 부동산을 1건 이상 체크해 주세요.');let c=calculate();for(let p of props){propertyShare(p)}return c}
 function identityInput(id){let info=state.details[id]||{};return `<div class="identity-row"><div class="row"><div class="field" style="flex:1;min-width:195px"><label>등록번호 (주민등록번호 / 외국인등록번호)</label><input data-detail="${attr(id)}" data-key="ident" data-registration-number="full" value="${attr(info.ident||'')}" placeholder="등록번호 입력" autocomplete="off"></div><div class="field" style="flex:2;min-width:230px"><label>주소</label><input data-detail="${attr(id)}" data-key="address" value="${attr(info.address||'')}" placeholder="주소 입력" autocomplete="off"></div></div></div>`}
 function renderHistory(){
@@ -2081,6 +2088,7 @@ function renderDocumentProperties(){
 function requirePropertyDescriptions(){
  const properties=selectedProperties();
  if(!properties.length)throw Error('부동산 입력 화면에서 문서에 넣을 부동산을 선택해 주세요.');
+ if(properties.some(p=>p.source==='registry'&&!registryOwner(p)))throw Error('부동산 입력에서 등기부 소유자를 먼저 선택해 주세요.');
  const index=properties.findIndex(property=>!property.label?.trim());
  if(index===-1)return;
  const field=document.getElementById('document-property-'+properties[index].id);
@@ -2095,14 +2103,61 @@ function addressInputMarkup(id,label,value,binding){
   +'<input id="'+attr(id)+'" class="cell-input" '+binding+' value="'+attr(value||'')+'" placeholder="주소 직접 입력" autocomplete="off">'
   +'<button type="button" class="outline" data-address-search="'+attr(id)+'" aria-label="'+esc(label+' 검색')+'">주소검색</button></div>';
 }
+function registryOwner(property){
+ return Number.isInteger(property.registry?.ownerIndex)?property.registry.owners?.[property.registry.ownerIndex]:null;
+}
+function applyRegistryProperty(property){
+ property.address=property.registry?.address||'';
+ property.label=property.registry?.label||'';
+ property.share=registryOwner(property)?.share||'';
+}
+function setPropertySource(property,source){
+ if(source===property.source||!['address','registry'].includes(source))return;
+ if(source==='registry'){
+  property.addressDraft={address:property.address,share:property.share,label:property.label};
+  applyRegistryProperty(property);
+ }else{
+  if(property.registry)property.registry.label=property.label;
+  Object.assign(property,property.addressDraft||{address:'',share:'1',label:''});
+ }
+ property.source=source;
+}
+function parseRegistryData(text){
+ const data=JSON.parse(text.replace(/^\uFEFF/,''));
+ if(typeof data?.address!=='string'||!data.address.trim()||!Array.isArray(data.owners)||!data.owners.length)
+  throw Error('등기부 데이터에 소재지 주소와 소유자 목록이 필요합니다.');
+ const owners=data.owners.map((entry,index)=>{
+  if(typeof entry?.name!=='string'||!entry.name.trim())throw Error('소유자 '+(index+1)+'의 성명을 확인하세요.');
+  try{return {name:entry.name.trim(),share:propertyShare({share:entry.share}).str()};}
+  catch{throw Error('소유자 '+(index+1)+'의 지분은 1, 1/2 등의 분수로 입력해 주세요.');}
+ });
+ return {address:data.address.trim(),label:typeof data.description==='string'?data.description.trim():'',owners,ownerIndex:owners.length===1?0:null};
+}
+function propertyRegistryMarkup(property){
+ const id=attr(property.id),registry=property.registry,owner=registryOwner(property);
+ const owners=Array.isArray(registry?.owners)?registry.owners:[];
+ const ownerField=owners.length>1?'<label for="registry-owner-'+id+'">피상속인에 해당하는 소유자</label>'
+  +'<select class="cell-input" id="registry-owner-'+id+'" data-registry-owner="'+id+'"><option value="">소유자 선택</option>'
+  +owners.map((entry,index)=>'<option value="'+index+'"'+(index===registry.ownerIndex?' selected':'')+'>'+esc(entry.name)+' · '+esc(entry.share)+'</option>').join('')+'</select>'
+  :owner?'<div><b>소유자</b> '+esc(owner.name)+' <span class="muted">· 자동 선택</span></div>':'';
+ return '<div class="property-registry-fields">'
+  +'<label for="registry-file-'+id+'">'+(registry?'다른 등기부 데이터 선택':'등기부 데이터 선택')+'</label>'
+  +'<input class="property-registry-file" id="registry-file-'+id+'" type="file" accept=".json,application/json" data-registry-file="'+id+'">'
+  +(registry?'<div><b>등기부 소재지 주소</b><br>'+esc(property.address)+'</div>'+ownerField
+   +'<div><b>대상지분</b> '+esc(owner?.share||'소유자 선택 후 자동 반영')+'</div>'
+   :'<details class="note"><summary>가져올 수 있는 파일 형식</summary><p>주소와 소유자별 지분이 들어 있는 JSON 파일을 선택하세요. C7 등기부 목록 연결은 준비 중입니다.</p><code>{"address":"소재지 주소","owners":[{"name":"소유자 성명","share":"1"}],"description":"등기부 표시(선택)"}</code></details>')
+  +'</div>';
+}
 function renderProperties(){
  const el=document.querySelector('#propertiesView');
  document.querySelector('#selectedPropertyCount').textContent='선택 '+selectedProperties().length+' / 전체 '+state.properties.length+'건';
  if(!state.properties.length){el.innerHTML='<div class="empty">부동산을 먼저 추가하고 선택해 주세요.</div>';return}
  el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
- <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><span class="muted">${p.selected!==false?'상속지분·협의서 반영 대상':'미선택 · 계산 제외'}</span></div>
- <div class="field property-address">${addressInputMarkup('property-address-'+p.id,'부동산 소재지 주소',p.address,'data-path="properties.'+i+'.address"')}</div>
- <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
+ <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><div class="property-source" role="group" aria-label="부동산 ${i+1} 입력 방식"><label><input type="radio" name="property-source-${i}" data-property-source="${attr(p.id)}" value="registry" ${p.source==='registry'?'checked':''}>등기부</label><label><input type="radio" name="property-source-${i}" data-property-source="${attr(p.id)}" value="address" ${p.source!=='registry'?'checked':''}>주소</label></div></div>
+ ${p.source==='registry'?propertyRegistryMarkup(p):`<div class="field property-address">${addressInputMarkup('property-address-'+p.id,'부동산 소재지 주소',p.address,'data-path="properties.'+i+'.address"')}</div>`}
+ <div class="row" style="align-items:end">
+ ${p.source==='registry'?'':`<div class="field" style="flex:1;min-width:145px"><label for="property-share-${i}">대상지분 (피상속인 소유지분)</label><input id="property-share-${i}" value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div>`}
+ <button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div>
  </div>`).join('');
 }
 // 협의 취득자 기준 배분(법정상속 지분과 혼합 금지).
@@ -2374,7 +2429,11 @@ document.addEventListener('input',e=>{
  const description=e.target.closest('[data-property-description]');
  if(description){
   const property=state.properties.find(p=>p.id===description.dataset.propertyDescription);
-  if(property){property.label=description.value;save();}
+  if(property){
+   property.label=description.value;
+   if(property.source==='registry'&&property.registry)property.registry.label=description.value;
+   save();
+  }
   return;
  }
  const registration=e.target.closest('[data-registration-number]');
@@ -2460,8 +2519,31 @@ document.querySelector('#docGuideCopy').addEventListener('click',copyDocGuide);
 document.querySelector('#docGuideShare').addEventListener('click',shareDocGuide);
 document.querySelector('#docGuidePrint').addEventListener('click',printDocGuide);
 
-document.querySelector('#proceedAfterProperty').addEventListener('click',()=>{if(!selectedProperties().length){alert('상속할 부동산을 한 건 이상 체크해 주세요.');return}navigateStage('people')});
+document.querySelector('#proceedAfterProperty').addEventListener('click',()=>{
+ const properties=selectedProperties();
+ if(!properties.length){alert('상속할 부동산을 한 건 이상 체크해 주세요.');return;}
+ if(properties.some(p=>p.source==='registry'&&!registryOwner(p))){alert('선택한 부동산의 등기부 데이터를 불러오고 피상속인에 해당하는 소유자를 선택해 주세요.');return;}
+ navigateStage('people');
+});
 for(let id of ['decedentName','decedentDeath','decedentIdent','decedentAddress']){document.getElementById(id).addEventListener('change',e=>{let key={decedentName:'name',decedentDeath:'death',decedentIdent:'ident',decedentAddress:'address'}[id];state.decedent[key]=e.target.value;if(key==='death'){renderLawSelection();renderHistory();renderResults();renderProperties();if(state.method==='agreement')renderAlloc()}if(key==='name')renderHeirs();if(state.method==='agreement')renderDocs();save()})}
+document.addEventListener('change',async e=>{
+ const input=e.target.closest('[data-registry-file]');
+ const file=input?.files?.[0];
+ if(!file)return;
+ const current=state,property=current.properties.find(p=>p.id===input.dataset.registryFile);
+ if(!property||property.source!=='registry')return;
+ try{
+  if(file.size>1024*1024)throw Error('등기부 JSON 파일은 1MB 이하로 선택해 주세요.');
+  const registry=parseRegistryData(await file.text());
+  if(state!==current||!input.isConnected||!state.properties.includes(property)||property.source!=='registry')return;
+  property.registry=registry;
+  applyRegistryProperty(property);
+  state.shareCompletedFor='';
+  renderAll();
+ }catch(err){
+  if(input.isConnected){input.value='';alert('등기부 데이터를 가져오지 못했습니다. '+err.message);}
+ }
+});
 document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-decedent-ymd]')){updateDecedentDatePart(t.dataset.decedentYmd,t.value);return}
  if(t.matches('[data-proxy-ymd]')){updateProxyDatePart(t.dataset.proxyYmd,t.dataset.proxyPart,t.value);return}
@@ -2500,6 +2582,22 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-receive]')){const id=t.dataset.receive;state.agreementSelected=t.checked?[...new Set([...state.agreementSelected,id])]:state.agreementSelected.filter(x=>x!==id);try{autoAllocateSelected(calculate())}catch{}renderAlloc();renderDocs();save();return}
  if(t.matches('[data-role]')){setPersonRole(t.dataset.role,t.dataset.value);return}
  if(t.matches('[data-era-relation]')){const n=findNode(t.dataset.nodeId);if(!n)return;let par=null;traverseNodes(state.heirs,(x,l,p)=>{if(x.id===n.id)par=p});applyRelationVariant(n,t.value,par);renderAll();return}
+ if(t.matches('[data-property-source]')){
+  const property=state.properties.find(p=>p.id===t.dataset.propertySource);
+  if(property){setPropertySource(property,t.value);state.shareCompletedFor='';renderAll();}
+  return;
+ }
+ if(t.matches('[data-registry-owner]')){
+  const property=state.properties.find(p=>p.id===t.dataset.registryOwner);
+  if(!property?.registry||property.source!=='registry')return;
+  const index=t.value===''?null:Number(t.value);
+  if(index!==null&&(!Number.isInteger(index)||!property.registry.owners[index]))return;
+  property.registry.ownerIndex=index;
+  property.share=registryOwner(property)?.share||'';
+  state.shareCompletedFor='';
+  renderAll();
+  return;
+ }
  if(t.matches('[data-property-selected]')){let p=state.properties.find(p=>p.id===t.dataset.propertySelected);if(p){p.selected=t.checked;renderAll()}return}
  if(t.matches('[data-nationality-select],[data-country-other]')){
   const person=t.dataset.nodeId==='__decedent__'?state.decedent:findNode(t.dataset.nodeId);
