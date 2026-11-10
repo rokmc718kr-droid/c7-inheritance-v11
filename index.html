@@ -438,6 +438,13 @@ button.danger{background:#f5f5f5;color:#434b55}
 .address-entry input{flex:1;min-width:0}
 .address-entry button{flex:none;white-space:nowrap;padding-inline:10px}
 .property-address{margin:8px 0 10px}
+.document-property{border:1px solid var(--border);border-radius:9px;margin:8px 0;padding:8px 10px}
+.document-property summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none}
+.document-property summary::-webkit-details-marker{display:none}
+.document-property summary strong{overflow-wrap:anywhere}
+.document-property .field{margin-top:8px}
+.document-property textarea{width:100%;min-height:88px}
+.document-property-action{flex:none;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--primarydark);font-weight:700;font-size:12px}
 #addressSearchDialog{width:min(540px,calc(100% - 16px));max-width:none;max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--border);border-radius:12px;color:var(--ink)}
 #addressSearchDialog::backdrop{background:#16253c80}
 .address-search-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px}
@@ -473,7 +480,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 <section class="panel"><div class="panelhead"><h2>01. 부동산 입력 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
 <div class="choice-info"><b>C7 연동 시 공통 부동산 리스트에서 선택한 부동산을 가져오는 화면입니다.</b><br>현재 오프라인 시제품에서는 부동산을 직접 등록하고 체크해 선택합니다. 여러 부동산을 선택할 수 있으며, 선택된 부동산의 피상속인 소유지분만 계산·협의서에 반영됩니다.</div>
 <div id="propertiesView"></div>
-<p class="note">‘부동산 표시’에는 등기사항증명서의 토지·건물 표시를 입력하세요. 피상속인 소유지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
+<p class="note">피상속인 소유지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
 <div class="actionbar"><button type="button" class="primary" id="proceedAfterProperty">입력 완료 · 상속관계 입력 →</button></div>
 </div></section>
 </div>
@@ -495,6 +502,12 @@ button.danger{background:#f5f5f5;color:#434b55}
  <div class="body">
   <div id="formCaseContext" class="form-case-context"></div>
   <div class="form-case-nav"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="light" id="formCaseSaveCurrent">현재 사건 저장</button></div>
+  <div class="form-maker-group" id="documentPropertiesPanel">
+   <h3>문서에 들어갈 부동산 표시</h3>
+   <p class="note">상속등기 위임장과 상속재산분할협의서에 사용할 등기부의 표시를 입력하세요.</p>
+   <div id="documentPropertiesView"></div>
+   <div class="actionbar hidden" id="documentPropertyAgreementLink"><button type="button" class="light" id="goAgreementInputs">협의분할 입력으로</button></div>
+  </div>
   <div class="choice-info"><strong>선택한 사건의 상속인 인적사항을 재사용하여 서식을 일괄 작성합니다.</strong><br>지분계산 없이도 위임장 작성이 가능합니다. 발급기관의 지정 양식과 위임 요건을 확인해 제출하세요. 생성 문서는 <b>작성·날인 전 검토용 초안</b>입니다.</div>
   <div class="form-maker-group">
    <h3>① 위임인 선택</h3>
@@ -627,7 +640,7 @@ function caseShareSignature(st){
  return JSON.stringify({
   decedent:st.decedent,
   heirs:st.heirs,
-  properties:(st.properties||[]).map(p=>({id:p.id,label:p.label,share:p.share,selected:p.selected})),
+  properties:(st.properties||[]).map(p=>({id:p.id,share:p.share,selected:p.selected})),
   eraMode:st.eraMode,eraOverride:st.eraOverride,
   legacyHoju:st.legacyHoju,historicalType:st.historicalType,
   manualShares:st.manualShares,verifiedManual:st.verifiedManual
@@ -639,8 +652,9 @@ function caseStageText(st){
  if(st.shareCompletedFor===signature)return '지분산출 확인';
  try{
   const legacy=JSON.parse(st.shareCompletedFor);
-  if(legacy&&Object.hasOwn(legacy,'method')){
+  if(legacy&&Array.isArray(legacy.properties)){
    delete legacy.method;
+   legacy.properties=legacy.properties.map(({id,share,selected})=>({id,share,selected}));
    if(JSON.stringify(legacy)===signature)return '지분산출 확인';
   }
  }catch{}
@@ -748,7 +762,7 @@ function caseOpenSaved(id,mode='open'){
   const root=document.querySelector('#printRoot');if(root)root.innerHTML='';
   renderAll();
   if(mode==='guide')document.querySelector('#docGuideMode').scrollIntoView({block:'center',behavior:'instant'});
-  if(mode==='agreement')document.querySelector('#agreementDatePanel').scrollIntoView({block:'start',behavior:'instant'});
+  if(mode==='agreement')document.querySelector('#documentPropertiesPanel').scrollIntoView({block:'start',behavior:'instant'});
   if(mode==='forms')formMakerFeedback(caseMeta(state).name+' 사건의 인적사항과 저장된 서식을 불러왔습니다.');
   showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
@@ -1925,6 +1939,7 @@ function formGeneratedHTML(){
  const selected=new Set(formSelectedIds()),people=formAvailablePeople().filter(p=>selected.has(p.id));
  if(!docs.length)throw Error('작성할 서식을 한 개 이상 선택하세요.');
  if(!people.length)throw Error('위임인을 한 명 이상 선택하세요.');
+ if(docs.some(t=>t.id==='registration'))requirePropertyDescriptions();
  const body=docs.map(t=>people.map(p=>formDocSheet(t,p,f)).join('')).join('');
  return {html:body,count:docs.length*people.length};
 }
@@ -2051,6 +2066,30 @@ function renderResults(){
   el.innerHTML=`<div class="errorbox"><b>계산 전 확인 사항</b><br>${esc(e.message)}${shortcut}</div>`;
 }
 }
+function renderDocumentProperties(){
+ const view=document.getElementById('documentPropertiesView');
+ const properties=selectedProperties();
+ document.getElementById('documentPropertyAgreementLink').classList.toggle('hidden',state.method!=='agreement');
+ view.innerHTML=properties.length?properties.map((property,i)=>{
+  const id=attr(property.id),address=esc(property.address?.trim()||'소재지 주소 미입력');
+  return '<details class="document-property" id="document-property-'+id+'">'
+   +'<summary><strong>부동산 '+(i+1)+' · '+address+'</strong><span class="document-property-action">표시 입력</span></summary>'
+   +'<div class="field"><label for="document-property-text-'+id+'">부동산의 표시 (등기부 기준)</label>'
+   +'<textarea id="document-property-text-'+id+'" data-property-description="'+id+'" placeholder="등기사항증명서의 부동산 표시를 입력하세요.">'+esc(property.label||'')+'</textarea></div></details>';
+ }).join(''):'<div class="empty">문서에 넣을 부동산을 부동산 입력 화면에서 선택해 주세요.</div>';
+}
+function requirePropertyDescriptions(){
+ const properties=selectedProperties();
+ if(!properties.length)throw Error('부동산 입력 화면에서 문서에 넣을 부동산을 선택해 주세요.');
+ const index=properties.findIndex(property=>!property.label?.trim());
+ if(index===-1)return;
+ const field=document.getElementById('document-property-'+properties[index].id);
+ if(field){
+  field.open=true;
+  field.querySelector('textarea')?.focus();
+ }
+ throw Error('서류작성의 [문서에 들어갈 부동산 표시]에서 부동산 '+(index+1)+'의 표시를 입력해 주세요.');
+}
 function addressInputMarkup(id,label,value,binding){
  return '<label for="'+attr(id)+'">'+esc(label)+'</label><div class="address-entry">'
   +'<input id="'+attr(id)+'" class="cell-input" '+binding+' value="'+attr(value||'')+'" placeholder="주소 직접 입력" autocomplete="off">'
@@ -2063,7 +2102,7 @@ function renderProperties(){
  el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
  <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><span class="muted">${p.selected!==false?'상속지분·협의서 반영 대상':'미선택 · 계산 제외'}</span></div>
  <div class="field property-address">${addressInputMarkup('property-address-'+p.id,'부동산 소재지 주소',p.address,'data-path="properties.'+i+'.address"')}</div>
- <div class="row" style="align-items:start"><div class="field" style="flex:4;min-width:230px"><label>부동산의 표시 (등기부 기준)</label><textarea data-path="properties.${i}.label" placeholder="예: 서울특별시 ○○구 ○○동 100-1 토지...">${esc(p.label)}</textarea></div><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
+ <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:145px"><label>피상속인 소유지분</label><input value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div><div style="padding-top:22px"><button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div></div>
  </div>`).join('');
 }
 // 협의 취득자 기준 배분(법정상속 지분과 혼합 금지).
@@ -2109,7 +2148,7 @@ function renderAlloc(){
  allocateDefaults(c);
  let chosen=new Set(state.agreementSelected);
  el.innerHTML=`<div class="choice-info"><b>협의로 부동산을 취득할 상속인에게 체크하세요.</b><br>1명만 선택하면 그 사람이 피상속인 소유지분 전부를 취득합니다. 여러 명을 선택하면 우선 균등 배분하며, 아래에서 각 부동산별 지분을 수정할 수 있습니다. <b>체크하지 않은 상속인도 협의서의 합의·날인 당사자로 포함됩니다.</b></div><div class="check-grid">${c.recipients.map((r,i)=>`<label class="check-card"><input type="checkbox" data-receive="${attr(r.id)}" ${chosen.has(r.id)?'checked':''}><span><strong>${esc(r.name||`상속인 ${i+1}`)}</strong><small>${esc(r.via||r.relation)} · 법정지분 ${r.share.str()}</small></span></label>`).join('')}</div>
- ${!chosen.size?'<div class="empty">협의로 취득할 상속인을 1명 이상 선택하세요.</div>':`<div class="actionbar"><button class="light" data-action="redistribute">선택 상속인에게 균등 배분</button><button class="light" data-action="applyFirst">선택한 첫 번째 상속인에게 전부 배분</button></div><p class="note">협의 취득자를 체크하거나 해제하면 모든 부동산의 배분비율이 다시 자동 설정됩니다.</p>${selectedProperties().map((p,i)=>`<div class="propertycard"><h3>부동산 ${i+1} <span class="muted">· 피상속인 지분 ${esc(p.share)}</span></h3><div class="muted" style="margin-bottom:6px">${esc(p.label||'(부동산 표시 미입력)')}</div><div class="sharegrid"><span class="head">협의 취득자</span><span class="head">배분비율</span><span class="head">부동산 전체 기준</span></div>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>{let text=p.alloc[r.id]??'0',final='—';try{final=propertyShare(p).mul(frac(text)).str()}catch{}return `<div class="sharegrid"><div>${esc(r.name||r.relation)} <span class="muted">(${esc(r.relation)})</span></div><input data-alloc="${attr(p.id)}" data-rec="${attr(r.id)}" value="${attr(text)}" placeholder="예: 1/2"><b data-share-result="${attr(p.id)}:${attr(r.id)}">${final}</b></div>`}).join('')}<div class="total" id="sum_${attr(p.id)}"></div><div class="mini-actions"><span class="muted">이 부동산 전부 취득자</span><select class="cell-input" style="max-width:240px" data-full-owner="${attr(p.id)}"><option value="">선택하면 자동 배분</option>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>`<option value="${attr(r.id)}">${esc(r.name||r.relation)}</option>`).join('')}</select></div></div>`).join('')}`}`;
+ ${!chosen.size?'<div class="empty">협의로 취득할 상속인을 1명 이상 선택하세요.</div>':`<div class="actionbar"><button class="light" data-action="redistribute">선택 상속인에게 균등 배분</button><button class="light" data-action="applyFirst">선택한 첫 번째 상속인에게 전부 배분</button></div><p class="note">협의 취득자를 체크하거나 해제하면 모든 부동산의 배분비율이 다시 자동 설정됩니다.</p>${selectedProperties().map((p,i)=>`<div class="propertycard"><h3>부동산 ${i+1} <span class="muted">· 피상속인 지분 ${esc(p.share)}</span></h3><div class="muted" style="margin-bottom:6px">${esc(p.address||p.label||'(소재지 주소 미입력)')}</div><div class="sharegrid"><span class="head">협의 취득자</span><span class="head">배분비율</span><span class="head">부동산 전체 기준</span></div>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>{let text=p.alloc[r.id]??'0',final='—';try{final=propertyShare(p).mul(frac(text)).str()}catch{}return `<div class="sharegrid"><div>${esc(r.name||r.relation)} <span class="muted">(${esc(r.relation)})</span></div><input data-alloc="${attr(p.id)}" data-rec="${attr(r.id)}" value="${attr(text)}" placeholder="예: 1/2"><b data-share-result="${attr(p.id)}:${attr(r.id)}">${final}</b></div>`}).join('')}<div class="total" id="sum_${attr(p.id)}"></div><div class="mini-actions"><span class="muted">이 부동산 전부 취득자</span><select class="cell-input" style="max-width:240px" data-full-owner="${attr(p.id)}"><option value="">선택하면 자동 배분</option>${c.recipients.filter(r=>chosen.has(r.id)).map(r=>`<option value="${attr(r.id)}">${esc(r.name||r.relation)}</option>`).join('')}</select></div></div>`).join('')}`}`;
  if(chosen.size)refreshAllocationSums(c)
 }
 function refreshAllocationSums(c){if(!c)return;for(let p of selectedProperties()){let total=Z,ok=true;for(let r of c.recipients){try{let f=frac(p.alloc[r.id]);if(f.lt(Z)||f.gt(O))ok=false;total=total.add(f);let cell=document.querySelector(`[data-share-result="${p.id}:${r.id}"]`);if(cell)cell.textContent=propertyShare(p).mul(f).str()}catch{ok=false;let cell=document.querySelector(`[data-share-result="${p.id}:${r.id}"]`);if(cell)cell.textContent='오류'}}let el=document.getElementById(`sum_${p.id}`);if(el){el.style.color=ok&&total.eq(O)?'#187348':'#b42e31';el.textContent=`배분 합계: ${total.str()} / 1 ${ok&&total.eq(O)?'✓ 정상':'⚠ 1이 되어야 합니다.'}`}}}
@@ -2123,7 +2162,7 @@ function renderAll(){normalise();
  for(const id of ['agreementDatePanel','allocPanel','docPanel'])
   document.getElementById(id).classList.toggle('hidden',!agreement);
  document.getElementById('agreementDate').value=state.agreementDate||'';
- renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocGuide();applyActiveStage();save();renderCaseList()
+ renderHeirs();renderLawSelection();renderHistory();renderCalculationGuide();renderResults();renderProperties();if(state.method==='agreement'){renderAlloc();renderDocs()}renderFormMaker();renderDocumentProperties();renderDocGuide();applyActiveStage();save();renderCaseList()
 }
 function setPath(path,value){let keys=path.split('.'),cur=state;for(let i=0;i<keys.length-1;i++){cur=cur[keys[i]]}let last=keys[keys.length-1];cur[last]=last==='proxy'?value==='true':value}
 function agreementRepresentativeFor(id){
@@ -2173,13 +2212,13 @@ function buildDocument(c){
  if(!state.decedent.name?.trim())throw Error('피상속인 성명을 입력하세요.');
  if(!state.decedent.ident?.trim())throw Error('피상속인 등록번호를 입력하세요.');
  if(!state.decedent.address?.trim())throw Error('피상속인 주소를 입력하세요.');
- if(!selectedProperties().length)throw Error('협의서에 사용할 부동산을 먼저 선택하세요.');
+ requirePropertyDescriptions();
  if(!todayCheck(state.agreementDate))throw Error('협의년월일을 입력하세요.');
  validateAgreementRepresentatives(c);
  if(!state.agreementSelected.length)throw Error('협의로 부동산을 취득할 상속인을 체크하세요.');
  for(let r of c.recipients){if(!r.name.trim())throw Error('모든 실제 상속인의 성명을 입력하세요.');let d=state.details[r.id]||{};if(!d.ident?.trim()||!d.address?.trim())throw Error(`${r.name} 상속인의 등록번호와 주소를 입력하세요.`)}
  const selected=new Set(state.agreementSelected);
- for(let p of selectedProperties()){if(!p.label.trim())throw Error('모든 부동산의 정확한 표시를 입력하세요.');let sum=Z;for(let r of c.recipients){let f=frac(p.alloc[r.id]??'0');if(f.lt(Z)||f.gt(O))throw Error('협의분할 배분비율은 0 이상 1 이하여야 합니다.');if(!selected.has(r.id)&&!f.eq(Z))throw Error('체크하지 않은 상속인의 취득지분은 0이어야 합니다.');sum=sum.add(f)}if(!sum.eq(O))throw Error('각 부동산의 협의분할 배분 합계는 1이어야 합니다.')}
+ for(let p of selectedProperties()){let sum=Z;for(let r of c.recipients){let f=frac(p.alloc[r.id]??'0');if(f.lt(Z)||f.gt(O))throw Error('협의분할 배분비율은 0 이상 1 이하여야 합니다.');if(!selected.has(r.id)&&!f.eq(Z))throw Error('체크하지 않은 상속인의 취득지분은 0이어야 합니다.');sum=sum.add(f)}if(!sum.eq(O))throw Error('각 부동산의 협의분할 배분 합계는 1이어야 합니다.')}
  const dateText=s=>String(s).replaceAll('-','. ')+'.';
  const propContent=selectedProperties().map((p,i)=>{let owner=propertyShare(p);let lines=c.recipients.filter(r=>!frac(p.alloc[r.id]??'0').eq(Z)).map(r=>{let rel=frac(p.alloc[r.id]);let full=owner.mul(rel);return `<div>· 상속인 <strong>${esc(r.name)}</strong>이 피상속인 소유지분의 <strong>${rel.str()}</strong>을 취득한다. (부동산 전체 기준 <strong>${full.str()}</strong>)</div>`}).join('');return `<div class="doc-item"><div class="ttl">${i+1}. 부동산의 표시</div><div class="doc-prop">${esc(p.label)}</div><div class="doc-list">피상속인의 소유지분: ${owner.str()}<br>${lines}</div></div>`}).join('');
  const persons=c.recipients.map(r=>{let info=state.details[r.id]||{};return {name:r.name,relation:r.relation,via:r.via,address:info.address,ident:info.ident,id:r.id,nationality:findNode(r.id)?.nationality||'내국인',country:countryName(findNode(r.id)),representative:agreementRepresentativeFor(r.id)}});
@@ -2332,6 +2371,12 @@ document.addEventListener('beforeinput',e=>{
  if(input.selectionStart===input.selectionEnd&&/^\d{6}-?\d{7}$/.test(input.value))e.preventDefault();
 });
 document.addEventListener('input',e=>{
+ const description=e.target.closest('[data-property-description]');
+ if(description){
+  const property=state.properties.find(p=>p.id===description.dataset.propertyDescription);
+  if(property){property.label=description.value;save();}
+  return;
+ }
  const registration=e.target.closest('[data-registration-number]');
  if(registration){
   if(e.isComposing)return;
@@ -2377,6 +2422,9 @@ document.addEventListener('change',e=>{
 document.querySelector('#formCaseSaveCurrent').addEventListener('click',()=>{
  if(!String(state.decedent?.name||'').trim()){formMakerFeedback('피상속인 성명을 입력한 뒤 사건리스트에 저장해 주세요.',true);return;}
  if(caseSaveCurrent()){renderFormMaker();formMakerFeedback('현재 상속사건과 서류작성 설정을 저장했습니다.');}
+});
+document.getElementById('goAgreementInputs').addEventListener('click',()=>{
+ document.getElementById('agreementDatePanel').scrollIntoView({block:'start',behavior:'instant'});
 });
 document.querySelector('#formPrintSelected').addEventListener('click',()=>formPrintSelected(false));
 document.querySelector('#formSaveSelected').addEventListener('click',()=>formPrintSelected(true));
