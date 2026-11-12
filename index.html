@@ -2837,7 +2837,7 @@ function openDateCalendar(input){
  const max=kind==='decedent'||node?now():input.max||(new Date().getFullYear()+30)+'-12-31';
  const preferred=todayCheck(value)?value:now();
  const initial=preferred<lower?lower:preferred>max?max:preferred;
- calendarSelection={kind,nodeId:node?.id,input,caseId:state.caseId,value,min:lower,max,year:Number(initial.slice(0,4)),month:Number(initial.slice(5,7))};
+ calendarSelection={kind,nodeId:node?.id,input,caseState:state,value,min:lower,max,year:Number(initial.slice(0,4)),month:Number(initial.slice(5,7))};
  document.getElementById('dateCalendarTitle').textContent=kind==='decedent'?'피상속인 사망일 선택':node?'망 '+(node.name?.trim()||'관계인')+' 사망일 선택':input.getAttribute('aria-label')||input.closest('label')?.textContent.trim()||'날짜 선택';
  renderDateCalendar();
  dateCalendarDialog.showModal();
@@ -2862,7 +2862,7 @@ function renderDateCalendar(){
 }
 function applyCalendarDate(value){
  const target=calendarSelection;
- if(!target||target.caseId!==state.caseId)return;
+ if(!target||target.caseState!==state)return;
  if(value&&(!todayCheck(value)||value<target.min||value>target.max))return;
  dateCalendarDialog.close();
  if(target.kind==='decedent'){
