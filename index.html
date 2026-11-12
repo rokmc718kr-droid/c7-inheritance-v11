@@ -498,6 +498,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 #docGuideAddCountry{margin-top:6px}
 #docGuideCountryPicker[hidden],#docGuideAddCountry[hidden]{display:none!important}
 .heir-tree-board.editor-dismissed{grid-template-columns:minmax(0,1fr)}
+#formPreviewDialog{width:min(960px,calc(100% - 20px));height:min(92vh,1000px);max-height:92vh;box-sizing:border-box;padding:0;border:1px solid #dce1e8;border-radius:14px;background:#f1f3f6;color:var(--ink)}
+#formPreviewDialog::backdrop{background:rgba(15,23,42,.5)}
+.form-preview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #dce1e8}
+.form-preview-header h3{margin:0;font-size:17px}
+#formPreviewFrame{display:block;width:100%;height:calc(100% - 65px);border:0;background:#fff}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -545,7 +550,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <div class="panelhead"><h2>05. 법무사 서류 자동작성·출력</h2><span class="tag">지분 계산 없이도 위임장 작성 가능</span></div>
  <div class="body">
   <div id="formCaseContext" class="form-case-context"></div>
-  <div class="form-case-nav"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="light" id="formCaseSaveCurrent">현재 사건 저장</button></div>
+  <div class="form-case-nav"><button type="button" class="outline" data-go-stage="files">← 사건리스트</button><button type="button" class="light" id="formCaseSaveCurrent">현재 사건 저장</button><button type="button" class="outline" id="formPreviewCurrent">서류 미리보기</button></div>
   <div class="form-maker-group" id="documentPropertiesPanel">
    <h3>문서에 들어갈 부동산 표시</h3>
    <p class="note">상속등기 위임장과 상속재산분할협의서에 사용할 등기부의 표시를 입력하세요.</p>
@@ -564,7 +569,7 @@ button.danger{background:#f5f5f5;color:#434b55}
    <p class="note">법정 양식 확인: <a href="https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015" target="_blank" rel="noopener noreferrer">주민등록표 등·초본 교부신청 위임장(별지 제9호)</a> · <a href="https://www.seo.incheon.kr/open_content/main/peti/petiDetail.do?cate=1&amp;seq=259" target="_blank" rel="noopener noreferrer">가족관계등록부 증명서 교부 위임장(별지 제12호)</a></p>
   </div>
   <div id="formMakerSummary" class="form-maker-summary"></div>
-  <div class="actionbar"><button type="button" class="primary" id="formPrintSelected">선택 서류 일괄 출력</button><button type="button" class="outline" id="formSaveSelected">선택 서류 HTML 저장</button></div>
+  <div class="actionbar"><button type="button" class="primary" id="formPrintSelected">선택 서류 일괄 출력</button><button type="button" class="outline" id="formSaveSelected">선택 서류 HTML 저장</button><button type="button" class="outline" id="formPreviewSelected">서류 미리보기</button></div>
   <p class="note" id="formMakerStatus" role="status">발급기관의 최신 법정서식을 확인한 뒤 사용해 주세요. 현재 생성 문서는 검토용 초안입니다.</p>
  </div>
 </section>
@@ -632,7 +637,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
 </main>
 <div id="printRoot"></div>
-<dialog id="roleChangeDialog" aria-labelledby="roleChangeTitle">
+<dialog id="formPreviewDialog" aria-labelledby="formPreviewTitle">
+ <div class="form-preview-header"><h3 id="formPreviewTitle">서류 미리보기</h3><button type="button" class="outline" id="closeFormPreview">닫기</button></div>
+ <iframe id="formPreviewFrame" title="선택한 상속 서류 미리보기" sandbox=""></iframe>
+</dialog>
+<dialog id="roleChangeDialog"  aria-labelledby="roleChangeTitle">
  <form method="dialog">
   <h3 id="roleChangeTitle">상속 구분 변경</h3>
   <p id="roleChangeMessage"></p>
@@ -2062,6 +2071,21 @@ function formGeneratedHTML(){
  const body=docs.map(t=>people.map(p=>formDocSheet(t,p,f)).join('')).join('');
  return {html:body,count:docs.length*people.length};
 }
+function formDocumentHTML(body,title='상속 서류 일괄 작성'){
+ const css=document.querySelector('style').textContent;
+ return '<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+css+'\nbody{background:#fff}#printRoot{display:block!important;max-width:210mm;margin:0 auto}@media screen{.doc-sheet{padding:14mm;box-shadow:0 3px 15px #9993;margin:15px}}@media print{.doc-sheet{padding:0}}</style></head><body><div id="printRoot">'+body+'</div></body></html>';
+}
+function formPreviewSelected(){
+ try{
+  const forms=formGeneratedHTML();
+  document.getElementById('formPreviewTitle').textContent='서류 미리보기 · '+forms.count+'부';
+  document.getElementById('formPreviewFrame').srcdoc=formDocumentHTML(forms.html);
+  document.getElementById('formPreviewDialog').showModal();
+ }catch(error){
+  formMakerFeedback(error.message,true);
+  document.getElementById('formMakerStatus').scrollIntoView({block:'center',behavior:'instant'});
+ }
+}
 function formPrintSelected(toFile){
  try{
   if(!state.caseId){
@@ -2074,8 +2098,7 @@ function formPrintSelected(toFile){
    document.querySelector('#printRoot').innerHTML=forms.html;
    window.print();
   }else{
-   const css=document.querySelector('style').textContent;
-   const html='<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>상속 서류 일괄 작성</title><style>'+css+'\nbody{background:#fff}#printRoot{display:block!important;max-width:210mm;margin:0 auto}@media screen{.doc-sheet{padding:14mm;box-shadow:0 3px 15px #9993;margin:15px}}@media print{.doc-sheet{padding:0}}</style></head><body><div id="printRoot">'+forms.html+'</div></body></html>';
+   const html=formDocumentHTML(forms.html);
    download(new Blob(['\ufeff',html],{type:'text/html;charset=utf-8'}),'상속위임장_일괄작성_'+(state.decedent.name||'사건').replace(/[\\/:*?"<>|]/g,'_')+'.html');
   }
   formMakerFeedback(forms.count+'부의 문서를 생성했습니다. 법정 서식과 날인 요건을 확인해 주세요.');
@@ -2610,6 +2633,11 @@ document.getElementById('goAgreementInputs').addEventListener('click',()=>{
 });
 document.querySelector('#formPrintSelected').addEventListener('click',()=>formPrintSelected(false));
 document.querySelector('#formSaveSelected').addEventListener('click',()=>formPrintSelected(true));
+document.getElementById('formPreviewCurrent').addEventListener('click',formPreviewSelected);
+document.getElementById('formPreviewSelected').addEventListener('click',formPreviewSelected);
+document.getElementById('closeFormPreview').addEventListener('click',()=>document.getElementById('formPreviewDialog').close());
+document.getElementById('formPreviewDialog').addEventListener('close',()=>{document.getElementById('formPreviewFrame').srcdoc=''});
+
 
 
 document.querySelector('#docGuidePeriod').addEventListener('change',e=>{docGuide.periodStart=e.target.value;renderDocGuide()});
