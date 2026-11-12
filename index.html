@@ -2636,7 +2636,7 @@ document.querySelector('#formSaveSelected').addEventListener('click',()=>formPri
 document.getElementById('formPreviewCurrent').addEventListener('click',formPreviewSelected);
 document.getElementById('formPreviewSelected').addEventListener('click',formPreviewSelected);
 document.getElementById('closeFormPreview').addEventListener('click',()=>document.getElementById('formPreviewDialog').close());
-document.getElementById('formPreviewDialog').addEventListener('close',()=>{document.getElementById('formPreviewFrame').srcdoc=''});
+document.getElementById('formPreviewDialog').addEventListener('close',()=>{if(!document.getElementById('formPreviewDialog').open)document.getElementById('formPreviewFrame').srcdoc=''});
 
 
 
