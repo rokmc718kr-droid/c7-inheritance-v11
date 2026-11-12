@@ -664,7 +664,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <form method="dialog">
   <h3 id="deletePersonTitle">상속인 삭제 확인</h3>
   <p id="deletePersonMessage"></p>
-  <div class="actionbar"><button type="submit" class="outline" value="cancel" autofocus>취소</button><button type="submit" class="danger" value="delete">삭제</button></div>
+  <div class="actionbar"><button type="button" class="outline" id="deletePersonCancel" autofocus>취소</button><button type="button" class="danger" id="deletePersonApply">삭제</button></div>
  </form>
 </dialog>
 <dialog id="addressSearchDialog" aria-labelledby="addressSearchTitle">
@@ -842,9 +842,7 @@ function caseSetAgreementDate(id,date){
 function caseOpenSaved(id,mode='open'){
  const item=caseReadList().find(x=>x.id===id);
  if(!item){alert('사건리스트에서 해당 사건을 찾을 수 없습니다.');renderCaseList();return}
- if(!state.caseId&&String(state.decedent?.name||'').trim()){
-  if(!confirm('현재 작업 중 사건은 사건리스트에 저장되지 않았습니다. 다른 사건을 열면 작업내용이 바뀝니다. 계속하시겠습니까?'))return;
- }
+ if(!state.caseId&&caseHasEnteredData(state)&&!caseSaveCurrent())return;
  try{
   state=JSON.parse(JSON.stringify(item.state));state.caseId=item.id;
   state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;
@@ -863,12 +861,20 @@ function caseOpenSaved(id,mode='open'){
   showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
 }
-function caseDeleteSaved(id){
+function caseDeleteSaved(id,confirmed=false){
  const list=caseReadList(),item=list.find(x=>x.id===id);if(!item)return;
- if(!confirm((item.state.decedent?.name||'피상속인 미입력')+' 사건을 사건리스트에서 삭제하시겠습니까? 이 브라우저의 해당 사건 목록 저장본이 삭제됩니다.'))return;
+ if(!confirmed){
+  pendingPersonDeletion={kind:'case',id,caseState:state};
+  document.getElementById('deletePersonTitle').textContent='사건 삭제 확인';
+  document.getElementById('deletePersonMessage').textContent=(item.state.decedent?.name||'피상속인 미입력')+' 사건을 사건리스트에서 삭제하시겠습니까?';
+  deletePersonDialog.showModal();return;
+ }
  if(!caseWriteList(list.filter(x=>x.id!==id)))return;
- if(state.caseId===id){state.caseId=null;save()}
- renderCaseList();showStatus('사건리스트에서 삭제했습니다.');
+ if(state.caseId===id){
+  state=fresh();decedentDeathDraft=null;clearProxyDeathDrafts();
+  selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;activeStage='files';
+ }
+ renderAll();showStatus('사건리스트에서 삭제했습니다.');
 }
 function caseNew(){
  if((state.caseId||caseHasEnteredData(state))&&!caseSaveCurrent())return;
@@ -2090,7 +2096,6 @@ function formPrintSelected(toFile){
  try{
   if(!state.caseId){
    if(!String(state.decedent?.name||'').trim())throw Error('서류작성은 상속사건별로 관리합니다. 피상속인 성명을 입력하거나 사건리스트에서 사건을 선택하세요.');
-   if(!confirm('현재 사건이 사건리스트에 없습니다. 목록에 저장한 다음 서류를 출력하시겠습니까?'))return;
    if(!caseSaveCurrent())return;
   }
   const forms=formGeneratedHTML();
@@ -2866,7 +2871,7 @@ function applyRoleChange(){
 document.getElementById('roleChangeApply').addEventListener('click',applyRoleChange);
 document.getElementById('roleChangeCancel').addEventListener('click',()=>roleChangeDialog.close());
 roleChangeDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();applyRoleChange()});
-roleChangeDialog.addEventListener('close',()=>{pendingRoleChange=null});
+roleChangeDialog.addEventListener('close',()=>{if(!roleChangeDialog.open)pendingRoleChange=null});
 document.addEventListener('pointerdown',e=>{
  if(e.target.closest('.role-check'))e.preventDefault();
 });
@@ -2966,23 +2971,26 @@ for(const id of ['dateCalendarYear','dateCalendarMonth']){
 }
 document.getElementById('dateCalendarClear').addEventListener('click',()=>applyCalendarDate(''));
 document.getElementById('dateCalendarCancel').addEventListener('click',()=>dateCalendarDialog.close());
-dateCalendarDialog.addEventListener('close',()=>{calendarSelection=null});
+dateCalendarDialog.addEventListener('close',()=>{if(!dateCalendarDialog.open)calendarSelection=null});
 
 const deletePersonDialog=document.getElementById('deletePersonDialog');
 let pendingPersonDeletion=null;
 function requestPersonDeletion(id){
  const person=findNode(id);if(!person)return;
  let count=0;traverseNodes([person],()=>count++);
- pendingPersonDeletion={id,caseId:state.caseId};
+ pendingPersonDeletion={kind:'person',id,caseState:state};
+ document.getElementById('deletePersonTitle').textContent='상속인 삭제 확인';
  deletePersonDialog.returnValue='';
  document.getElementById('deletePersonMessage').textContent=
   (person.name?.trim()||'선택한 관계인')+(count>1?'과 연결된 하위 상속인 '+(count-1)+'명을 함께':'을')+' 삭제하시겠습니까?';
  deletePersonDialog.showModal();
 }
-deletePersonDialog.addEventListener('close',()=>{
+function applyPersonDeletion(){
  const pending=pendingPersonDeletion;
+ if(!pending||pending.caseState!==state){deletePersonDialog.close();return}
  pendingPersonDeletion=null;
- if(deletePersonDialog.returnValue!=='delete'||!pending||pending.caseId!==state.caseId)return;
+ deletePersonDialog.close();
+ if(pending.kind==='case'){caseDeleteSaved(pending.id,true);return}
  const person=findNode(pending.id);if(!person)return;
  const ids=new Set();traverseNodes([person],node=>ids.add(node.id));
  executeButtonAction(()=>{
@@ -2996,7 +3004,11 @@ deletePersonDialog.addEventListener('close',()=>{
   state.shareCompletedFor='';state.successionReviewed=false;state.successionReviewSignature='';
   selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;
  },'관계인이 삭제되었습니다.');
-});
+}
+document.getElementById('deletePersonApply').addEventListener('click',applyPersonDeletion);
+document.getElementById('deletePersonCancel').addEventListener('click',()=>deletePersonDialog.close());
+deletePersonDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();applyPersonDeletion()});
+deletePersonDialog.addEventListener('close',()=>{if(!deletePersonDialog.open)pendingPersonDeletion=null});
 // Preserve the delete click when an edited field would otherwise rebuild the editor on blur.
 document.addEventListener('pointerdown',e=>{
  if(e.target.closest('[data-action="removePerson"]'))e.preventDefault();
