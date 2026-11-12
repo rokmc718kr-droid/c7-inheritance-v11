@@ -497,6 +497,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 .guide-country button{padding:0 4px;font-size:17px}
 #docGuideAddCountry{margin-top:6px}
 #docGuideCountryPicker[hidden],#docGuideAddCountry[hidden]{display:none!important}
+.heir-tree-board.editor-dismissed{grid-template-columns:minmax(0,1fr)}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -837,7 +838,7 @@ function caseOpenSaved(id,mode='open'){
  }
  try{
   state=JSON.parse(JSON.stringify(item.state));state.caseId=item.id;
-  state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;
+  state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;
   normalise();
   if(mode==='guide'){
    syncDocGuideWithCase();
@@ -862,7 +863,7 @@ function caseDeleteSaved(id){
 }
 function caseNew(){
  if((state.caseId||caseHasEnteredData(state))&&!caseSaveCurrent())return;
- state=fresh();decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;activeStage='property';
+ state=fresh();decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;activeStage='property';
  renderAll();
  document.getElementById('inheritanceEditorTop')?.scrollIntoView({block:'start',behavior:'instant'});
  showStatus('새 사건 입력 화면을 열었습니다. 기존 사건은 사건리스트에 저장되어 있습니다.');
@@ -1366,6 +1367,7 @@ function updateProxyDatePart(nodeId,part,value){
 function clearProxyDeathDrafts(){proxyDeathDrafts=Object.create(null)}
 let selectedPersonId='__decedent__';
 let treeEditorOpen=false;
+let treeEditorDismissed=false;
 let treeMini=true;
 let activeStage='files';
 function proxyDeathOrderWarning(){
@@ -1589,9 +1591,9 @@ function renderHeirs(){
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
  ${nationalityMarkup(state.decedent,'__decedent__','피상속인 국적/신분')}
  <div class="field"><label>피상속인 성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명"></div><div class="field"><label>사망년월일 (달력 선택)</label>${decedentDateSelectMarkup()}</div><div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" data-decedent-edit="ident" data-registration-number="${state.decedent.nationality==='내국인'?'partial':'full'}" value="${attr(state.decedent.ident||'')}" placeholder="등록번호"></div><div class="field wide">${addressInputMarkup('decedent-address','피상속인 주소',state.decedent.address,'data-decedent-edit="address"')}</div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
- target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeMini?'tree-mini':''}">
+ target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeEditorDismissed?'editor-dismissed':''} ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 상속 후 사망한 상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong><small>사망일 ${esc(rootDate)}</small></button>${treeAgreementDateMarkup()}<button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
- <section class="tree-editor ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
+ <section class="tree-editor ${treeEditorDismissed?'hidden':''} ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
  document.body.classList.toggle('tree-editor-open',treeEditorOpen);
 }
 
@@ -2097,7 +2099,7 @@ function applyActiveStage(){
 function navigateStage(name){
  if(name==='agreement')name='forms';
  if(name==='cost'||name==='home')name='files';
- activeStage=name;treeEditorOpen=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
+ activeStage=name;treeEditorOpen=false;treeEditorDismissed=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
  const scrollTarget=name==='files'?(document.querySelector('.case-list-card.is-current')||document.getElementById('caseListView'))
   :document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView');
  scrollTarget?.scrollIntoView({block:'start',behavior:'instant'});
@@ -2418,14 +2420,26 @@ function executeButtonAction(action, successText){
 }
 document.addEventListener('click', e=>{
  const add=e.target.closest('#addHeir');
- if(add){e.preventDefault();executeButtonAction(()=>{let n=makeHeir();state.heirs.push(n);selectedPersonId=n.id;treeEditorOpen=window.matchMedia('(max-width:820px)').matches},`상속인이 추가되었습니다. (총 ${state.heirs.length+1}명)`);return}
+ if(add){e.preventDefault();executeButtonAction(()=>{let n=makeHeir();state.heirs.push(n);selectedPersonId=n.id;treeEditorDismissed=false;treeEditorOpen=window.matchMedia('(max-width:820px)').matches},`상속인이 추가되었습니다. (총 ${state.heirs.length+1}명)`);return}
  const prop=e.target.closest('#addProperty');
  if(prop){e.preventDefault();executeButtonAction(()=>{state.properties.push(makeProp())},'부동산이 추가되었습니다.');return}
 });
+function completeTreeEditor(){
+ const input=document.activeElement;
+ if(input?.matches('input,textarea,select'))input.blur();
+ save();
+ treeEditorOpen=false;treeEditorDismissed=true;
+ renderHeirs();
+ document.querySelector('#heirsView .tree-pane')?.scrollIntoView({block:'start',behavior:'instant'});
+ showStatus('입력사항을 저장했습니다. 가족관계 트리에서 다음 사람을 선택하세요.');
+}
+document.addEventListener('pointerdown',e=>{
+ if(e.target.closest('[data-tree-close]'))e.preventDefault();
+});
 document.addEventListener('click',e=>{
  const nav=e.target.closest('[data-go-stage]');if(nav){navigateStage(nav.dataset.goStage);return}
- const selected=e.target.closest('[data-tree-person]');if(selected){selectedPersonId=selected.dataset.treePerson;treeEditorOpen=window.matchMedia('(max-width:820px)').matches;renderHeirs();return}
- const close=e.target.closest('[data-tree-close]');if(close){treeEditorOpen=false;renderHeirs();showStatus('입력사항이 저장되었습니다.');return}
+ const selected=e.target.closest('[data-tree-person]');if(selected){selectedPersonId=selected.dataset.treePerson;treeEditorDismissed=false;treeEditorOpen=window.matchMedia('(max-width:820px)').matches;renderHeirs();return}
+ const close=e.target.closest('[data-tree-close]');if(close){completeTreeEditor();return}
  const mini=e.target.closest('[data-tree-mini]');if(mini){treeMini=!treeMini;renderHeirs();return}
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
@@ -2942,7 +2956,7 @@ deletePersonDialog.addEventListener('close',()=>{
   state.agreementSelected=state.agreementSelected.filter(id=>!ids.has(id));
   if(Array.isArray(state.formSettings.selectedPeople))state.formSettings.selectedPeople=state.formSettings.selectedPeople.filter(id=>!ids.has(id));
   state.shareCompletedFor='';state.successionReviewed=false;state.successionReviewSignature='';
-  selectedPersonId='__decedent__';treeEditorOpen=false;
+  selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;
  },'관계인이 삭제되었습니다.');
 });
 // Preserve the delete click when an edited field would otherwise rebuild the editor on blur.
@@ -2971,7 +2985,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
    return;
  }
  if(act==='removePerson'){requestPersonDeletion(btn.dataset.node);return}
- if(act==='addChild'){const n=findNode(btn.dataset.node);if(n){const child=makeSub();n.sub.push(child);selectedPersonId=child.id;treeEditorOpen=window.matchMedia('(max-width:820px)').matches;renderAll()}return}
+ if(act==='addChild'){const n=findNode(btn.dataset.node);if(n){const child=makeSub();n.sub.push(child);selectedPersonId=child.id;treeEditorDismissed=false;treeEditorOpen=window.matchMedia('(max-width:820px)').matches;renderAll()}return}
  if(act==='removeHeir')state.heirs.splice(i,1);
  if(act==='addSub')state.heirs[i].sub.push(makeSub());
  if(act==='removeSub')state.heirs[i].sub.splice(j,1);
@@ -2983,7 +2997,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
 document.addEventListener('click',e=>{if(e.target.closest('#printAgreement'))outputDocument(false);if(e.target.closest('#downloadAgreement'))outputDocument(true)});
 document.querySelector('#saveJson').addEventListener('click',()=>{download(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),`상속사건_${(state.decedent.name||'새사건').replace(/[\\/:*?"<>|]/g,'_')}.json`);showStatus('사건 파일을 저장했습니다.')});
 document.querySelector('#loadJson').addEventListener('click',()=>document.querySelector('#jsonFile').click());
-document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
+document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
 document.querySelector('#reset').addEventListener('click',caseNew);
 document.querySelector('#caseNewItem').addEventListener('click',caseNew);
 document.querySelector('#caseSaveToList').addEventListener('click',()=>{
