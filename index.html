@@ -637,7 +637,7 @@ button.danger{background:#f5f5f5;color:#434b55}
   <h3 id="roleChangeTitle">상속 구분 변경</h3>
   <p id="roleChangeMessage"></p>
   <label id="roleRelationField" hidden>망인과의 관계<select id="roleRelationChoice" class="cell-input"></select></label>
-  <div class="actionbar"><button type="submit" class="outline" value="cancel" autofocus>취소</button><button type="submit" class="primary" value="apply">선택 적용</button></div>
+  <p id="roleChangeFeedback" class="note" role="status" aria-live="polite"></p><div class="actionbar"><button type="button" class="outline" id="roleChangeCancel" autofocus>취소</button><button type="button" class="primary" id="roleChangeApply">선택 적용</button></div>
  </form>
 </dialog>
 <dialog id="dateCalendarDialog"  aria-labelledby="dateCalendarTitle">
@@ -2801,7 +2801,7 @@ let pendingRoleChange=null;
 function requestRoleChange(person,role,needsRelation,allowed,preserve){
  let parent=null;traverseNodes(state.heirs,(node,level,preceding)=>{if(node.id===person.id)parent=preceding});
  const options=needsRelation?relationChoices(relationEra(parent),!!parent).filter(choice=>allowed.includes(choice.base)):[];
- pendingRoleChange={id:person.id,role,needsRelation,parent,options,caseId:state.caseId};
+ pendingRoleChange={id:person.id,role,needsRelation,parent,options,caseState:state};
  const field=document.getElementById('roleRelationField');
  field.hidden=!needsRelation;
  const select=document.getElementById('roleRelationChoice');
@@ -2816,19 +2816,29 @@ function requestRoleChange(person,role,needsRelation,allowed,preserve){
   }
  }
  document.getElementById('roleChangeMessage').textContent=message;
+ document.getElementById('roleChangeFeedback').textContent='';
  roleChangeDialog.returnValue='';roleChangeDialog.showModal();
 }
-roleChangeDialog.addEventListener('close',()=>{
- const pending=pendingRoleChange;pendingRoleChange=null;
- if(roleChangeDialog.returnValue!=='apply'||!pending||pending.caseId!==state.caseId)return;
- const person=findNode(pending.id);if(!person)return;
+function applyRoleChange(){
+ const pending=pendingRoleChange;
+ if(!pending||pending.caseState!==state){roleChangeDialog.close();return}
+ const person=findNode(pending.id);if(!person){roleChangeDialog.close();return}
  if(pending.needsRelation){
-  const value=document.getElementById('roleRelationChoice').value;
-  if(!pending.options.some(choice=>choice.base+'|'+choice.v===value))return;
+  const select=document.getElementById('roleRelationChoice'),value=select.value;
+  if(!pending.options.some(choice=>choice.base+'|'+choice.v===value)){
+   document.getElementById('roleChangeFeedback').textContent='망인과의 관계를 먼저 선택해 주세요.';
+   select.focus();return;
+  }
   applyRelationVariant(person,value,pending.parent);
  }
+ pendingRoleChange=null;
+ roleChangeDialog.close();
  setPersonRole(pending.id,pending.role,true);
-});
+}
+document.getElementById('roleChangeApply').addEventListener('click',applyRoleChange);
+document.getElementById('roleChangeCancel').addEventListener('click',()=>roleChangeDialog.close());
+roleChangeDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();applyRoleChange()});
+roleChangeDialog.addEventListener('close',()=>{pendingRoleChange=null});
 document.addEventListener('pointerdown',e=>{
  if(e.target.closest('.role-check'))e.preventDefault();
 });
