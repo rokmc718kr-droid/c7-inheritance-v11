@@ -628,10 +628,10 @@ button.danger{background:#f5f5f5;color:#434b55}
  <div id="caseListView"></div>
  <p class="note">임시저장 사건도 후속업무를 시작할 수 있습니다. 사건별 [비용계산(연동 예정)] · [서류작성] · [준비서류]를 이용하세요. 먼저 입력한 정보는 자동으로 불러오고 부족한 항목만 추가 입력합니다.</p>
  <hr class="divider">
- <b>사건파일 백업·불러오기</b>
- <div class="actionbar"><button class="light" id="saveJson">사건파일(JSON) 다운로드</button><button class="light" id="loadJson">사건파일(JSON) 불러오기</button><button class="danger" id="reset">새 사건으로 초기화</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div>
+ <b>전체 사건 백업·불러오기</b>
+ <div class="actionbar"><button class="light" id="saveJson">전체 사건 백업(JSON) 다운로드</button><button class="light" id="loadJson">사건 백업(JSON) 불러오기</button><button class="danger" id="reset">새 사건으로 초기화</button><input type="file" id="jsonFile" accept=".json,application/json" class="hidden"></div>
  <div class="status" id="status"></div>
- <p class="note">임시저장 사건도 사건리스트에 표시됩니다. 비용계산 엔진은 아직 미구현입니다. 사건리스트는 <b>현재 브라우저의 기기 저장공간</b>에 보관됩니다. 인터넷으로 전송되지 않으며 다른 기기·브라우저나 새로 다운로드한 HTML에서는 목록이 이어지지 않을 수 있습니다. 중요한 사건은 반드시 JSON 파일로 별도 백업하세요.</p>
+ <p class="note">임시저장 사건도 사건리스트에 표시됩니다. 비용계산 엔진은 아직 미구현입니다. 사건리스트는 <b>현재 브라우저의 기기 저장공간</b>에 보관됩니다. 인터넷으로 전송되지 않으며 다른 기기·브라우저나 새로 다운로드한 HTML에서는 목록이 이어지지 않을 수 있습니다. 저장 버튼을 누르면 전체 사건 JSON 백업을 함께 다운로드합니다. 새 HTML·다른 브라우저에서 목록이 보이지 않으면 [사건 백업(JSON) 불러오기]로 복원하세요.</p>
 </div></section>
 </div>
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
@@ -703,7 +703,7 @@ const relationSelect=(value,opts,path)=>`<select class="cell-input" data-path="$
 function caseReadList(){
  try{
   const parsed=JSON.parse(localStorage.getItem(CASE_LIST_KEY)||'[]');
-  return Array.isArray(parsed)?parsed.filter(x=>x&&typeof x.id==='string'&&x.state&&Array.isArray(x.state.heirs)).slice(0,500):[];
+  return Array.isArray(parsed)?parsed.filter(x=>x&&typeof x.id==='string'&&x.state&&Array.isArray(x.state.heirs)):[];
  }catch{return []}
 }
 function caseWriteList(list){
@@ -762,11 +762,12 @@ const save=()=>{
    const index=list.findIndex(item=>item.id===state.caseId);
    const item={id:state.caseId,state:caseSnapshot(),updatedAt:new Date().toISOString()};
    if(index>=0)list[index]=item;else list.unshift(item);
-   caseWriteList(list);
+   if(!caseWriteList(list))return false;
   }
- }catch(e){showStatus('브라우저 저장에 실패했습니다. JSON 파일로 저장하세요.',true)}
+  return true;
+ }catch(e){showStatus('브라우저 저장에 실패했습니다. JSON 파일로 저장하세요.',true);return false}
 };
-function caseSaveCurrent(){
+function caseSaveCurrent(exportBackup=false){
  const original=state.caseId||'';
  const id=original||'case_'+ID();
  const snapshot=caseSnapshot();
@@ -774,10 +775,36 @@ function caseSaveCurrent(){
  const list=caseReadList(),at=list.findIndex(item=>item.id===id);
  const row={id,state:snapshot,updatedAt:new Date().toISOString()};
  if(at>=0)list[at]=row;else list.unshift(row);
+ if(exportBackup)downloadCaseBackup(list,id);
  if(!caseWriteList(list))return false;
  state.caseId=id;
- save();renderCaseList();
- showStatus('사건리스트에 저장했습니다. 이후 수정사항은 자동 반영됩니다.');
+ try{localStorage.setItem(KEY,JSON.stringify(state))}
+ catch(error){showStatus('사건목록은 저장했지만 현재 작업상태 저장에 실패했습니다. JSON 백업파일을 보관해 주세요.',true);return false}
+ renderCaseList();
+ showStatus(exportBackup?'사건리스트에 저장하고 전체 사건 JSON 백업 다운로드를 요청했습니다. 다운로드된 파일을 보관해 주세요.':'사건리스트에 저장했습니다. 이후 수정사항은 자동 반영됩니다.');
+ return true;
+}
+function downloadCaseBackup(cases=caseReadList(),activeCaseId=state.caseId){
+ const backup={format:'c7-inheritance-case-backup',version:1,exportedAt:new Date().toISOString(),activeCaseId,cases};
+ download(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),'상속사건_전체백업_'+now()+'.json');
+}
+function restoreCaseBackup(incoming){
+ if(incoming?.format!=='c7-inheritance-case-backup')return false;
+ if(!Array.isArray(incoming.cases)||incoming.cases.some(row=>!row||typeof row.id!=='string'||!row.state?.decedent||!Array.isArray(row.state.heirs)||!Array.isArray(row.state.properties)))throw Error('사건 백업파일 형식을 확인해 주세요.');
+ if(caseHasEnteredData(state)&&!save())throw Error('현재 사건을 보존하지 못했습니다. 현재 사건을 먼저 JSON으로 백업하세요.');
+ const merged=new Map(caseReadList().map(row=>[row.id,row]));
+ for(const row of incoming.cases){
+  const current=merged.get(row.id);
+  if(!current||String(row.updatedAt||'')>String(current.updatedAt||''))merged.set(row.id,row);
+ }
+ const list=[...merged.values()];
+ if(!caseWriteList(list))throw Error('백업사건을 저장하지 못했습니다.');
+ const active=merged.get(incoming.activeCaseId)||list[0];
+ state=active?JSON.parse(JSON.stringify(active.state)):fresh();
+ if(active)state.caseId=active.id;
+ state.details??={};
+ decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;activeStage='files';
+ normalise();renderAll();showStatus('백업에서 '+incoming.cases.length+'건을 불러왔습니다. 기존 사건도 함께 유지됩니다.');
  return true;
 }
 function renderCaseList(){
@@ -2631,7 +2658,7 @@ document.addEventListener('change',e=>{
 });
 document.querySelector('#formCaseSaveCurrent').addEventListener('click',()=>{
  if(!String(state.decedent?.name||'').trim()){formMakerFeedback('피상속인 성명을 입력한 뒤 사건리스트에 저장해 주세요.',true);return;}
- if(caseSaveCurrent()){renderFormMaker();formMakerFeedback('현재 상속사건과 서류작성 설정을 저장했습니다.');}
+ if(caseSaveCurrent(true)){renderFormMaker();formMakerFeedback('현재 사건과 서류작성 설정을 저장하고 전체 사건 JSON 백업 다운로드를 요청했습니다.');}
 });
 document.getElementById('goAgreementInputs').addEventListener('click',()=>{
  document.getElementById('agreementDatePanel').scrollIntoView({block:'start',behavior:'instant'});
@@ -3022,7 +3049,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
     if(c.recipients.some(x=>!String(x.name||'').trim()))throw Error('실제 지분취득자 성명을 모두 입력해 주세요.');
     if(hasSequentialSuccession()&&!isSuccessionReviewed())throw Error('재전상속 사건은 사망 단계별 순위와 서류 검토 확인이 필요합니다.');
     state.shareCompletedFor=caseShareSignature(state);
-    if(caseSaveCurrent())navigateStage('files');
+    if(caseSaveCurrent(true))navigateStage('files');
    }catch(e){alert('지분산출 확인 전 입력사항을 검토해 주세요: '+e.message)}
    return;
  }
@@ -3045,16 +3072,19 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
  renderAll()
 });
 document.addEventListener('click',e=>{if(e.target.closest('#printAgreement'))outputDocument(false);if(e.target.closest('#downloadAgreement'))outputDocument(true)});
-document.querySelector('#saveJson').addEventListener('click',()=>{download(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),`상속사건_${(state.decedent.name||'새사건').replace(/[\\/:*?"<>|]/g,'_')}.json`);showStatus('사건 파일을 저장했습니다.')});
+document.querySelector('#saveJson').addEventListener('click',()=>{
+ if(state.caseId||caseHasEnteredData(state))caseSaveCurrent(true);
+ else downloadCaseBackup();
+});
 document.querySelector('#loadJson').addEventListener('click',()=>document.querySelector('#jsonFile').click());
-document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
+document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(restoreCaseBackup(incoming)){e.target.value='';return}if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
 document.querySelector('#reset').addEventListener('click',caseNew);
 document.querySelector('#caseNewItem').addEventListener('click',caseNew);
 document.querySelector('#caseSaveToList').addEventListener('click',()=>{
- if(caseSaveCurrent())navigateStage('files');
+ if(caseSaveCurrent(true))navigateStage('files');
 });
 document.getElementById('editorCaseSave').addEventListener('click',()=>{
- if(caseSaveCurrent())navigateStage('files');
+ if(caseSaveCurrent(true))navigateStage('files');
 });
 document.addEventListener('click',e=>{
  const open=e.target.closest('[data-case-open]');
