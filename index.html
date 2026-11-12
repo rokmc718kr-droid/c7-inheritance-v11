@@ -467,6 +467,10 @@ button.danger{background:#f5f5f5;color:#434b55}
 #addressSearchFallback{padding:0 12px 12px}
 #addressSearchFallback button{margin-right:8px}
 @media print{#addressSearchDialog{display:none!important}}
+#roleChangeDialog{width:min(420px,calc(100% - 32px));box-sizing:border-box;border:1px solid #dce1e8;border-radius:16px;padding:24px;background:#fff;color:var(--ink)}
+#roleChangeDialog::backdrop{background:rgba(15,23,42,.5)}
+#roleChangeDialog p{line-height:1.7}
+#roleChangeDialog select{width:100%;margin:8px 0}
 #deletePersonDialog{width:min(420px,calc(100% - 32px));box-sizing:border-box;border:1px solid #dce1e8;border-radius:16px;padding:24px;color:var(--ink);background:#fff}
 #deletePersonDialog::backdrop{background:rgba(15,23,42,.5)}
 #deletePersonDialog h3{margin:0 0 12px}
@@ -618,7 +622,15 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
 </main>
 <div id="printRoot"></div>
-<dialog id="dateCalendarDialog" aria-labelledby="dateCalendarTitle">
+<dialog id="roleChangeDialog" aria-labelledby="roleChangeTitle">
+ <form method="dialog">
+  <h3 id="roleChangeTitle">상속 구분 변경</h3>
+  <p id="roleChangeMessage"></p>
+  <label id="roleRelationField" hidden>망인과의 관계<select id="roleRelationChoice" class="cell-input"></select></label>
+  <div class="actionbar"><button type="submit" class="outline" value="cancel" autofocus>취소</button><button type="submit" class="primary" value="apply">선택 적용</button></div>
+ </form>
+</dialog>
+<dialog id="dateCalendarDialog"  aria-labelledby="dateCalendarTitle">
  <h3 id="dateCalendarTitle">날짜 선택</h3>
  <div class="calendar-toolbar">
   <button type="button" class="outline" data-calendar-month-step="-1" aria-label="이전 달">‹</button>
@@ -2060,20 +2072,16 @@ function navigateStage(name){
  scrollTarget?.scrollIntoView({block:'start',behavior:'instant'});
 }
 // 1차 일반 상속인과 1차·2차 대습상속인을 모두 선택 후 다음 차수의 피대습자로 변경할 수 있습니다.
-function setPersonRole(id,role){
+function setPersonRole(id,role,confirmed=false){
  const n=findNode(id);if(!n)return;
  let depth=0;traverseNodes(state.heirs,(x,l)=>{if(x.id===id)depth=l});
  const old=n.proxy?'proxy':n.postDeath?'post':'heir';
  if(role===old){renderHeirs();return;}
- if(role==='proxy'&&!(depth===0?['아들','딸','형제','자매']:['아들','딸']).includes(n.relation)){
-  alert('피대습자 지정은 최초 단계의 아들·딸·형제·자매 또는 하위 단계의 아들·딸에서 지원합니다. 관계를 확인하세요.');renderHeirs();return;
- }
+ const allowed=depth===0?['아들','딸','형제','자매']:['아들','딸'];
+ const needsRelation=role==='proxy'&&!allowed.includes(n.relation);
  const preserve=(old==='proxy'&&role==='post')||(old==='post'&&role==='proxy');
- if(preserve&&n.sub?.length){
-  if(!confirm('상속 구분 변경 후 기존 하위 가족관계를 그대로 유지합니다. 사망일에 따라 관계와 적용법을 다시 확인해야 합니다. 계속하시겠습니까?')){renderHeirs();return;}
- }else if(old!=='heir'&&n.sub?.length){
-  let cnt=0;const count=ns=>ns.forEach(x=>{cnt++;count(x.sub||[])});count(n.sub);
-  if(!confirm('상속 구분 변경 시 연결된 하위 관계인 '+cnt+'명의 입력정보가 삭제됩니다. 계속하시겠습니까?')){renderHeirs();return;}
+ if(needsRelation||(!confirmed&&old!=='heir'&&n.sub?.length)){
+  requestRoleChange(n,role,needsRelation,allowed,preserve);return;
  }
  if(!preserve&&old!=='heir')n.sub=[];
  n.proxy=role==='proxy';n.postDeath=role==='post';
@@ -2724,6 +2732,48 @@ document.addEventListener('change',e=>{let t=e.target;
   save();if(state.method==='agreement'){renderHeirs();renderDocs()}
  }
 });
+const roleChangeDialog=document.getElementById('roleChangeDialog');
+let pendingRoleChange=null;
+function requestRoleChange(person,role,needsRelation,allowed,preserve){
+ let parent=null;traverseNodes(state.heirs,(node,level,preceding)=>{if(node.id===person.id)parent=preceding});
+ const options=needsRelation?relationChoices(relationEra(parent),!!parent).filter(choice=>allowed.includes(choice.base)):[];
+ pendingRoleChange={id:person.id,role,needsRelation,parent,options,caseId:state.caseId};
+ const field=document.getElementById('roleRelationField');
+ field.hidden=!needsRelation;
+ const select=document.getElementById('roleRelationChoice');
+ select.required=needsRelation;
+ select.innerHTML='<option value="">관계를 선택해 주세요</option>'+options.map(choice=>'<option value="'+attr(choice.base+'|'+choice.v)+'">'+esc(choice.label)+'</option>').join('');
+ let message=needsRelation?'피대습자로 지정하려면 망인과의 관계를 선택해 주세요. 현재 입력된 관계는 '+(person.relation||'미선택')+'입니다.':'상속 구분을 변경하시겠습니까?';
+ if(person.sub?.length){
+  if(preserve)message+=' 연결된 하위 상속인은 유지됩니다. 사망일과 관계를 다시 확인해 주세요.';
+  else if(role==='heir'){
+   let count=0;traverseNodes(person.sub,()=>count++);
+   message+=' 연결된 하위 상속인 '+count+'명이 삭제됩니다.';
+  }
+ }
+ document.getElementById('roleChangeMessage').textContent=message;
+ roleChangeDialog.returnValue='';roleChangeDialog.showModal();
+}
+roleChangeDialog.addEventListener('close',()=>{
+ const pending=pendingRoleChange;pendingRoleChange=null;
+ if(roleChangeDialog.returnValue!=='apply'||!pending||pending.caseId!==state.caseId)return;
+ const person=findNode(pending.id);if(!person)return;
+ if(pending.needsRelation){
+  const value=document.getElementById('roleRelationChoice').value;
+  if(!pending.options.some(choice=>choice.base+'|'+choice.v===value))return;
+  applyRelationVariant(person,value,pending.parent);
+ }
+ setPersonRole(pending.id,pending.role,true);
+});
+document.addEventListener('pointerdown',e=>{
+ if(e.target.closest('.role-check'))e.preventDefault();
+});
+document.addEventListener('click',e=>{
+ const choice=e.target.closest('.role-check')?.querySelector('[data-role]');
+ if(!choice)return;
+ e.preventDefault();
+ setPersonRole(choice.dataset.role,choice.dataset.value);
+},true);
 const dateCalendarDialog=document.getElementById('dateCalendarDialog');
 let calendarSelection=null;
 function openDateCalendar(input){
