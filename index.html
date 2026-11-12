@@ -467,6 +467,11 @@ button.danger{background:#f5f5f5;color:#434b55}
 #addressSearchFallback{padding:0 12px 12px}
 #addressSearchFallback button{margin-right:8px}
 @media print{#addressSearchDialog{display:none!important}}
+#deletePersonDialog{width:min(420px,calc(100% - 32px));box-sizing:border-box;border:1px solid #dce1e8;border-radius:16px;padding:24px;color:var(--ink);background:#fff}
+#deletePersonDialog::backdrop{background:rgba(15,23,42,.5)}
+#deletePersonDialog h3{margin:0 0 12px}
+#deletePersonDialog p{line-height:1.7}
+#deletePersonDialog .actionbar{justify-content:flex-end}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -597,6 +602,13 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="foot">근거: 구관습법·구민법의 시기별 규정, 민법 제1000조·제1001조·제1003조·제1009조·제1010조·제1013조, 대법원 등기예규 제1871호. 자세한 조문은 <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a>에서 확인하세요. 이 파일은 업무 보조용 시제품이며 실제 등기신청 전 적용법, 가족관계·신분자료, 전원 협의와 서면·인감 요건을 별도로 확인해야 합니다.</div>
 </main>
 <div id="printRoot"></div>
+<dialog id="deletePersonDialog" aria-labelledby="deletePersonTitle" aria-describedby="deletePersonMessage">
+ <form method="dialog">
+  <h3 id="deletePersonTitle">상속인 삭제 확인</h3>
+  <p id="deletePersonMessage"></p>
+  <div class="actionbar"><button type="submit" class="outline" value="cancel" autofocus>취소</button><button type="submit" class="danger" value="delete">삭제</button></div>
+ </form>
+</dialog>
 <dialog id="addressSearchDialog" aria-labelledby="addressSearchTitle">
  <div class="address-search-head"><strong id="addressSearchTitle">국내 주소검색</strong><button type="button" class="outline" id="closeAddressSearch">닫기</button></div>
  <p class="note" id="addressSearchStatus" role="status"></p>
@@ -2710,6 +2722,39 @@ document.addEventListener('change',e=>{let t=e.target;
   save();if(state.method==='agreement'){renderHeirs();renderDocs()}
  }
 });
+const deletePersonDialog=document.getElementById('deletePersonDialog');
+let pendingPersonDeletion=null;
+function requestPersonDeletion(id){
+ const person=findNode(id);if(!person)return;
+ let count=0;traverseNodes([person],()=>count++);
+ pendingPersonDeletion={id,caseId:state.caseId};
+ deletePersonDialog.returnValue='';
+ document.getElementById('deletePersonMessage').textContent=
+  (person.name?.trim()||'선택한 관계인')+(count>1?'과 연결된 하위 상속인 '+(count-1)+'명을 함께':'을')+' 삭제하시겠습니까?';
+ deletePersonDialog.showModal();
+}
+deletePersonDialog.addEventListener('close',()=>{
+ const pending=pendingPersonDeletion;
+ pendingPersonDeletion=null;
+ if(deletePersonDialog.returnValue!=='delete'||!pending||pending.caseId!==state.caseId)return;
+ const person=findNode(pending.id);if(!person)return;
+ const ids=new Set();traverseNodes([person],node=>ids.add(node.id));
+ executeButtonAction(()=>{
+  removeNode(pending.id);
+  for(const id of ids){
+   delete state.details[id];delete state.manualShares[id];delete proxyDeathDrafts[id];
+   for(const property of state.properties)delete property.alloc[id];
+  }
+  state.agreementSelected=state.agreementSelected.filter(id=>!ids.has(id));
+  if(Array.isArray(state.formSettings.selectedPeople))state.formSettings.selectedPeople=state.formSettings.selectedPeople.filter(id=>!ids.has(id));
+  state.shareCompletedFor='';state.successionReviewed=false;state.successionReviewSignature='';
+  selectedPersonId='__decedent__';treeEditorOpen=false;
+ },'관계인이 삭제되었습니다.');
+});
+// Preserve the delete click when an edited field would otherwise rebuild the editor on blur.
+document.addEventListener('pointerdown',e=>{
+ if(e.target.closest('[data-action="removePerson"]'))e.preventDefault();
+});
 document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(!btn)return;let act=btn.dataset.action,i=Number(btn.dataset.i),j=Number(btn.dataset.j);
  if(act==='changePersonRole'){setProxyRole(btn.dataset.node,btn.dataset.asProxy==='true');return}
  if(act==='confirmCaseShares'){
@@ -2731,7 +2776,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
    showStatus('법무사 확인 지분을 입력하고 합계가 1/1인지 확인해 주세요.');
    return;
  }
- if(act==='removePerson'){let toRemove=btn.dataset.node;let victim=findNode(toRemove);if(!victim)return;let cnt=0;traverseNodes([victim],()=>cnt++);if(!confirm('선택한 관계인'+(cnt>1?'과 하위 대습상속인 '+(cnt-1)+'명까지':'')+'을 삭제하시겠습니까?'))return;removeNode(toRemove);selectedPersonId='__decedent__';treeEditorOpen=false;renderAll();showStatus('관계인이 삭제되었습니다.');return}
+ if(act==='removePerson'){requestPersonDeletion(btn.dataset.node);return}
  if(act==='addChild'){const n=findNode(btn.dataset.node);if(n){const child=makeSub();n.sub.push(child);selectedPersonId=child.id;treeEditorOpen=window.matchMedia('(max-width:820px)').matches;renderAll()}return}
  if(act==='removeHeir')state.heirs.splice(i,1);
  if(act==='addSub')state.heirs[i].sub.push(makeSub());
