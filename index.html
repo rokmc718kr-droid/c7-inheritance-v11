@@ -813,9 +813,11 @@ function caseDeleteSaved(id){
  renderCaseList();showStatus('사건리스트에서 삭제했습니다.');
 }
 function caseNew(){
- if(!confirm('새 상속사건을 시작하시겠습니까? 현재 사건이 목록에 저장되지 않았다면 JSON 파일로 백업하세요.'))return;
+ if((state.caseId||caseHasEnteredData(state))&&!caseSaveCurrent())return;
  state=fresh();decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;activeStage='property';
- renderAll();showStatus('새 사건을 시작했습니다. 기존 사건리스트는 유지됩니다.');
+ renderAll();
+ document.getElementById('inheritanceEditorTop')?.scrollIntoView({block:'start',behavior:'instant'});
+ showStatus('새 사건 입력 화면을 열었습니다. 기존 사건은 사건리스트에 저장되어 있습니다.');
 }
 function showStatus(msg,bad=false){let el=document.querySelector('#status');if(el){el.textContent=msg;el.style.color=bad?'#a62929':'#14744c'}}
 function normalise(){
