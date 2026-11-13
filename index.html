@@ -555,9 +555,6 @@ button.danger{background:#f5f5f5;color:#434b55}
 @media(max-width:400px){.death-date-heading{gap:12px}.death-date-heading label{font-size:13px}}
 
 .death-era-description{color:#526273;background:#f3f5f8;border-radius:8px;padding:12px;margin:0 0 10px;font-size:14px;line-height:1.6}
-.death-era-picker>summary{display:flex;justify-content:space-between;align-items:center;list-style:none;border:1px solid #d3d9e2;border-radius:10px;padding:12px;cursor:pointer;background:white;font-weight:600}
-.death-era-picker>summary::-webkit-details-marker{display:none}
-.death-era-picker[open]>summary{margin-bottom:8px}
 .death-era-picker .death-era-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
 .death-era-picker .death-era-options .law-mode{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;min-width:0;text-align:center;font-size:12px;overflow-wrap:anywhere}
 .death-era-picker .death-era-options input{flex:none;width:18px;height:18px;margin:0}
@@ -1384,7 +1381,7 @@ function decedentDateSelectMarkup(){
   const selected=['custom','civil60','civil79','modern'].includes(state.eraOverride)?state.eraOverride:'';
   const explanations={custom:'호주상속·유산상속 유형을 아래 세부항목에서 확인합니다.',civil60:'당시의 신분·가적 및 호주상속 관계유형을 아래에서 선택합니다.',civil79:'개정 구민법 시기의 신분·가적 및 호주상속 관계유형을 아래에서 선택합니다.',modern:'입력한 상속인 관계에 따라 이 시기의 법정지분을 산출합니다.'};
   const description=selected?eraText(selected)+' — '+explanations[selected]:'사망일을 모르면 상속 적용법을 선택하세요.';
-  return mode+'<div class="death-era-description" aria-live="polite">'+esc(description)+'</div><details class="death-era-picker"><summary>'+(selected?esc(eraText(selected)):'적용법 선택')+' <span aria-hidden="true">▾</span></summary><div class="death-era-options" role="group" aria-label="사망일 미상 적용법 선택">'+['custom','civil60','civil79','modern'].map(e=>{const parts=eraText(e).split(' · ');return '<label class="law-mode '+(selected===e?'picked':'')+'"><input type="radio" name="deathEra" value="'+e+'" '+(selected===e?'checked':'')+'><span>'+esc(parts[0])+'</span><strong>'+esc(parts[1])+'</strong></label>'}).join('')+'</div></details>';
+  return mode+'<div class="death-era-description" aria-live="polite">'+esc(description)+'</div><div class="death-era-picker"><div class="death-era-options" role="group" aria-label="사망일 미상 적용법 선택">'+['custom','civil60','civil79','modern'].map(e=>{const parts=eraText(e).split(' · ');return '<label class="law-mode '+(selected===e?'picked':'')+'"><input type="radio" name="deathEra" value="'+e+'" '+(selected===e?'checked':'')+'><span>'+esc(parts[0])+'</span><strong>'+esc(parts[1])+'</strong></label>'}).join('')+'</div></div>';
  }
  return mode+'<button type="button" class="cell-input calendar-open" data-calendar-open="decedent" aria-haspopup="dialog">'+esc(state.decedent.death?.replaceAll('-','.')||'사망일 선택')+' <span aria-hidden="true">▦</span></button><small class="muted" style="display:block;margin-top:5px">'+(todayCheck(state.decedent.death)?'자동 적용: '+esc(eraText(getEra(state.decedent.death))):'달력에서 연도·월·일을 선택하세요.')+'</small>';
 }
