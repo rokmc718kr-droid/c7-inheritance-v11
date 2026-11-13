@@ -995,7 +995,7 @@ function normalise(){
  if(!Object.hasOwn(CASE_METHODS,state.method))state.method='unknown';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';if(state.eraMode==='choose'&&todayCheck(state.decedent.death))state.eraMode='auto';
- state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
+ state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.deathUnknown=!!n.deathUnknown;if(!n.postDeath)n.deathUnknown=false;n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  if(!['address','registry'].includes(state.propertyInputMode))state.propertyInputMode=state.properties[0]?.source==='registry'?'registry':'address';
  state.properties.forEach(p=>{p.source??='address';p.propertyType=['토지','건물','집합건물'].includes(p.propertyType)?p.propertyType:'';p.buildingDong=String(p.buildingDong??'');p.buildingHo=String(p.buildingHo??'');p.alloc??={};p.share??='1';p.label??='';p.address??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
@@ -1022,7 +1022,7 @@ function effectiveEra(date){
 function relationEra(parent){
  // 대습은 최초 상속개시 기준, 재전상속은 그 후속 피상속인의 사망일 기준.
  const d=parent?.postDeath?parent.death:state.decedent.death;
- return parent?.postDeath?(todayCheck(d)?getEra(d):'unsupported'):effectiveEra(d);
+ return parent?.postDeath?postDeathEra(parent):effectiveEra(d);
 }
 function relationChoices(era,nested){
  const names=nested?['배우자','아들','딸']:['배우자','아들','딸','아버지','어머니','형제','자매'];
@@ -1100,8 +1100,7 @@ function calculateInitial(){
  function validateBranch(n,level){
   if(level>12)throw Error('대습 입력 단계가 너무 깊습니다. 입력관계를 확인하세요.');
   if(n.postDeath){
-   if(!todayCheck(d))throw Error('상속 중 사망 관계의 사망 순서를 확인하려면 최초 피상속인의 사망일을 입력해 주세요.');
-   if(!todayCheck(n.death))throw Error((n.name||n.relation)+' 상속 후 사망한 상속인의 사망일을 입력하세요.');
+   if(!todayCheck(d)&&!rootModernEra())throw Error('상속 중 사망 관계의 사망 순서를 확인하려면 최초 피상속인의 사망일을 입력해 주세요.');
    checkPostDeathOrder(n,d);
    if(!n.sub.length)throw Error('망 '+(n.name||n.relation)+'의 후속상속인을 추가하세요.');
    return;
@@ -1248,7 +1247,7 @@ function successionSnapshot(){
 function isSuccessionReviewed(){return !!state.successionReviewed&&state.successionReviewSignature===successionSnapshot()}
 function calculateManualFinal(){
  const d=state.decedent.death;
- if(!todayCheck(d)||d<'1900-01-01'||d>now())throw Error('피상속인 사망일을 정확히 입력해 주세요.');
+ if((d&&(!todayCheck(d)||d<'1900-01-01'||d>now()))||(!todayCheck(d)&&!rootModernEra()))throw Error('피상속인 사망일을 정확히 입력해 주세요.');
  validateSequentialChronology();
  const leaves=finalRecipientLeaves(state.heirs);
  if(!leaves.length)throw Error('최종 취득할 상속인을 입력하세요.');
@@ -1259,7 +1258,7 @@ function calculateManualFinal(){
  });
  const sum=recipients.reduce((a,b)=>a.add(b.share),Z);
  if(!sum.eq(O))throw Error('직접 입력한 최종 지분의 합계가 1/1이어야 합니다.');
- return {recipients,byid:Object.fromEntries(recipients.map(n=>[n.id,n.share])),kind:'sequential_manual',era:getEra(d),manual:true,sequential:true,intermediate:{},stages:[]};
+ return {recipients,byid:Object.fromEntries(recipients.map(n=>[n.id,n.share])),kind:'sequential_manual',era:effectiveEra(d),manual:true,sequential:true,intermediate:{},stages:[]};
 }
 function calculate(){
  if(hasSequentialSuccession()&&state.verifiedManual)return calculateManualFinal();
@@ -1267,10 +1266,9 @@ function calculate(){
  if(!hasSequentialSuccession())return initial;
  const distributed=[],intermediate={},stages=[];
  function nextEvent(node,parentShare,openingDate,via){
-  if(!todayCheck(node.death))throw Error('망 '+(node.name||node.relation)+'의 재전상속 사망일을 입력하세요.');
   checkPostDeathOrder(node,openingDate);
   if(node.death>now())throw Error('상속 후 사망한 상속인의 사망일은 미래일 수 없습니다.');
-  if(getEra(node.death)!=='modern')throw Error('망 '+(node.name||node.relation)+'의 후속상속이 1991년 이전에 개시됐습니다. 해당 당시법의 상속순위·상속분을 별도로 검증하고 법무사 확인 지분을 입력하세요.');
+  if(postDeathEra(node)!=='modern')throw Error('망 '+(node.name||node.relation)+'의 후속상속이 1991년 이전에 개시됐습니다. 해당 당시법의 상속순위·상속분을 별도로 검증하고 법무사 확인 지분을 입력하세요.');
   if(!node.sub||!node.sub.length)throw Error('망 '+(node.name||node.relation)+'의 후속상속인을 추가하세요.');
   const options=node.sub,known=['배우자','아들','딸','아버지','어머니','형제','자매','손자녀','조부모','4촌 이내 방계혈족'];
   const unknown=options.filter(x=>!known.includes(x.relation));
@@ -1413,11 +1411,14 @@ function openingDateForNode(nodeId){
  while(cursor){if(cursor.postDeath)return cursor.death||'';let ancestor=null;traverseNodes(state.heirs,(n,l,p)=>{if(n.id===cursor.id)ancestor=p});cursor=ancestor}
  return state.decedent.death||'';
 }
+function rootModernEra(){return effectiveEra(state.decedent.death)==='modern';}
+function postDeathEra(node){return node.deathUnknown?(rootModernEra()?'modern':'unsupported'):todayCheck(node.death)?getEra(node.death):'unsupported';}
+function postDeathLabel(node){return node.postDeath&&node.deathUnknown?'모름 · '+(rootModernEra()?'1991년 이후 · 개정 민법':'최초 적용법 확인 필요'):node.death?.replaceAll('-','.')||'사망일 미입력';}
 function postDeathDateBasis(nodeId){
  let parent=null;
  traverseNodes(state.heirs,(n,l,p)=>{if(n.id===nodeId)parent=p});
  while(parent){
-  if(parent.postDeath)return todayCheck(parent.death)?{min:parent.death,exact:true}:{min:'',message:'선행하는 상속 후 사망한 상속인의 사망일을 먼저 입력하세요.'};
+  if(parent.postDeath&&!(parent.deathUnknown&&rootModernEra()))return todayCheck(parent.death)?{min:parent.death,exact:true}:{min:'',message:'선행하는 상속 후 사망한 상속인의 사망일을 먼저 입력하세요.'};
   let next=null;traverseNodes(state.heirs,(n,l,p)=>{if(n.id===parent.id)next=p});parent=next;
  }
  if(todayCheck(state.decedent.death))return {min:state.decedent.death,exact:true};
@@ -1428,8 +1429,18 @@ function postDeathDateBasis(nodeId){
 function sameDayKey(node,opening){return String(opening||'')+'|'+String(node.death||'')}
 function isSameDayConfirmed(node,opening){return !!node.sameDayVerifiedFor&&node.sameDayVerifiedFor===sameDayKey(node,opening)}
 function checkPostDeathOrder(node,opening){
+ if(node.deathUnknown){
+  if(!node.postDeath||!rootModernEra())throw Error('사망일 모름의 개정 민법 자동 적용은 최초 피상속인의 적용법이 개정 민법인 경우에 가능합니다. 사망일을 입력해 주세요.');
+  return;
+ }
  if(!todayCheck(node.death))throw Error('망 '+(node.name||node.relation)+'의 재전상속 사망일을 입력하세요.');
- if(!todayCheck(opening))throw Error('선행 피상속인의 사망일을 먼저 입력하세요.');
+ if(node.death>now())throw Error('상속 후 사망한 상속인의 사망일은 미래일 수 없습니다.');
+ if(!todayCheck(opening)){
+  const basis=postDeathDateBasis(node.id);
+  if(!rootModernEra()||!basis.min)throw Error('선행 피상속인의 사망일을 먼저 입력하세요.');
+  if(node.death<basis.min)throw Error('사망일은 선행 상속의 적용 기준일('+basis.min+')보다 빠를 수 없습니다.');
+  return;
+ }
  if(node.death<opening)throw Error('망 '+(node.name||node.relation)+'의 사망일('+node.death+')은 선행 피상속인의 사망일('+opening+')보다 이전일 수 없습니다. 상속 구분과 사망일을 확인하세요.');
  if(node.death===opening&&!isSameDayConfirmed(node,opening))throw Error('망 '+(node.name||node.relation)+'이(가) 선행 피상속인과 같은 날짜에 사망했습니다. 시간상 후에 사망한 사실을 자료로 확인하고 [사망 순서 확인]에 체크해야 재전상속 지분을 계산할 수 있습니다.');
 }
@@ -1438,7 +1449,9 @@ function proxyDateSelectMarkup(node){
  const basis=node.postDeath?postDeathDateBasis(node.id):null;
  const floor=todayCheck(opening)?opening.split('-').map(Number):null;
  const id=attr(node.id);
- let html='<button type="button" class="cell-input calendar-open" data-calendar-open="proxy" data-calendar-node="'+id+'" aria-haspopup="dialog">'+esc(node.death?.replaceAll('-','.')||'사망일 선택')+' <span aria-hidden="true">▦</span></button>';
+ const mode=node.postDeath?'<div class="death-date-heading" role="group" aria-label="후속 피상속인 사망일 알고 있음 여부"><span class="death-date-title">사망일</span><label><input type="radio" name="postDeathKnowledge-'+id+'" data-post-death-mode="'+id+'" value="known" '+(!node.deathUnknown?'checked':'')+'> 알고 있음</label><label><input type="radio" name="postDeathKnowledge-'+id+'" data-post-death-mode="'+id+'" value="unknown" '+(node.deathUnknown?'checked':'')+' '+(!rootModernEra()?'disabled':'')+'> 모름</label></div>':'';
+ if(node.postDeath&&node.deathUnknown)return mode+(rootModernEra()?'<div class="choice-info"><b>상속 적용법 · 1991년 이후 · 개정 민법</b><br>최초 피상속인의 적용법에 따라 자동 적용됩니다. 다른 적용법은 선택할 수 없습니다.</div>':'<div class="errorbox">최초 피상속인의 적용법이 변경되었습니다. 사망일을 입력해 후속 적용법을 확인하세요.</div>');
+ let html=mode+'<button type="button" class="cell-input calendar-open" data-calendar-open="proxy" data-calendar-node="'+id+'" aria-haspopup="dialog">'+esc(node.death?.replaceAll('-','.')||'사망일 선택')+' <span aria-hidden="true">▦</span></button>';
  if(node.postDeath){
   if(floor)html+='<small class="muted" style="display:block;margin-top:6px">선행 피상속인 사망일 <strong>'+esc(opening.replaceAll('-','.'))+'</strong> 이후만 선택할 수 있습니다. 같은 날도 선택 가능합니다.</small>';
   else if(basis.min)html+='<small class="muted" style="display:block;margin-top:6px">최초 피상속인의 선택 적용법 <strong>'+esc(eraText(basis.era))+'</strong>을 포함한 이후 시기('+esc(basis.min.slice(0,4))+'년부터)만 선택할 수 있습니다. 정확한 사망 순서는 별도 확인이 필요합니다.</small>';
@@ -1454,6 +1467,7 @@ function proxyDateSelectMarkup(node){
 function updateProxyDatePart(nodeId,part,value){
  const node=findNode(nodeId);
  if(!node||!(node.proxy||node.postDeath))return;
+ if(node.postDeath&&node.deathUnknown)return;
  const p={...proxyDateParts(node),[part]:value};
  const opening=node.postDeath?openingDateForNode(nodeId):'';
  const basis=node.postDeath?postDeathDateBasis(nodeId):null;
@@ -1690,7 +1704,7 @@ function renderHeirs(){
   const relationText=`망 ${parentName}의 ${relationship}`;
   const share=!(n.proxy||n.postDeath)&&byId[n.id]?byId[n.id].str():'';
   const children=(n.proxy||n.postDeath)&&n.sub.length?`<ul class="tree-stack">${n.sub.map(child=>viewNode(child,n,level+1)).join('')}</ul>`:'';
-  return `<li><div class="tree-family-row tree-desc-row"><button type="button" class="tree-person ${n.proxy?'is-proxy':level>0?'is-substitute':'is-direct'} ${selected?'selected':''}" data-tree-person="${id}" aria-pressed="${selected?'true':'false'}" aria-label="${attr(role+' '+peopleName+', '+relationText)}"><span class="tree-main"><strong><span class="tree-role">${role}</span><span class="tree-name">${esc(peopleName)}</span></strong><small>${esc(relationText)}${n.proxy||n.postDeath?' · 사망 '+esc(n.death?.replaceAll('-','.')||'사망일 미입력'):''}</small></span><span class="tree-state">${share?`<span class="tree-share">${share}</span>`:''}</span></button>${n.proxy||n.postDeath?`<button type="button" class="tree-inline-add" data-action="addChild" data-node="${id}" aria-label="${attr('망 '+peopleName+'의 '+(n.postDeath?'후속상속인':'대습상속인')+' 추가')}" title="이 망자 아래에 상속인 추가">＋ ${n.postDeath?'후속상속인':'대습상속인'} 추가</button>`:''}</div>${children}</li>`;
+  return `<li><div class="tree-family-row tree-desc-row"><button type="button" class="tree-person ${n.proxy?'is-proxy':level>0?'is-substitute':'is-direct'} ${selected?'selected':''}" data-tree-person="${id}" aria-pressed="${selected?'true':'false'}" aria-label="${attr(role+' '+peopleName+', '+relationText)}"><span class="tree-main"><strong><span class="tree-role">${role}</span><span class="tree-name">${esc(peopleName)}</span></strong><small>${esc(relationText)}${n.proxy||n.postDeath?' · 사망 '+esc(postDeathLabel(n)):''}</small></span><span class="tree-state">${share?`<span class="tree-share">${share}</span>`:''}</span></button>${n.proxy||n.postDeath?`<button type="button" class="tree-inline-add" data-action="addChild" data-node="${id}" aria-label="${attr('망 '+peopleName+'의 '+(n.postDeath?'후속상속인':'대습상속인')+' 추가')}" title="이 망자 아래에 상속인 추가">＋ ${n.postDeath?'후속상속인':'대습상속인'} 추가</button>`:''}</div>${children}</li>`;
  }
  let person=selectedPersonId==='__decedent__'?null:findNode(selectedPersonId);
  let selectedParent=null;traverseNodes(state.heirs,(n,l,parent)=>{if(n.id===selectedPersonId)selectedParent=parent});
@@ -1714,7 +1728,7 @@ function renderHeirs(){
 
   ${personIdentityFieldsMarkup(person,info.ident,info.address,person.id)}</div>
   ${minorRepresentativeMarkup(person)}
-  ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (달력 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
+  ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망정보</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
  ${nationalityMarkup(state.decedent,'__decedent__','국적/신분')}
@@ -2281,7 +2295,7 @@ function renderShareTree(c){
   const relation=`망 ${base}의 ${n.relation}`;
   const share=!n.proxy&&!n.postDeath&&shares[n.id]?shares[n.id].str():'';
   const children=(n.proxy||n.postDeath)&&n.sub?.length?`<ul class="share-tree-list">${n.sub.map(child=>branch(child,n,level+1)).join('')}</ul>`:'';
-  const extra=n.proxy||n.postDeath?`<span class="share-tree-death">사망 ${esc(n.death?.replaceAll('-','.')||'미입력')}${n.postDeath&&c.intermediate?.[n.id]?' · 취득했던 지분 '+c.intermediate[n.id].str():''}</span>`:'';
+  const extra=n.proxy||n.postDeath?`<span class="share-tree-death">사망 ${esc(postDeathLabel(n))}${n.postDeath&&c.intermediate?.[n.id]?' · 취득했던 지분 '+c.intermediate[n.id].str():''}</span>`:'';
   return `<li><div class="share-tree-row ${n.proxy?'proxy':n.postDeath?'sequential':level>0?'substitute':'direct'}" aria-label="${attr(label+' '+name+' '+relation+(share?' 지분 '+share:''))}"><span class="share-tree-person"><span class="share-tree-type">${esc(label)}</span> <strong>${esc(name)}</strong> <span class="share-tree-relation">(${esc(relation)})</span>${extra}</span>${share?`<span class="share-tree-value">${share}</span>`:''}</div>${children}</li>`;
  }
  return `<div class="share-tree-board"><div class="share-tree-head">상속지분 관계 트리 <span class="muted">피대습자는 지분을 직접 취득하지 않고 아래 대습상속인에게 연결됩니다.</span></div><div class="share-tree-scroll"><div class="share-tree-root"><strong>피상속인 ${esc(rootName)}</strong>${decedentTreeBasisMarkup()}</div><ul class="share-tree-list share-tree-top">${state.heirs.map(n=>branch(n,null,0)).join('')}</ul></div><div class="share-tree-foot">분수는 최초 피상속인의 상속재산 전체를 기준으로 한 법정상속지분입니다.</div></div>`;
@@ -2313,7 +2327,7 @@ function renderResults(){
   traverseNodes(state.heirs,(n,level)=>{if(level>0&&n.proxy)nestedProxy=true});
   const sum=c.recipients.reduce((a,r)=>a.add(r.share),Z);
   const summary=`<div class="result-grid"><div class="resultbox"><div class="muted">법정상속지분</div><div class="big">${c.manual?'확인 지분 입력 완료':(c.era!=='modern'&&state.heirs.some(h=>h.proxy)?'참고 지분 산출':'자동 계산 완료')}</div><small class="muted">정확한 분수로 계산 · 실제 취득자 ${c.recipients.length}명</small></div><div class="resultbox"><div class="muted">지분 합계</div><div class="big">${sum.eq(O)?'1/1':sum.str()}</div><small class="muted">${sum.eq(O)?'상속인 전체 지분 합계 검증 완료':'⚠ 합계를 확인해 주세요'}</small></div></div>`;
-  const staged=c.sequential?(c.stages||[]).map((x,i)=>`<div class="propertycard" style="margin:8px 0"><div class="mini-title">후속상속 ${i+1} · 망 ${esc(x.decedent)} (${esc(x.date)})</div><p class="note">이 사건으로 승계된 지분: <strong>${esc(x.baseShare)}</strong> · 적용법: 1991년 이후 민법 기준 · <strong>${esc(x.rank)}</strong></p><div class="note">이번 상속에서 취득: ${esc(x.included.join(', ')||'없음')}</div>${x.excluded.length?`<div class="note" style="color:#a15612"><strong>후순위로 지분 제외:</strong> ${esc(x.excluded.map(n=>n.name+' ('+n.relation+')').join(', '))}</div>`:''}</div>`).join(''):'';
+  const staged=c.sequential?(c.stages||[]).map((x,i)=>`<div class="propertycard" style="margin:8px 0"><div class="mini-title">후속상속 ${i+1} · 망 ${esc(x.decedent)} (${esc(x.date||'사망일 모름')})</div><p class="note">이 사건으로 승계된 지분: <strong>${esc(x.baseShare)}</strong> · 적용법: 1991년 이후 민법 기준 · <strong>${esc(x.rank)}</strong></p><div class="note">이번 상속에서 취득: ${esc(x.included.join(', ')||'없음')}</div>${x.excluded.length?`<div class="note" style="color:#a15612"><strong>후순위로 지분 제외:</strong> ${esc(x.excluded.map(n=>n.name+' ('+n.relation+')').join(', '))}</div>`:''}</div>`).join(''):'';
   const review=c.sequential?`<div class="warnbox" style="margin:12px 0"><strong>상속등기 전 검토 필수</strong><p class="note" style="margin:7px 0">상속등기 미완료 상태에서 상속인이 다시 사망한 경우, 각 사망을 별개의 상속개시로 계산합니다. 첫 번째 상속지분과 후속상속지분을 곱해 최종 취득분을 산출했습니다. 상속인 누락·가족관계·재산분할협의 당사자와 중간 등기 필요 여부는 별도 확인해야 합니다.</p><label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><input type="checkbox" id="successionReviewed" ${isSuccessionReviewed()?'checked':''} style="width:18px;height:18px"> <b>각 단계의 상속관계·순위 및 서류를 확인했습니다.</b></label></div>`:'';
   const table=`<details class="shares-table-toggle"><summary>상속지분 표로도 보기</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>구분</th><th>성명</th><th>망자와의 관계</th><th>대습 연결</th><th>법정상속지분</th></tr></thead><tbody>${c.recipients.map((r,i)=>{const info=recipientParents.get(r.id)||{},parent=info.parent,level=info.level||0,base=parent?.name?.trim()||state.decedent.name?.trim()||'피상속인';return `<tr><td><span class="result-role ${level>0?'sub':''}">${esc(stageRole({proxy:false},level,parent))}</span></td><td><b>${esc(r.name||`취득자 ${i+1}`)}</b></td><td>${esc(`망 ${base}의 ${r.relation}`)}</td><td>${esc(r.via||'—')}</td><td><strong>${r.share.str()}</strong></td></tr>`}).join('')}</tbody></table></div></details>`;
   el.innerHTML=`<div class="results"><div class="choice-info"><b>적용 기준:</b> ${esc(eraText(c.era))}${state.eraMode==='choose'?' (사망일 모름 · 적용법 선택)':' (사망일 기준)'}${c.manual?' · <b>법무사 확인 지분 입력</b>':' · 자동 산출 (개별 법률 요건 확인 필요)'}</div>${nestedProxy?'<div class="warnbox" style="margin-bottom:10px"><b>2차 이상 대습 검토 필요:</b> 차수는 입력 관계를 구분하기 위한 표시입니다. 실제 다단계 대습 인정 여부·사망 순서·배우자의 상속권·적용법은 실무 검증 후 확정하세요.</div>':''}${summary}${review}${staged}${renderShareTree(c)}${table}<div class="actionbar"><button type="button" class="primary" data-action="confirmCaseShares">지분산출 확인 · 사건리스트 저장</button><button type="button" class="outline" data-go-stage="files">사건리스트</button></div></div>`;
@@ -2551,6 +2565,7 @@ function validateAgreementRepresentatives(c){
 }
 function buildDocument(c){
  if(!todayCheck(state.decedent.death))throw Error('문서를 작성하려면 피상속인의 실제 사망일을 입력해 주세요.');
+ traverseNodes(state.heirs,n=>{if(n.postDeath&&(n.deathUnknown||!todayCheck(n.death)))throw Error('문서를 작성하려면 망 '+(n.name||n.relation)+'의 실제 사망일을 입력해 주세요.');});
  if(!state.decedent.name?.trim())throw Error('피상속인 성명을 입력하세요.');
  if(!state.decedent.ident?.trim())throw Error('피상속인 등록번호를 입력하세요.');
  if(!state.decedent.address?.trim())throw Error('피상속인 주소를 입력하세요.');
@@ -2902,6 +2917,11 @@ document.addEventListener('change',e=>{let t=e.target;
   if(t.matches('[data-decedent-edit]')){
   state.decedent[t.dataset.decedentEdit]=t.value;renderAll();return
  }
+ if(t.matches('[data-post-death-mode]')){
+  const node=findNode(t.dataset.postDeathMode);if(!node?.postDeath)return;
+  if(t.value==='unknown'&&!rootModernEra()){showStatus('최초 피상속인의 적용법이 개정 민법인 경우에만 자동 적용할 수 있습니다.',true);renderHeirs();return;}
+  node.deathUnknown=t.value==='unknown';node.death='';delete proxyDeathDrafts[node.id];node.sameDayVerifiedFor='';state.shareCompletedFor='';state.successionReviewed=false;renderAll();return;
+ }
  if(t.matches('[name="deathKnowledge"]')){state.eraMode=t.value==='unknown'?'choose':'auto';state.decedent.death='';state.eraOverride='';state.eraVerified=false;decedentDeathDraft=null;state.shareCompletedFor='';state.successionReviewed=false;renderAll();return}
  if(t.matches('[name="deathEra"]')){state.eraOverride=t.value;state.shareCompletedFor='';state.successionReviewed=false;renderAll();return}
  if(t.matches('#historicalType')){state.historicalType=t.value;renderAll();return}
@@ -3065,7 +3085,7 @@ let calendarSelection=null;
 function openDateCalendar(input){
  const kind=input.dataset.calendarOpen||'input';
  const node=kind==='proxy'?findNode(input.dataset.calendarNode):null;
- if(kind==='proxy'&&!node)return;
+ if(kind==='proxy'&&(!node||node.postDeath&&node.deathUnknown))return;
  const value=kind==='decedent'?state.decedent.death:node?node.death:input.value;
  const min=kind==='decedent'||node?'1900-01-01':input.min||'1800-01-01';
  const basis=node?.postDeath?postDeathDateBasis(node.id):null;
