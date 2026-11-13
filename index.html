@@ -2587,13 +2587,25 @@ document.addEventListener('click', e=>{
  if(prop){e.preventDefault();executeButtonAction(()=>{const p=makeProp();setPropertySource(p,'registry');state.properties.push(p);state.propertyInputMode='registry'},'등기부 부동산이 추가되었습니다.');return}
 });
 function completeTreeEditor(){
+ // Read the live radio selection before blur/change can replace the editor DOM.
+ const knowledge=document.querySelector('[name="deathKnowledge"]:checked');
+ const chosenEra=document.querySelector('[name="deathEra"]:checked');
+ const deathSelection=knowledge?{unknown:knowledge.value==='unknown',era:chosenEra?.value||''}:null;
  const input=document.activeElement;
  if(input?.matches('input,textarea,select'))input.blur();
- save();
+ if(deathSelection){
+  const nextMode=deathSelection.unknown?'choose':'auto';
+  const changed=state.eraMode!==nextMode||(deathSelection.unknown&&state.eraOverride!==deathSelection.era);
+  state.eraMode=nextMode;
+  if(deathSelection.unknown){state.decedent.death='';decedentDeathDraft=null;state.eraOverride=deathSelection.era;}
+  if(changed){state.shareCompletedFor='';state.successionReviewed=false;}
+ }
  treeEditorOpen=false;treeEditorDismissed=true;
- renderHeirs();
+ renderAll();
  document.querySelector('#heirsView .tree-pane')?.scrollIntoView({block:'start',behavior:'instant'});
- showStatus('입력사항을 저장했습니다. 가족관계 트리에서 다음 사람을 선택하세요.');
+ const unknown=deathSelection?.unknown;
+ const message=unknown?(state.eraOverride?'사망일 모름 · '+eraText(state.eraOverride)+'으로 저장했습니다.':'사망일 모름으로 저장했습니다. 지분 산출 전 상속 적용법을 선택해 주세요.'):'입력사항을 저장했습니다. 가족관계 트리에서 다음 사람을 선택하세요.';
+ showStatus(message);
 }
 document.addEventListener('pointerdown',e=>{
  if(e.target.closest('[data-tree-close]'))e.preventDefault();
