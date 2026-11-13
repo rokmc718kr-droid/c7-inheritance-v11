@@ -2186,7 +2186,7 @@ function applyActiveStage(){
 function navigateStage(name){
  if(name==='agreement')name='forms';
  if(name==='cost'||name==='home')name='files';
- activeStage=name;treeEditorOpen=false;treeEditorDismissed=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
+ activeStage=name;treeEditorOpen=false;treeEditorDismissed=false;applyActiveStage();renderHeirs();if(name==='files')renderCaseList();if(name==='forms')renderFormMaker();
  const scrollTarget=name==='files'?(document.querySelector('.case-table-row.is-current')||document.getElementById('caseListView'))
   :document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView');
  scrollTarget?.scrollIntoView({block:'start',behavior:'instant'});
