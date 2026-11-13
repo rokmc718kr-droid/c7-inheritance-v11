@@ -1413,6 +1413,18 @@ function openingDateForNode(nodeId){
  while(cursor){if(cursor.postDeath)return cursor.death||'';let ancestor=null;traverseNodes(state.heirs,(n,l,p)=>{if(n.id===cursor.id)ancestor=p});cursor=ancestor}
  return state.decedent.death||'';
 }
+function postDeathDateBasis(nodeId){
+ let parent=null;
+ traverseNodes(state.heirs,(n,l,p)=>{if(n.id===nodeId)parent=p});
+ while(parent){
+  if(parent.postDeath)return todayCheck(parent.death)?{min:parent.death,exact:true}:{min:'',message:'선행하는 상속 후 사망한 상속인의 사망일을 먼저 입력하세요.'};
+  let next=null;traverseNodes(state.heirs,(n,l,p)=>{if(n.id===parent.id)next=p});parent=next;
+ }
+ if(todayCheck(state.decedent.death))return {min:state.decedent.death,exact:true};
+ const starts={custom:'1900-01-01',civil60:'1960-01-01',civil79:'1979-01-01',modern:'1991-01-01'};
+ if(state.eraMode==='choose'&&starts[state.eraOverride])return {min:starts[state.eraOverride],exact:false,era:state.eraOverride};
+ return {min:'',message:state.eraMode==='choose'?'피상속인의 상속 적용법을 먼저 선택하세요.':'선행 피상속인의 사망일을 먼저 입력하세요.'};
+}
 function sameDayKey(node,opening){return String(opening||'')+'|'+String(node.death||'')}
 function isSameDayConfirmed(node,opening){return !!node.sameDayVerifiedFor&&node.sameDayVerifiedFor===sameDayKey(node,opening)}
 function checkPostDeathOrder(node,opening){
@@ -1423,13 +1435,15 @@ function checkPostDeathOrder(node,opening){
 }
 function proxyDateSelectMarkup(node){
  const opening=node.postDeath?openingDateForNode(node.id):'';
+ const basis=node.postDeath?postDeathDateBasis(node.id):null;
  const floor=todayCheck(opening)?opening.split('-').map(Number):null;
  const id=attr(node.id);
  let html='<button type="button" class="cell-input calendar-open" data-calendar-open="proxy" data-calendar-node="'+id+'" aria-haspopup="dialog">'+esc(node.death?.replaceAll('-','.')||'사망일 선택')+' <span aria-hidden="true">▦</span></button>';
  if(node.postDeath){
   if(floor)html+='<small class="muted" style="display:block;margin-top:6px">선행 피상속인 사망일 <strong>'+esc(opening.replaceAll('-','.'))+'</strong> 이후만 선택할 수 있습니다. 같은 날도 선택 가능합니다.</small>';
-  else html+='<small style="display:block;margin-top:6px;color:#a33d32">선행 피상속인의 사망일을 먼저 입력하세요.</small>';
-  if(node.death&&floor&&node.death<opening)html+='<small style="display:block;margin-top:5px;color:#ac3030">⚠ 이전에 저장된 사망일이 선행 사망일보다 빠릅니다. 사망일을 수정해 주세요.</small>';
+  else if(basis.min)html+='<small class="muted" style="display:block;margin-top:6px">최초 피상속인의 선택 적용법 <strong>'+esc(eraText(basis.era))+'</strong>을 포함한 이후 시기('+esc(basis.min.slice(0,4))+'년부터)만 선택할 수 있습니다. 정확한 사망 순서는 별도 확인이 필요합니다.</small>';
+  else html+='<small style="display:block;margin-top:6px;color:#a33d32">'+esc(basis.message)+'</small>';
+  if(node.death&&basis.min&&node.death<basis.min)html+='<small style="display:block;margin-top:5px;color:#ac3030">⚠ 이전에 저장된 사망일이 선택 가능한 기준일보다 빠릅니다. 사망일을 수정해 주세요.</small>';
   if(node.death&&floor&&node.death===opening)
    html+='<label class="note" style="display:flex;align-items:flex-start;gap:8px;padding:9px;margin-top:8px;background:#fff8ea;border:1px solid #edd8af;border-radius:8px;cursor:pointer">'
     +'<input type="checkbox" data-same-day-order="'+id+'" style="width:19px;height:19px;flex:0 0 auto" '+(isSameDayConfirmed(node,opening)?'checked':'')+'>'
@@ -1442,24 +1456,27 @@ function updateProxyDatePart(nodeId,part,value){
  if(!node||!(node.proxy||node.postDeath))return;
  const p={...proxyDateParts(node),[part]:value};
  const opening=node.postDeath?openingDateForNode(nodeId):'';
+ const basis=node.postDeath?postDeathDateBasis(nodeId):null;
+ const lower=basis?.min||'';
+ if(node.postDeath&&!lower){showStatus(basis.message,true);renderHeirs();return;}
  // 빠른 해제: 선택한 연도가 상속개시 연도보다 작으면 즉시 복귀
- if(node.postDeath&&todayCheck(opening)&&p.year&&Number(p.year)<Number(opening.slice(0,4))){
-  showStatus('재전상속 사망연도는 선행 피상속인 사망연도('+opening.slice(0,4)+'년) 이전일 수 없습니다.',true);renderHeirs();return;
+ if(node.postDeath&&todayCheck(lower)&&p.year&&Number(p.year)<Number(lower.slice(0,4))){
+  showStatus('사망연도는 선택 가능한 기준연도('+lower.slice(0,4)+'년) 이전일 수 없습니다.',true);renderHeirs();return;
  }
  if(p.day&&p.year&&p.month&&Number(p.day)>new Date(Number(p.year),Number(p.month),0).getDate())p.day='';
- if(node.postDeath&&todayCheck(opening)&&p.year&&p.month){
-  if(p.year===opening.slice(0,4)&&Number(p.month)<Number(opening.slice(5,7))){
+ if(node.postDeath&&todayCheck(lower)&&p.year&&p.month){
+  if(p.year===lower.slice(0,4)&&Number(p.month)<Number(lower.slice(5,7))){
    p.month='';p.day='';
-  }else if(p.year===opening.slice(0,4)&&p.month===opening.slice(5,7)&&p.day&&p.day<opening.slice(8,10))p.day='';
+  }else if(p.year===lower.slice(0,4)&&p.month===lower.slice(5,7)&&p.day&&p.day<lower.slice(8,10))p.day='';
  }
  if(p.year&&p.month&&p.day){
   const date=[p.year,p.month,p.day].join('-'),today=now();
   if(date>today){
    p.day='';node.death='';proxyDeathDrafts[nodeId]=p;
    showStatus('미래의 사망일은 선택할 수 없습니다.',true);
-  }else if(node.postDeath&&todayCheck(opening)&&date<opening){
+  }else if(node.postDeath&&todayCheck(lower)&&date<lower){
    p.day='';node.death='';node.sameDayVerifiedFor='';proxyDeathDrafts[nodeId]=p;
-   showStatus('재전상속 사망일은 선행 피상속인 사망일('+opening+')보다 빠를 수 없습니다.',true);
+   showStatus('사망일은 선택 가능한 기준일('+lower+')보다 빠를 수 없습니다.',true);
   }else{
    const prev=node.death;
    node.death=date;delete proxyDeathDrafts[nodeId];
@@ -3051,7 +3068,9 @@ function openDateCalendar(input){
  if(kind==='proxy'&&!node)return;
  const value=kind==='decedent'?state.decedent.death:node?node.death:input.value;
  const min=kind==='decedent'||node?'1900-01-01':input.min||'1800-01-01';
- const opening=node?.postDeath?openingDateForNode(node.id):'';
+ const basis=node?.postDeath?postDeathDateBasis(node.id):null;
+ if(basis&&!basis.min){showStatus(basis.message,true);return;}
+ const opening=basis?.min||'';
  const lower=todayCheck(opening)&&opening>min?opening:min;
  const max=kind==='decedent'||node?now():input.max||(new Date().getFullYear()+30)+'-12-31';
  const preferred=todayCheck(value)?value:now();
