@@ -738,7 +738,7 @@ button.danger{background:#f5f5f5;color:#434b55}
  <p class="note" id="addressSearchStatus" role="status"></p>
  <div id="addressSearchFallback" hidden>
   <button type="button" class="outline" id="openAddressSearchTab">새 탭에서 주소검색</button>
-  <a href="https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=local2" target="_blank" rel="noopener noreferrer">검색 페이지 직접 열기</a>
+  <a href="https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=repair261109" target="_blank" rel="noopener noreferrer">검색 페이지 직접 열기</a>
  </div>
  <iframe id="addressSearchFrame" title="카카오 국내 주소검색" referrerpolicy="no-referrer" hidden></iframe>
 </dialog>
@@ -2670,13 +2670,13 @@ document.addEventListener('click',e=>{
 });
 document.querySelector('#recalc').addEventListener('click',()=>{renderAll();showStatus('입력내용을 다시 계산했습니다.')});
 
-const addressSearchURL=new URL('https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=local2');
+const addressSearchURL=new URL('https://rokmc718kr-droid.github.io/c7-inheritance-v11/address-search.html?v=repair261109');
 const addressDialog=document.getElementById('addressSearchDialog');
 const addressFrame=document.getElementById('addressSearchFrame');
 const addressStatus=document.getElementById('addressSearchStatus');
 const addressFallback=document.getElementById('addressSearchFallback');
 const downloadedAddressPage=!['http:','https:'].includes(location.protocol);
-let addressTarget=null,addressPopup=null,addressLoadTimer;
+let addressTarget=null,addressPopup=null,addressLoadTimer,addressCaseState=null;
 const addressTabInstructions='새 탭에서 주소를 선택하세요. 자동 입력이 되지 않으면 주소를 복사한 뒤 이 화면의 주소칸에 붙여넣으세요.';
 function showAddressTabFallback(message){
  clearTimeout(addressLoadTimer);
@@ -2691,12 +2691,8 @@ document.addEventListener('click',e=>{
  const input=document.getElementById(button.dataset.addressSearch);
  if(!input)return;
  if(typeof addressDialog.showModal!=='function'){input.focus();return}
- addressTarget=input;
+ addressTarget=input;addressCaseState=state;
  addressDialog.showModal();
- if(downloadedAddressPage){
-  showAddressTabFallback(addressTabInstructions);
-  return;
- }
  addressStatus.textContent='주소검색을 불러오는 중입니다.';
  addressFallback.hidden=true;
  addressFrame.hidden=false;
@@ -2707,11 +2703,12 @@ document.getElementById('openAddressSearchTab').addEventListener('click',()=>{
  addressPopup=window.open(addressSearchURL.href,'_blank');
  addressStatus.textContent=addressPopup?addressTabInstructions:'새 탭이 차단되었습니다. [검색 페이지 직접 열기]를 누른 뒤 주소를 복사해 붙여넣으세요.';
 });
+addressFrame.addEventListener('load',()=>{if(addressDialog.open&&!addressFrame.hidden)addressFrame.contentWindow?.postMessage({channel:'c7-address-search',type:'init'},addressSearchURL.origin)});
 document.getElementById('closeAddressSearch').addEventListener('click',()=>addressDialog.close());
 addressDialog.addEventListener('close',()=>{
  if(addressDialog.open)return;
  clearTimeout(addressLoadTimer);
- addressTarget=null;
+ addressTarget=null;addressCaseState=null;
  addressPopup=null;
  addressFrame.hidden=true;
  addressFrame.removeAttribute('src');
@@ -2722,7 +2719,9 @@ window.addEventListener('message',e=>{
  const fromPopup=!!addressPopup&&e.source===addressPopup;
  if(!fromFrame&&!fromPopup)return;
  const {type,address}=e.data;
- if(fromPopup&&type==='ready'){
+ if(type==='ready'){
+  clearTimeout(addressLoadTimer);
+  addressStatus.textContent='도로명, 건물명 또는 지번으로 검색하세요.';
   e.source.postMessage({channel:'c7-address-search',type:'init'},addressSearchURL.origin);
   return;
  }
@@ -2730,13 +2729,9 @@ window.addEventListener('message',e=>{
   showAddressTabFallback('검색창에 연결되지 않았습니다. '+addressTabInstructions);
   return;
  }
- if(fromFrame&&type==='ready'){
-  clearTimeout(addressLoadTimer);
-  addressStatus.textContent='도로명, 건물명 또는 지번으로 검색하세요.';
-  return;
- }
- if(type!=='selected'||typeof address!=='string'||!address.trim()||address.length>300||!addressTarget?.isConnected)return;
- const input=addressTarget;
+ if(type!=='selected'||typeof address!=='string'||!address.trim()||address.length>300||addressCaseState!==state)return;
+ const input=addressTarget?.isConnected?addressTarget:document.getElementById(addressTarget?.id||'');
+ if(!input)return;
  addressDialog.close();
  input.value=address.trim();
  input.dispatchEvent(new Event('change',{bubbles:true}));
