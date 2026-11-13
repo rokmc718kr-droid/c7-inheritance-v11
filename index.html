@@ -503,6 +503,24 @@ button.danger{background:#f5f5f5;color:#434b55}
 .form-preview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #dce1e8}
 .form-preview-header h3{margin:0;font-size:17px}
 #formPreviewFrame{display:block;width:100%;height:calc(100% - 65px);border:0;background:#fff}
+.case-table-scroll{width:100%;overflow-x:auto;border:1px solid #dce1e8;border-radius:10px}
+.case-table{width:100%;min-width:1050px;border-spacing:0;table-layout:fixed;font-size:13px}
+.case-table th,.case-table td{padding:11px 9px;text-align:left;vertical-align:middle;border-bottom:1px solid #e5e9ee;background:#fff;overflow-wrap:anywhere}
+.case-table th{background:#f1f3f6;color:#4d5968;font-size:12px;white-space:nowrap}
+.case-table tr:last-child td{border-bottom:0}
+.case-table .case-check-col{width:44px;box-sizing:border-box;text-align:center;position:sticky;left:0;z-index:2}
+.case-table .case-address-col{width:250px;box-sizing:border-box;position:sticky;left:44px;z-index:2;border-right:1px solid #e5e9ee}
+.case-table th.case-check-col,.case-table th.case-address-col{z-index:3}
+.case-table th:nth-child(3){width:90px}.case-table th:nth-child(4){width:130px}.case-table th:nth-child(5){width:145px}
+.case-table th:nth-child(n+6){width:80px;text-align:center}.case-table td:nth-child(n+6){text-align:center}
+.case-table-row.is-current td{background:#f0f5fc}
+.case-table-row.is-selected td{background:#e8f0fb}
+.case-table input[type="checkbox"]{width:17px;height:17px;cursor:pointer;accent-color:#434e5b}
+.case-address-link{display:block;width:100%;padding:0;color:#24569a;text-decoration:underline;text-underline-offset:3px;white-space:normal;text-align:left;line-height:1.6}
+.case-address-link small{display:inline-block;margin-left:5px;font-size:12px;font-weight:750;color:#344b69}
+.case-table-method{min-width:0;height:35px;font-size:12px;padding:5px}
+.case-table td>button.outline{font-size:12px;padding:7px 10px}
+.case-heir-details summary{cursor:pointer;line-height:1.6}.case-heir-details ul{margin:6px 0 0;padding-left:17px;font-size:12px;line-height:1.7}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -576,7 +594,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 
 <section class="panel hidden" id="agreementDatePanel">
  <div class="panelhead"><h2>협의분할 연월일</h2><span class="tag">미성년자 판단 기준일</span></div>
- <div class="body"><div class="agreement-date-row"><strong id="agreementDateDisplay"></strong><p class="note">협의일은 사건리스트 또는 가족관계 트리의 피상속인 카드 옆에서 지정할 수 있습니다.</p></div><div class="actionbar"><button type="button" class="outline" data-go-stage="files">사건리스트에서 협의일 지정</button><button type="button" class="light" data-go-stage="people">상속관계·대리인 정보 확인</button></div></div>
+ <div class="body"><div class="agreement-date-row"><strong id="agreementDateDisplay"></strong><p class="note">협의일은 가족관계 트리의 피상속인 카드 옆에서 지정할 수 있습니다.</p></div><div class="actionbar"><button type="button" class="outline" data-go-stage="people">협의일·상속관계·대리인 정보 확인</button></div></div>
 </section>
 <section class="panel hidden" id="allocPanel"><div class="panelhead"><h2>06. 협의로 취득할 상속인 선택</h2><span class="tag">취득자 체크 → 지분 자동 배분</span></div><div class="body"><div id="allocationView"></div></div></section>
 <section class="panel hidden" id="docPanel"><div class="panelhead"><h2>07. 상속재산분할협의서 자동작성</h2><span class="tag">통합 1부 / 상속인별 작성 선택</span></div><div class="body"><div id="docView"></div></div></section>
@@ -623,7 +641,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 <div class="body">
  <div class="case-list-toolbar">
   <div class="case-current"><b>상속 사건리스트</b> <span id="caseActiveLabel">입력 중인 사건 없음</span></div>
-  <div class="actionbar"><button type="button" class="outline" id="caseSaveToList">현재 사건 저장</button><button type="button" class="primary" id="caseNewItem">＋ 신규</button><button type="button" class="outline" id="openQuickDocGuide">준비서류 간편 안내</button></div>
+  <div class="actionbar"><button type="button" class="outline" id="caseSaveToList">현재 사건 저장</button><button type="button" class="primary" id="caseNewItem">＋ 신규</button><button type="button" class="danger" id="caseDeleteSelected" disabled>선택 사건 삭제</button><button type="button" class="outline" id="openQuickDocGuide">준비서류 간편 안내</button></div>
  </div>
  <div id="caseListView"></div>
  <p class="note">임시저장 사건도 후속업무를 시작할 수 있습니다. 사건별 [비용계산(연동 예정)] · [서류작성] · [준비서류]를 이용하세요. 먼저 입력한 정보는 자동으로 불러오고 부족한 항목만 추가 입력합니다.</p>
@@ -680,6 +698,7 @@ button.danger{background:#f5f5f5;color:#434b55}
 'use strict';
 const KEY='inheritance_mvp_local_20261104_v1'; // 이전 사건 데이터 유지
 const CASE_LIST_KEY='c7_inheritance_total_case_list_v1';
+const caseSelectedIds=new Set();
 const ID=()=> 'r'+Math.random().toString(36).slice(2,10);
 const now=()=>{const d=new Date();const off=d.getTimezoneOffset();return new Date(d.getTime()-off*60000).toISOString().slice(0,10)};
 const makeHeir=(relation='아들')=>({id:ID(),name:'',relation,proxy:false,postDeath:false,nationality:'내국인',country:'',countryCustom:'',death:'',sameDayVerifiedFor:'',sub:[],legacyRegister:'',eraVariant:''});
@@ -810,30 +829,38 @@ function restoreCaseBackup(incoming){
 function renderCaseList(){
  const panel=document.getElementById('caseListView');if(!panel)return;
  const list=caseReadList().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+ for(const id of caseSelectedIds)if(!list.some(row=>row.id===id))caseSelectedIds.delete(id);
+ document.getElementById('caseDeleteSelected').disabled=!caseSelectedIds.size;
  document.getElementById('caseListCount').textContent=list.length+'건';
- document.getElementById('caseActiveLabel').textContent=caseMeta(state).name+(state.caseId?' · '+caseStageText(state):' · 새 사건');
+ document.getElementById('caseActiveLabel').textContent=caseMeta(state).name+(state.caseId?' · 현재 작업 중':' · 새 사건');
  if(!list.length){panel.innerHTML='<div class="empty">저장된 상속사건이 없습니다.<br>피상속인·상속인·부동산 등 실제 정보를 입력하면 임시저장 사건이 자동 생성됩니다.</div>';return}
- panel.innerHTML='<div class="case-list-container">'+list.map((row,i)=>{
-  const m=caseMeta(row.state),active=state.caseId===row.id;
-  const when=String(row.updatedAt||'').replace('T',' ').slice(0,16);
-  return '<article class="case-list-card '+(active?'is-current':'')+'">'
-  +'<div class="case-list-no">'+(i+1)+'</div>'
-  +'<div class="case-list-detail"><strong>'+esc(m.name)+' 상속사건</strong>'
-  +'<small>사망일 '+esc(m.death?m.death.replaceAll('-','.'):'미입력')+' · 부동산 '+m.count+'건</small>'
-  +'<label class="case-method">등기 방식 <select class="cell-input" data-case-method="'+attr(row.id)+'" aria-label="'+attr(m.name+' 사건 등기 방식')+'">'
-  +Object.entries(CASE_METHODS).map(([value,label])=>'<option value="'+value+'"'+(m.method===label?' selected':'')+'>'+label+'</option>').join('')+'</select></label>'
-  +(row.state.method==='agreement'?'<label class="case-agreement-date">협의일 <input type="text" readonly data-calendar-input aria-haspopup="dialog" class="cell-input" data-case-agreement-date="'+attr(row.id)+'" aria-label="'+attr(m.name+' 사건 협의일')+'" value="'+attr(row.state.agreementDate||'')+'"></label>':'')
-  +'<small>최근 저장 '+esc(when)+(active?' · 현재 작업 중':'')+'</small>'
-  +'<small class="case-stage-badge '+(m.status==='임시저장'?'draft':'completed')+'">'+esc(m.status)+'</small></div>'
-  +'<div class="case-list-actions"><button type="button" class="outline" data-case-open="'+attr(row.id)+'">이어서 입력</button>'
-  +'<button type="button" class="outline" data-case-shares="'+attr(row.id)+'">지분계산</button>'
-  +'<button type="button" class="outline" data-case-cost="'+attr(row.id)+'" disabled title="C7 비용계산 연동 예정">비용계산(예정)</button>'
-  +'<button type="button" class="outline case-write-btn" data-case-forms="'+attr(row.id)+'">서류작성</button>'
-  +(row.state.method==='agreement'?'<button type="button" class="outline case-agreement-btn" data-case-agreement="'+attr(row.id)+'">지분 배분·협의서 작성</button>':'')
-  +'<button type="button" class="outline" data-case-guide="'+attr(row.id)+'">준비서류</button>'
-  +'<button type="button" class="danger" data-case-delete="'+attr(row.id)+'">삭제</button></div>'
-  +'</article>'
- }).join('')+'</div>';
+ const allSelected=list.every(row=>caseSelectedIds.has(row.id));
+ panel.innerHTML='<div class="case-table-scroll" role="region" aria-label="상속 사건리스트" tabindex="0"><table class="case-table"><thead><tr>'
+  +'<th class="case-check-col"><input type="checkbox" id="caseSelectAll" aria-label="모든 사건 선택"'+(allSelected?' checked':'')+'></th>'
+  +'<th class="case-address-col" scope="col">부동산 주소</th><th scope="col">피상속인</th><th scope="col">상속인</th><th scope="col">상속방법</th>'
+  +'<th scope="col">지분계산</th><th scope="col">비용계산</th><th scope="col">서류작성</th><th scope="col">준비서류</th></tr></thead><tbody>'
+  +list.map(row=>{
+   const m=caseMeta(row.state),id=attr(row.id),active=state.caseId===row.id;
+   const properties=(row.state.properties||[]).filter(property=>property.selected!==false);
+   const addresses=properties.map(property=>String(property.address||property.label||'주소 미입력').trim().split('\n')[0]);
+   const address=addresses[0]||'부동산 주소 입력';
+   const heirs=leafNodes(row.state.heirs),names=heirs.map(person=>String(person.name||'').trim()||'성명 미입력');
+   const firstName=names.find(name=>name!=='성명 미입력')||names[0]||'상속인 미입력';
+   const heirText=firstName+(names.length>1?' 외 '+(names.length-1)+'인':'');
+   const heirCell=names.length>1?'<details class="case-heir-details"><summary>'+esc(heirText)+'</summary><ul>'+names.map(name=>'<li>'+esc(name)+'</li>').join('')+'</ul></details>':esc(heirText);
+   return '<tr class="case-table-row '+(active?'is-current':'')+(caseSelectedIds.has(row.id)?' is-selected':'')+'">'
+    +'<td class="case-check-col"><input type="checkbox" data-case-select="'+id+'" aria-label="'+attr(m.name+' 사건 선택')+'"'+(caseSelectedIds.has(row.id)?' checked':'')+'></td>'
+    +'<td class="case-address-col"><button type="button" class="case-address-link" data-case-open="'+id+'" title="'+attr(addresses.join(' / '))+'" aria-label="'+attr(address+' 사건 입력 열기')+'">'+esc(address)+(addresses.length>1?'<small>외 '+(addresses.length-1)+'필지</small>':'')+'</button></td>'
+    +'<td>'+esc(m.name)+'</td><td>'+heirCell+'</td>'
+    +'<td><select class="cell-input case-table-method" data-case-method="'+id+'" aria-label="'+attr(m.name+' 사건 상속방법')+'">'
+    +Object.entries(CASE_METHODS).map(([value,label])=>'<option value="'+value+'"'+(row.state.method===value?' selected':'')+'>'+label+'</option>').join('')+'</select></td>'
+    +'<td><button type="button" class="outline" data-case-shares="'+id+'">계산</button></td>'
+    +'<td><button type="button" class="outline" disabled title="C7 비용계산 연동 예정" aria-label="비용계산 연동 예정">예정</button></td>'
+    +'<td><button type="button" class="outline" data-case-forms="'+id+'">작성</button></td>'
+    +'<td><button type="button" class="outline" data-case-guide="'+id+'">안내</button></td></tr>';
+  }).join('')+'</tbody></table></div>';
+ const selectAll=document.getElementById('caseSelectAll');
+ selectAll.indeterminate=caseSelectedIds.size>0&&!allSelected;
 }
 function caseUpdateSaved(id,changes){
  const list=caseReadList(),row=list.find(item=>item.id===id);
@@ -888,20 +915,25 @@ function caseOpenSaved(id,mode='open'){
   showStatus(caseMeta(state).name+(mode==='forms'?' 사건 서류작성 화면을 열었습니다.':' 사건을 열었습니다.'));
  }catch(e){alert('사건 열기 실패: '+e.message)}
 }
-function caseDeleteSaved(id,confirmed=false){
- const list=caseReadList(),item=list.find(x=>x.id===id);if(!item)return;
+function caseDeleteSaved(id,confirmed=false){caseDeleteSelection([id],confirmed)}
+function caseDeleteSelection(ids=[...caseSelectedIds],confirmed=false){
+ const list=caseReadList(),selected=new Set(ids),rows=list.filter(row=>selected.has(row.id));
+ if(!rows.length)return;
  if(!confirmed){
-  pendingPersonDeletion={kind:'case',id,caseState:state};
+  pendingPersonDeletion={kind:'cases',ids:rows.map(row=>row.id),caseState:state};
   document.getElementById('deletePersonTitle').textContent='사건 삭제 확인';
-  document.getElementById('deletePersonMessage').textContent=(item.state.decedent?.name||'피상속인 미입력')+' 사건을 사건리스트에서 삭제하시겠습니까?';
+  document.getElementById('deletePersonMessage').textContent=rows.length===1
+   ?(rows[0].state.decedent?.name||'피상속인 미입력')+' 사건을 사건리스트에서 삭제하시겠습니까?'
+   :'선택한 사건 '+rows.length+'건을 사건리스트에서 삭제하시겠습니까?';
   deletePersonDialog.showModal();return;
  }
- if(!caseWriteList(list.filter(x=>x.id!==id)))return;
- if(state.caseId===id){
+ if(!caseWriteList(list.filter(row=>!selected.has(row.id))))return;
+ for(const id of selected)caseSelectedIds.delete(id);
+ if(selected.has(state.caseId)){
   state=fresh();decedentDeathDraft=null;clearProxyDeathDrafts();
   selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;activeStage='files';
  }
- renderAll();showStatus('사건리스트에서 삭제했습니다.');
+ renderAll();showStatus(rows.length+'건의 사건을 목록에서 삭제했습니다.');
 }
 function caseNew(){
  if((state.caseId||caseHasEnteredData(state))&&!caseSaveCurrent())return;
@@ -2155,7 +2187,7 @@ function navigateStage(name){
  if(name==='agreement')name='forms';
  if(name==='cost'||name==='home')name='files';
  activeStage=name;treeEditorOpen=false;treeEditorDismissed=false;applyActiveStage();renderHeirs();if(name==='forms')renderFormMaker();
- const scrollTarget=name==='files'?(document.querySelector('.case-list-card.is-current')||document.getElementById('caseListView'))
+ const scrollTarget=name==='files'?(document.querySelector('.case-table-row.is-current')||document.getElementById('caseListView'))
   :document.getElementById(['property','people','shares'].includes(name)?'inheritanceEditorTop':'caseListView');
  scrollTarget?.scrollIntoView({block:'start',behavior:'instant'});
 }
@@ -2434,7 +2466,7 @@ function buildDocument(c){
  if(!state.decedent.ident?.trim())throw Error('피상속인 등록번호를 입력하세요.');
  if(!state.decedent.address?.trim())throw Error('피상속인 주소를 입력하세요.');
  requirePropertyDescriptions();
- if(!todayCheck(state.agreementDate))throw Error('사건리스트 또는 피상속인 카드 옆에서 실제 협의일을 지정해 주세요.');
+ if(!todayCheck(state.agreementDate))throw Error('가족관계 트리의 피상속인 카드 옆에서 실제 협의일을 지정해 주세요.');
  validateAgreementRepresentatives(c);
  if(!state.agreementSelected.length)throw Error('협의로 부동산을 취득할 상속인을 체크하세요.');
  for(let r of c.recipients){if(!r.name.trim())throw Error('모든 실제 상속인의 성명을 입력하세요.');let d=state.details[r.id]||{};if(!d.ident?.trim()||!d.address?.trim())throw Error(`${r.name} 상속인의 등록번호와 주소를 입력하세요.`)}
@@ -2747,6 +2779,15 @@ document.addEventListener('change',async e=>{
  }
 });
 document.addEventListener('change',e=>{let t=e.target;
+ if(t.matches('[data-case-select]')){
+  t.checked?caseSelectedIds.add(t.dataset.caseSelect):caseSelectedIds.delete(t.dataset.caseSelect);
+  renderCaseList();return;
+ }
+ if(t.matches('#caseSelectAll')){
+  for(const row of caseReadList())t.checked?caseSelectedIds.add(row.id):caseSelectedIds.delete(row.id);
+  renderCaseList();return;
+ }
+
  if(t.matches('[data-decedent-ymd]')){updateDecedentDatePart(t.dataset.decedentYmd,t.value);return}
  if(t.matches('[data-proxy-ymd]')){updateProxyDatePart(t.dataset.proxyYmd,t.dataset.proxyPart,t.value);return}
  if(t.matches('[data-same-day-order]')){
@@ -3017,7 +3058,7 @@ function applyPersonDeletion(){
  if(!pending||pending.caseState!==state){deletePersonDialog.close();return}
  pendingPersonDeletion=null;
  deletePersonDialog.close();
- if(pending.kind==='case'){caseDeleteSaved(pending.id,true);return}
+ if(pending.kind==='cases'){caseDeleteSelection(pending.ids,true);return}
  const person=findNode(pending.id);if(!person)return;
  const ids=new Set();traverseNodes([person],node=>ids.add(node.id));
  executeButtonAction(()=>{
@@ -3080,6 +3121,7 @@ document.querySelector('#loadJson').addEventListener('click',()=>document.queryS
 document.querySelector('#jsonFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let incoming=JSON.parse(await f.text());if(restoreCaseBackup(incoming)){e.target.value='';return}if(!incoming||!Array.isArray(incoming.heirs)||!Array.isArray(incoming.properties)||!incoming.decedent)throw Error('사건 형식이 아닙니다.');state=incoming;state.caseId=null;state.details??={};decedentDeathDraft=null;clearProxyDeathDrafts();selectedPersonId='__decedent__';treeEditorOpen=false;treeEditorDismissed=false;normalise();renderAll();showStatus('사건 파일을 불러왔습니다.')}catch(err){alert('불러오기 실패: '+err.message)}e.target.value=''});
 document.querySelector('#reset').addEventListener('click',caseNew);
 document.querySelector('#caseNewItem').addEventListener('click',caseNew);
+document.getElementById('caseDeleteSelected').addEventListener('click',()=>caseDeleteSelection());
 document.querySelector('#caseSaveToList').addEventListener('click',()=>{
  if(caseSaveCurrent(true))navigateStage('files');
 });
