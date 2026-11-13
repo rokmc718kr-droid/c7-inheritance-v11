@@ -562,6 +562,12 @@ button.danger{background:#f5f5f5;color:#434b55}
 .death-era-picker .death-era-options .law-mode{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;min-width:0;text-align:center;font-size:12px;overflow-wrap:anywhere}
 .death-era-picker .death-era-options input{flex:none;width:18px;height:18px;margin:0}
 .death-era-picker .death-era-options strong{font-size:13px}
+
+.person-name-ident-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,7fr);align-items:end;gap:10px}
+.person-name-ident-row .field{min-width:0}
+.person-name-ident-row input{width:100%;min-width:0}
+.editor-form .nationality-field{grid-column:1/-1}
+@media(max-width:370px){.person-name-ident-row{gap:8px}.person-name-ident-row input{padding-left:8px;padding-right:8px}}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -1514,7 +1520,7 @@ function nationalityMarkup(person,id,label){
  const selected=nationalitySelection(person);
  const custom=selected==='직접입력'
   ?'<div class="field wide"><label for="nationalityOther-'+attr(id)+'">국가명 직접입력</label><input type="text" class="cell-input" id="nationalityOther-'+attr(id)+'" data-node-id="'+attr(id)+'" data-country-other value="'+attr(countryName(person))+'" placeholder="예: 싱가포르" autocomplete="off" maxlength="80"></div>':'';
- return '<div class="field nationality-field"><label for="nationality-'+attr(id)+'">'+esc(label)+'</label><select class="cell-input" id="nationality-'+attr(id)+'" data-node-id="'+attr(id)+'" data-nationality-select>'+nationalityOptions(selected)+'</select></div>'+custom;
+ return '<div class="field wide nationality-field"><label for="nationality-'+attr(id)+'">'+esc(label)+'</label><select class="cell-input" id="nationality-'+attr(id)+'" data-node-id="'+attr(id)+'" data-nationality-select>'+nationalityOptions(selected)+'</select></div>'+custom;
 }
 
 
@@ -1682,14 +1688,14 @@ function renderHeirs(){
   <div class="editor-rel"><div class="field"><label>${esc(relationCaption(parentName))} <span class="era-compact">· ${esc(eraText(relationEra(selectedParent)))}</span></label>${relationVariantSelect(person,selectedParent)}</div></div>
   <div class="editor-form">
   ${nationalityMarkup(person,person.id,'국적/신분')}
-  <div class="field"><label>성명</label><input class="cell-input" data-node-id="${id}" data-node-prop="name" value="${attr(person.name)}" placeholder="성명" autocomplete="off"></div>
+
   ${personIdentityFieldsMarkup(person,info.ident,info.address,person.id)}</div>
   ${minorRepresentativeMarkup(person)}
   ${(person.proxy||person.postDeath)?`<div class="editor-proxy"><div class="field"><label>망 ${esc(person.name||'관계인')}의 사망년월일 (달력 선택)</label>${proxyDateSelectMarkup(person)}</div><p class="note" style="margin-top:8px">${person.postDeath?'후속상속인은 이 사람의 사망일에 따른 상속순위를 다시 판단합니다.':'피대습자의 선사망일을 기준으로 대습상속 요건을 검토합니다.'} 트리의 <b>＋ ${person.postDeath?'후속상속인':'대습상속인'} 추가</b> 버튼으로 등록하세요.</p></div>`:''}
   <div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`;
  }else{editor=`<div class="editor-head"><div><strong>피상속인 정보 수정</strong><small>가족관계 트리의 기준이 되는 망자입니다.</small></div></div><div class="editor-inner"><div class="stage-banner">피상속인의 성명 · 사망일을 입력하면 관계 표시가 자동 변경됩니다.</div><div class="editor-form">
  ${nationalityMarkup(state.decedent,'__decedent__','국적/신분')}
- <div class="field"><label>성명</label><input class="cell-input" data-decedent-edit="name" value="${attr(state.decedent.name||'')}" placeholder="성명" autocomplete="off"></div>
+
  ${personIdentityFieldsMarkup(state.decedent,state.decedent.ident,state.decedent.address,'__decedent__',true)}
  <div class="field wide">${decedentDateSelectMarkup()}</div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeEditorDismissed?'editor-dismissed':''} ${treeMini?'tree-mini':''}">
@@ -2322,8 +2328,10 @@ function requirePropertyDescriptions(){
 }
 function personIdentityFieldsMarkup(person,ident,address,id,isDecedent=false){
  const identBinding=isDecedent?'data-decedent-edit="ident"':'data-detail="'+attr(id)+'" data-key="ident"';
+ const nameBinding=isDecedent?'data-decedent-edit="name"':'data-node-id="'+attr(id)+'" data-node-prop="name"';
  const addressBinding=isDecedent?'data-decedent-edit="address"':'data-detail="'+attr(id)+'" data-key="address"';
- return '<div class="field wide"><label>주민등록번호 / 등록번호</label><input class="cell-input" '+identBinding+' data-registration-number="'+(person.nationality==='내국인'?'partial':'full')+'" value="'+attr(ident||'')+'" placeholder="등록번호" autocomplete="off"></div><div class="field wide">'+addressInputMarkup(isDecedent?'decedent-address':'heir-address-'+id,'주소',address,addressBinding)+'</div>';
+ const nameId='person-name-'+attr(id),identId='person-ident-'+attr(id);
+ return '<div class="person-name-ident-row wide"><div class="field"><label for="'+nameId+'">성명</label><input id="'+nameId+'" class="cell-input" '+nameBinding+' value="'+attr(person.name||'')+'" placeholder="성명" autocomplete="off"></div><div class="field"><label for="'+identId+'">주민등록번호 / 등록번호</label><input id="'+identId+'" class="cell-input" '+identBinding+' data-registration-number="'+(person.nationality==='내국인'?'partial':'full')+'" value="'+attr(ident||'')+'" placeholder="등록번호" autocomplete="off"></div></div><div class="field wide">'+addressInputMarkup(isDecedent?'decedent-address':'heir-address-'+id,'주소',address,addressBinding)+'</div>';
 }
 function addressInputMarkup(id,label,value,binding){
  return '<label for="'+attr(id)+'">'+esc(label)+'</label><div class="address-entry">'
