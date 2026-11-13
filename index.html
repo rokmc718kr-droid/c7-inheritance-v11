@@ -522,6 +522,26 @@ button.danger{background:#f5f5f5;color:#434b55}
 .case-table td>button.outline{font-size:12px;padding:7px 10px}
 .case-heir-details summary{cursor:pointer;line-height:1.6}.case-heir-details ul{margin:6px 0 0;padding-left:17px;font-size:12px;line-height:1.7}
 .death-era-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.death-era-options .law-mode{min-width:0;margin:0;font-size:14px}@media(max-width:600px){.death-era-options{grid-template-columns:1fr}}
+
+.property-input-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:18px 0}
+.property-input-toolbar fieldset{display:flex;align-items:center;gap:20px;border:0;padding:0;margin:0;min-width:0}
+.property-input-toolbar legend{float:left;margin-right:16px;font-weight:700}
+.property-input-toolbar label{display:flex;align-items:center;gap:8px;margin:0}
+.property-count-label select{width:100px;margin:0}
+.property-grid-scroll{overflow-x:auto;border:1px solid #d6dce4;border-radius:12px}
+.property-grid{border-collapse:collapse;width:100%;min-width:540px;table-layout:fixed}
+.property-grid th,.property-grid td{padding:14px 12px;text-align:left;border-bottom:1px solid #e4e7eb;vertical-align:middle}
+.property-grid thead th{background:#f3f5f8;color:#394754}
+.property-grid th:first-child{width:140px}.property-grid th:last-child{width:145px}
+.property-grid tbody tr:last-child>*{border-bottom:0}
+.property-grid input{margin:0;min-width:0;width:100%}
+.property-grid .address-entry{display:flex;gap:8px;align-items:center}
+.property-grid .address-entry button{flex:none;padding:10px 14px;white-space:nowrap}
+.property-row-select{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.property-grid .property-row-select input{width:18px;height:18px;flex:none}
+.property-row-delete{background:transparent;color:#8b4550;font-size:12px;padding:4px 0;margin-left:26px}
+.property-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:600px){.property-grid th,.property-grid td{padding:10px 8px}.property-input-toolbar{gap:12px}.property-grid{min-width:510px}.property-grid th:first-child{width:115px}.property-grid th:last-child{width:110px}}
 </style>
 </head><body>
 <div class="topbar"><div><div class="pill">C7 · AI 상속 토탈 · V11 기반</div><h1>AI 상속 토탈</h1><p class="sub">상속지분 계산 · 상속비용 산출(연동 예정) · 서류 자동작성·출력 · 고객 준비서류 안내</p></div><div class="pill" id="runtimeStatus" role="status">⚠ 기능 준비 중 · 버튼이 안 되면 브라우저에서 열어 주세요</div></div>
@@ -545,8 +565,8 @@ button.danger{background:#f5f5f5;color:#434b55}
  <button type="button" data-go-stage="shares">③ AI 상속지분 계산</button>
 </nav>
 <div class="stage-screen" data-stage="property">
-<section class="panel"><div class="panelhead"><h2>01. 부동산 입력 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 부동산 추가</button></div><div class="body">
-<div class="choice-info"><b>부동산별로 등기부 또는 주소를 선택하세요.</b><br>등기부는 가져온 데이터의 주소와 선택한 소유자의 지분을 반영합니다. 주소는 소재지와 대상지분을 입력합니다. 체크한 부동산만 계산·서류에 반영됩니다.</div>
+<section class="panel"><div class="panelhead"><h2>01. 부동산 입력 <span id="selectedPropertyCount" class="tag"></span></h2><button type="button" class="outline" id="addProperty">＋ 등기부 부동산 추가</button></div><div class="body">
+<div class="choice-info">입력방식을 선택하세요. 주소 입력은 부동산 수에 맞춰 주소와 대상지분을 한 줄씩 입력합니다. 등기부는 가져온 주소와 선택한 소유자의 지분을 반영합니다.</div><div id="propertyInputControls"></div>
 <div id="propertiesView"></div>
 <p class="note">주소 방식의 대상지분은 1, 1/2, 17/100 등의 분수로 입력합니다.</p>
 <div class="actionbar"><button type="button" class="primary" id="proceedAfterProperty">입력 완료 · 상속관계 입력 →</button></div>
@@ -949,7 +969,8 @@ function normalise(){
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
  state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';if(state.eraMode==='choose'&&todayCheck(state.decedent.death))state.eraMode='auto';
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
- state.properties.forEach(p=>{p.alloc??={};p.share??='1';p.label??='';p.address??='';p.selected??=true });
+ if(!['address','registry'].includes(state.propertyInputMode))state.propertyInputMode=state.properties[0]?.source==='registry'?'registry':'address';
+ state.properties.forEach(p=>{p.source??='address';p.alloc??={};p.share??='1';p.label??='';p.address??='';p.selected??=true });
  if(!Array.isArray(state.agreementSelected)){
   const ids=new Set();state.properties.forEach(p=>Object.entries(p.alloc||{}).forEach(([id,v])=>{if(/^\s*[1-9]\d*(?:\/\d+)?\s*$/.test(String(v)))ids.add(id)}));state.agreementSelected=[...ids];
  }
@@ -2323,17 +2344,30 @@ function propertyRegistryMarkup(property){
    :'<details class="note"><summary>가져올 수 있는 파일 형식</summary><p>주소와 소유자별 지분이 들어 있는 JSON 파일을 선택하세요. C7 등기부 목록 연결은 준비 중입니다.</p><code>{"address":"소재지 주소","owners":[{"name":"소유자 성명","share":"1"}],"description":"등기부 표시(선택)"}</code></details>')
   +'</div>';
 }
+function propertyHasInput(p){
+ return !!(String(p.address||'').trim()||String(p.label||'').trim()||p.registry||p.addressDraft?.address||p.addressDraft?.label||String(p.share||'1').trim()!=='1'||Object.keys(p.alloc||{}).length);
+}
+function resizeAddressProperties(value){
+ const count=Number(value),current=state.properties.length;
+ if(!Number.isInteger(count)||count<1||count>Math.max(100,current)){renderProperties();return;}
+ if(count<current){
+  const removed=state.properties.slice(count);
+  if(removed.some(propertyHasInput)&&!confirm('부동산 '+(count+1)+'~'+current+'의 입력내용을 삭제하고 '+count+'개로 줄일까요?\n'+removed.map((p,i)=>'부동산 '+(count+i+1)+': '+(p.address||p.addressDraft?.address||'주소 미입력')).join('\n'))){renderProperties();return;}
+  state.properties.splice(count);
+ }else while(state.properties.length<count)state.properties.push(makeProp());
+ state.shareCompletedFor='';renderAll();
+}
 function renderProperties(){
- const el=document.querySelector('#propertiesView');
+ const el=document.querySelector('#propertiesView'),mode=state.propertyInputMode||'address',addressMode=mode==='address';
  document.querySelector('#selectedPropertyCount').textContent='선택 '+selectedProperties().length+' / 전체 '+state.properties.length+'건';
- if(!state.properties.length){el.innerHTML='<div class="empty">부동산을 먼저 추가하고 선택해 주세요.</div>';return}
- el.innerHTML=state.properties.map((p,i)=>`<div class="propertycard ${p.selected!==false?'property-picked':''}">
- <div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label><div class="property-source" role="group" aria-label="부동산 ${i+1} 입력 방식"><label><input type="radio" name="property-source-${i}" data-property-source="${attr(p.id)}" value="registry" ${p.source==='registry'?'checked':''}>등기부</label><label><input type="radio" name="property-source-${i}" data-property-source="${attr(p.id)}" value="address" ${p.source!=='registry'?'checked':''}>주소</label></div></div>
- ${p.source==='registry'?propertyRegistryMarkup(p):`<div class="field property-address">${addressInputMarkup('property-address-'+p.id,'부동산 소재지 주소',p.address,'data-path="properties.'+i+'.address"')}</div>`}
- <div class="row" style="align-items:end">
- ${p.source==='registry'?'':`<div class="field" style="flex:1;min-width:145px"><label for="property-share-${i}">대상지분 (피상속인 소유지분)</label><input id="property-share-${i}" value="${attr(p.share)}" data-path="properties.${i}.share" placeholder="1/2"></div>`}
- <button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div>
- </div>`).join('');
+ document.getElementById('addProperty').hidden=addressMode;
+ document.getElementById('propertyInputControls').innerHTML='<div class="property-input-toolbar"><fieldset><legend>입력방식</legend><label><input type="radio" name="propertyInputMode" value="registry" '+(!addressMode?'checked':'')+'> 등기부</label><label><input type="radio" name="propertyInputMode" value="address" '+(addressMode?'checked':'')+'> 주소 입력</label></fieldset>'+(addressMode?'<label class="property-count-label" for="propertyAddressCount">부동산 수 <select id="propertyAddressCount">'+(!state.properties.length?'<option value="0">선택</option>':'')+Array.from({length:Math.max(100,state.properties.length)},(_,i)=>'<option value="'+(i+1)+'" '+(i+1===state.properties.length?'selected':'')+'>'+(i+1)+'개</option>').join('')+'</select></label>':'')+'</div>';
+ if(!state.properties.length){el.innerHTML='<div class="empty">'+(addressMode?'상단에서 부동산 수를 선택하세요.':'등기부 부동산을 추가하세요.')+'</div>';return;}
+ const addressRows=state.properties.map((p,i)=>({p,i})).filter(({p})=>p.source!=='registry');
+ const registryRows=state.properties.map((p,i)=>({p,i})).filter(({p})=>p.source==='registry');
+ const table=addressRows.length?'<div class="property-grid-scroll"><table class="property-grid"><caption class="property-visually-hidden">주소 입력 부동산 목록</caption><thead><tr><th scope="col">부동산 구분</th><th scope="col">주소</th><th scope="col">대상지분</th></tr></thead><tbody>'+addressRows.map(({p,i})=>`<tr><th scope="row"><label class="property-row-select"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''} aria-label="부동산 ${i+1} 선택">부동산 ${i+1}</label><button type="button" class="property-row-delete" data-action="removeProperty" data-i="${i}" aria-label="부동산 ${i+1} 삭제">삭제</button></th><td><div class="address-entry"><input id="property-address-${attr(p.id)}" class="cell-input" data-path="properties.${i}.address" aria-label="부동산 ${i+1} 주소" value="${attr(p.address||'')}" placeholder="주소 입력" autocomplete="off"><button type="button" class="outline" data-address-search="property-address-${attr(p.id)}" aria-label="부동산 ${i+1} 주소 검색">검색</button></div></td><td><input id="property-share-${i}" class="cell-input" data-path="properties.${i}.share" aria-label="부동산 ${i+1} 대상지분" value="${attr(p.share)}" placeholder="1/2"></td></tr>`).join('')+'</tbody></table></div>':'';
+ const cards=registryRows.map(({p,i})=>`<div class="propertycard ${p.selected!==false?'property-picked':''}"><div class="property-select-line"><label class="prop-check"><input type="checkbox" data-property-selected="${attr(p.id)}" ${p.selected!==false?'checked':''}> <b>부동산 ${i+1} 선택</b></label></div>${propertyRegistryMarkup(p)}<button type="button" class="danger" data-action="removeProperty" data-i="${i}">삭제</button></div>`).join('');
+ el.innerHTML=table+cards;
 }
 // 협의 취득자 기준 배분(법정상속 지분과 혼합 금지).
 // 체크되지 않은 상속인의 취득비율은 항상 0, 1명만 체크된 경우 반드시 1.
@@ -2490,7 +2524,7 @@ document.addEventListener('click', e=>{
  const add=e.target.closest('#addHeir');
  if(add){e.preventDefault();executeButtonAction(()=>{let n=makeHeir();state.heirs.push(n);selectedPersonId=n.id;treeEditorDismissed=false;treeEditorOpen=window.matchMedia('(max-width:820px)').matches},`상속인이 추가되었습니다. (총 ${state.heirs.length+1}명)`);return}
  const prop=e.target.closest('#addProperty');
- if(prop){e.preventDefault();executeButtonAction(()=>{state.properties.push(makeProp())},'부동산이 추가되었습니다.');return}
+ if(prop){e.preventDefault();executeButtonAction(()=>{const p=makeProp();setPropertySource(p,'registry');state.properties.push(p);state.propertyInputMode='registry'},'등기부 부동산이 추가되었습니다.');return}
 });
 function completeTreeEditor(){
  const input=document.activeElement;
@@ -2809,6 +2843,14 @@ document.addEventListener('change',e=>{let t=e.target;
  if(t.matches('[data-receive]')){const id=t.dataset.receive;state.agreementSelected=t.checked?[...new Set([...state.agreementSelected,id])]:state.agreementSelected.filter(x=>x!==id);try{autoAllocateSelected(calculate())}catch{}renderAlloc();renderDocs();save();return}
  if(t.matches('[data-role]')){setPersonRole(t.dataset.role,t.dataset.value);return}
  if(t.matches('[data-era-relation]')){const n=findNode(t.dataset.nodeId);if(!n)return;let par=null;traverseNodes(state.heirs,(x,l,p)=>{if(x.id===n.id)par=p});applyRelationVariant(n,t.value,par);renderAll();return}
+ if(t.matches('[name="propertyInputMode"]')){
+  if(!['address','registry'].includes(t.value))return;
+  state.propertyInputMode=t.value;
+  if(!state.properties.length)state.properties.push(makeProp());
+  state.properties.forEach(p=>setPropertySource(p,t.value));
+  state.shareCompletedFor='';renderAll();return;
+ }
+ if(t.matches('#propertyAddressCount')){resizeAddressProperties(t.value);return;}
  if(t.matches('[data-property-source]')){
   const property=state.properties.find(p=>p.id===t.dataset.propertySource);
   if(property){setPropertySource(property,t.value);state.shareCompletedFor='';renderAll();}
@@ -3085,7 +3127,7 @@ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');
  if(act==='removeHeir')state.heirs.splice(i,1);
  if(act==='addSub')state.heirs[i].sub.push(makeSub());
  if(act==='removeSub')state.heirs[i].sub.splice(j,1);
- if(act==='removeProperty')state.properties.splice(i,1);
+ if(act==='removeProperty'){const p=state.properties[i];if(p&&propertyHasInput(p)&&!confirm('부동산 '+(i+1)+'의 입력내용을 삭제할까요?\n'+(p.address||p.addressDraft?.address||'주소 미입력')))return;state.properties.splice(i,1);state.shareCompletedFor='';}
  if(act==='redistribute'){try{autoAllocateSelected(calculate())}catch(e){alert(e.message)}}
  if(act==='applyFirst'){try{let c=calculate();let first=c.recipients.find(r=>state.agreementSelected.includes(r.id));if(first)selectedProperties().forEach(p=>{p.allocUserEdited=true;c.recipients.forEach(r=>p.alloc[r.id]=r.id===first.id?'1':'0')})}catch(e){alert(e.message)}}
  renderAll()
