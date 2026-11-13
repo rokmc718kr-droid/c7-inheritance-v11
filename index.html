@@ -994,7 +994,7 @@ function showStatus(msg,bad=false){let el=document.querySelector('#status');if(e
 function normalise(){
  if(!Object.hasOwn(CASE_METHODS,state.method))state.method='unknown';
  if(!['combined','individual'].includes(state.docMode))state.docMode='combined';
- state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';if(state.eraMode==='choose'&&todayCheck(state.decedent.death))state.eraMode='auto';
+ state.caseId??=null;state.shareCompletedFor??='';state.formSettings??={};state.formSettings.agentName??='';state.formSettings.officeName??='';state.formSettings.agentIdent??='';state.formSettings.officePhone??='';state.formSettings.officeAddress??='';state.formSettings.issueDate??='';state.formSettings.manualName??='';state.formSettings.manualIdent??='';state.formSettings.manualAddress??='';state.formSettings.selectedDocs??=['registration','resident_extract'];state.formSettings.selectedPeople??=null;state.decedent.ident??='';state.decedent.address??='';state.decedent.sex??='';state.decedent.nationality=['내국인','재외국민','외국인'].includes(state.decedent.nationality)?state.decedent.nationality:'내국인';state.decedent.country??='';state.decedent.countryCustom??='';state.agreementDate??='';state.details??={};state.historicalType??='';state.historicalSuccessor??='';state.legacyHoju??='';state.verifiedManual??=false;state.oldProxyVerified??=false;state.successionReviewed??=false;state.successionReviewSignature??='';state.manualShares??={};state.eraMode??='auto';state.eraOverride??='';state.eraReasonType??='';state.eraReasonNote??='';state.eraVerified??=false;if(!['auto','choose'].includes(state.eraMode))state.eraMode='auto';if(state.eraMode==='choose'&&todayCheck(state.decedent.death))state.eraMode='auto';syncBirthDerivedEra();
  state.heirs.forEach(h=>{const prep=n=>{n.sub??=[];n.proxy=!!n.proxy;n.postDeath=!!n.postDeath;if(n.proxy&&n.postDeath)n.postDeath=false;n.death??='';n.deathUnknown=!!n.deathUnknown;if(!n.postDeath)n.deathUnknown=false;n.sameDayVerifiedFor??='';n.name??='';n.nationality=['내국인','재외국민','외국인'].includes(n.nationality)?n.nationality:'내국인';n.country??='';n.countryCustom??='';n.legacyRegister??='';n.eraVariant??='';n.sub.forEach(prep)};prep(h)});
  if(!['address','registry'].includes(state.propertyInputMode))state.propertyInputMode=state.properties[0]?.source==='registry'?'registry':'address';
  state.properties.forEach(p=>{p.source??='address';p.propertyType=['토지','건물','집합건물'].includes(p.propertyType)?p.propertyType:'';p.buildingDong=String(p.buildingDong??'');p.buildingHo=String(p.buildingHo??'');p.alloc??={};p.share??='1';p.label??='';p.address??='';p.selected??=true });
@@ -1366,6 +1366,29 @@ function decedentDatePieces(){
  const a=(state.decedent.death||'').split('-');
  return {year:a[0]||'',month:a[1]||'',day:a[2]||''};
 }
+function decedentBirthProvesModern(){
+ if(!['내국인','재외국민'].includes(state.decedent.nationality))return false;
+ const raw=String(state.decedent.ident||'').replace(/[^0-9]/g,'');
+ if(!['1','2','3','4','9','0'].includes(raw[6]))return false;
+ const birth=birthDateFromIdentity(state.decedent.ident);
+ return birth.valid&&birth.born>='1991-01-01'&&birth.born<=now();
+}
+function syncBirthDerivedEra(){
+ const before=state.eraOverride+'|'+!!state.eraBirthAuto;
+ const automatic=state.eraMode==='choose'&&decedentBirthProvesModern();
+ if(automatic){state.eraOverride='modern';state.eraBirthAuto=true;}
+ else if(state.eraBirthAuto){state.eraBirthAuto=false;if(state.eraMode==='choose')state.eraOverride='';}
+ const changed=before!==state.eraOverride+'|'+!!state.eraBirthAuto;
+ if(changed){state.shareCompletedFor='';state.successionReviewed=false;}
+ return changed;
+}
+function refreshBirthEraDisplay(){
+ const field=document.getElementById('decedent-death-editor');
+ if(field)field.innerHTML=decedentDateSelectMarkup();
+ const root=document.querySelector('[data-tree-person="__decedent__"]');
+ if(root){root.querySelectorAll('.root-death-basis,.root-law-basis').forEach(el=>el.remove());root.insertAdjacentHTML('beforeend',decedentTreeBasisMarkup());}
+ renderResults();renderHistory();
+}
 function decedentTreeBasisMarkup(){
  const unknown=state.eraMode==='choose',era=effectiveEra(state.decedent.death);
  const date=unknown?'사망일 모름':todayCheck(state.decedent.death)?'사망일 '+state.decedent.death.replaceAll('-','.'):'사망일 미입력';
@@ -1378,8 +1401,8 @@ function decedentDateSelectMarkup(){
  if(unknown){
   const selected=['custom','civil60','civil79','modern'].includes(state.eraOverride)?state.eraOverride:'';
   const explanations={custom:'호주상속·유산상속 유형을 아래 세부항목에서 확인합니다.',civil60:'당시의 신분·가적 및 호주상속 관계유형을 아래에서 선택합니다.',civil79:'개정 구민법 시기의 신분·가적 및 호주상속 관계유형을 아래에서 선택합니다.',modern:'입력한 상속인 관계에 따라 이 시기의 법정지분을 산출합니다.'};
-  const description=selected?eraText(selected)+' — '+explanations[selected]:'사망일을 모르면 상속 적용법을 선택하세요.';
-  return mode+'<div class="death-era-description" aria-live="polite">'+esc(description)+'</div><div class="death-era-picker"><div class="death-era-options" role="group" aria-label="사망일 미상 적용법 선택">'+['custom','civil60','civil79','modern'].map(e=>{const parts=eraText(e).split(' · ');return '<label class="law-mode '+(selected===e?'picked':'')+'"><input type="radio" name="deathEra" value="'+e+'" '+(selected===e?'checked':'')+'><span>'+esc(parts[0])+'</span><strong>'+esc(parts[1])+'</strong></label>'}).join('')+'</div></div>';
+  const description=state.eraBirthAuto?'주민등록번호상 1991년 이후 출생 확인 · 개정 민법이 자동 적용됩니다.':selected?eraText(selected)+' — '+explanations[selected]:'사망일을 모르면 상속 적용법을 선택하세요.';
+  return mode+'<div class="death-era-description" aria-live="polite">'+esc(description)+'</div><div class="death-era-picker"><div class="death-era-options" role="group" aria-label="사망일 미상 적용법 선택">'+['custom','civil60','civil79','modern'].map(e=>{const parts=eraText(e).split(' · ');return '<label class="law-mode '+(selected===e?'picked':'')+'"><input type="radio" name="deathEra" value="'+e+'" '+(selected===e?'checked':'')+' '+(state.eraBirthAuto&&e!=='modern'?'disabled':'')+'><span>'+esc(parts[0])+'</span><strong>'+esc(parts[1])+'</strong></label>'}).join('')+'</div></div>';
  }
  return mode+'<button type="button" class="cell-input calendar-open" data-calendar-open="decedent" aria-haspopup="dialog">'+esc(state.decedent.death?.replaceAll('-','.')||'사망일 선택')+' <span aria-hidden="true">▦</span></button><small class="muted" style="display:block;margin-top:5px">'+(todayCheck(state.decedent.death)?'자동 적용: '+esc(eraText(getEra(state.decedent.death))):'달력에서 연도·월·일을 선택하세요.')+'</small>';
 }
@@ -1734,7 +1757,7 @@ function renderHeirs(){
  ${nationalityMarkup(state.decedent,'__decedent__','국적/신분')}
 
  ${personIdentityFieldsMarkup(state.decedent,state.decedent.ident,state.decedent.address,'__decedent__',true)}
- <div class="field wide">${decedentDateSelectMarkup()}</div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
+ <div class="field wide" id="decedent-death-editor">${decedentDateSelectMarkup()}</div></div><div class="editor-actions"><span class="muted">수정내용은 자동 저장됩니다.</span><button type="button" class="editor-complete" data-tree-close>완료 ✓</button></div></div>`}
  target.innerHTML=`<div class="tree-mobile-shade ${treeEditorOpen?'show':''}" data-tree-close></div><div class="heir-tree-board ${treeEditorDismissed?'editor-dismissed':''} ${treeMini?'tree-mini':''}">
  <section class="tree-pane" aria-label="가족관계 전체 트리"><div class="tree-pane-top"><div><strong>가족관계 전체 보기</strong><small>상속인 · 피대습자 · 대습상속인 · 상속 후 사망한 상속인 · 후속상속인</small></div><button type="button" data-tree-mini>${treeMini?'기본 크기':'한눈에 축소'}</button></div><div class="tree-viewport"><div class="tree-family-row tree-root-row"><button type="button" class="tree-root ${selectedPersonId==='__decedent__'?'is-selected':''}" data-tree-person="__decedent__"><strong>피상속인 ${esc(rootName)}</strong>${decedentTreeBasisMarkup()}</button>${treeAgreementDateMarkup()}<button type="button" id="addHeir" class="tree-inline-add" aria-label="상속인 추가">＋ 상속인 추가</button></div><ul class="tree-stack">${allLabel}</ul>${proxyDeathOrderWarning()}<div class="tree-hint">피상속인·피대습자 옆 ＋ 버튼으로 바로 추가하고, 사람을 선택하면 상세정보를 수정할 수 있습니다.</div></div><div class="tree-legend">구분: 상속인 / 1·2차 피대습자 / 1·2차 대습상속인 · 명칭과 연결선으로 관계를 확인합니다.</div></section>
  <section class="tree-editor ${treeEditorDismissed?'hidden':''} ${treeEditorOpen?'open':''}" aria-label="선택된 관계인 상세입력">${editor}</section></div>`;
@@ -2768,6 +2791,7 @@ document.addEventListener('input',e=>{
   formatRegistrationNumber(registration,e.inputType);
   if(registration.dataset.decedentEdit==='ident'){
    state.decedent.ident=registration.value;
+   if(syncBirthDerivedEra())refreshBirthEraDisplay();
    save();
    return;
   }
@@ -2923,7 +2947,7 @@ document.addEventListener('change',e=>{let t=e.target;
   node.deathUnknown=t.value==='unknown';node.death='';delete proxyDeathDrafts[node.id];node.sameDayVerifiedFor='';state.shareCompletedFor='';state.successionReviewed=false;renderAll();return;
  }
  if(t.matches('[name="deathKnowledge"]')){state.eraMode=t.value==='unknown'?'choose':'auto';state.decedent.death='';state.eraOverride='';state.eraVerified=false;decedentDeathDraft=null;state.shareCompletedFor='';state.successionReviewed=false;renderAll();return}
- if(t.matches('[name="deathEra"]')){state.eraOverride=t.value;state.shareCompletedFor='';state.successionReviewed=false;renderAll();return}
+ if(t.matches('[name="deathEra"]')){if(state.eraBirthAuto&&t.value!=='modern')return;state.eraOverride=t.value;state.shareCompletedFor='';state.successionReviewed=false;renderAll();return}
  if(t.matches('#historicalType')){state.historicalType=t.value;renderAll();return}
  if(t.matches('#historicalSuccessor')){state.historicalSuccessor=t.value;renderAll();return}
  if(t.matches('#legacyHoju')){state.legacyHoju=t.value;renderAll();return}
