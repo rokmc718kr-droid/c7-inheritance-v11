@@ -1863,6 +1863,7 @@ function docGuideGroupsByIssuer(guide){
  add(guide.heirs,domesticSubject);
  add(guide.method,'상속방법에 따른 준비');
  add(guide.extra,'해당하는 경우');
+ for(const person of guide.additionalPeople||[])add(person.items,person.subject);
  for(const group of guide.foreignGroups)add(group.items,group.title);
  add(guide.foreignMaterials,'외국 서류 관련');
  const priority=title=>order.includes(title)?order.indexOf(title):title==='직접 지참할 것'?3:title==='참고사항'?4:2;
@@ -1992,7 +1993,16 @@ function docGuideItems(){
  const methodDocs=docGuide.method==='agreement'?DOCS_AGREEMENT:
   docGuide.method==='statute'?DOCS_STATUTE:
   ['협의분할을 선택할 경우, 참여 상속인의 인감증명서·인감도장이 추가로 필요합니다. (상속방법 결정 후 다시 확인)'];
- const extra=[...DOCS_EXTRA];
+ const extra=docGuide.sourceCaseId?[]:[...DOCS_EXTRA];
+ const additionalPeople=[];
+ if(docGuide.sourceCaseId===state.caseId&&docGuide.sourceCaseId)traverseNodes(state.heirs,(n,level)=>{
+  if(!n.proxy&&!n.postDeath)return;
+  const subject=(n.postDeath?'상속 중 사망 피상속인':'피대습자')+' · '+(n.name||'성명 미입력');
+  let items;
+  if(n.nationality==='외국인')items=foreignCountryDocs(countryName(n)||'국가 미선택','deceased');
+  else {const year=Number(String(n.death||'').slice(0,4));const period=year?DOCS_BY_PERIOD.find(p=>year>=p.start&&year<=p.end):null;items=period?period.docs:['사망 사실을 증명하는 기본증명서(상세) 또는 제적등본(사망신고·등록부 존재 여부에 따라 확인)','가족관계증명서(상세) 및 상속관계가 연결되는 제적등본·전호적(등록부·호적 이력에 따라 확인)'];}
+  additionalPeople.push({subject,items});
+ });
  const linked=!!docGuide.sourceCaseId&&docGuide.sourceCaseId===state.caseId;
  if(linked&&docGuide.method==='agreement'){
   for(const minor of minorPeople()){
@@ -2004,8 +2014,8 @@ function docGuideItems(){
  const foreignGroups=docGuideForeignGroups();
  const countryDocs=foreign?foreignCountryDocs(countryName(docGuide.decedent)||'국가 미선택','deceased'):[];
  return {methodText,oldRegNote,foreign,
-  decedent:countryDocs,heirs:DOCS_HEIR,method:methodDocs,extra,
-  foreignGroups:foreignGroups.filter(x=>x.role!=='망자'),foreignMaterials:foreignGroups.length?additionalForeignDocs():[]};
+  decedent:countryDocs,heirs:DOCS_HEIR,method:methodDocs,extra,additionalPeople,
+  foreignGroups:foreignGroups.filter(x=>x.role!=='망자'),foreignMaterials:foreignGroups.length||additionalPeople.some(p=>p.items.some(x=>typeof x!=='string'))?additionalForeignDocs():[]};
 }
 function docGuideSections(guide){
  if(guide.foreign)return [{label:'외국국적 피상속인 준비서류',groups:docGuideGroupsByIssuer(guide),
@@ -2013,7 +2023,7 @@ function docGuideSections(guide){
  const periods=DOCS_BY_PERIOD.filter(p=>!docGuide.periodStart||String(p.start)===docGuide.periodStart).reverse();
  const sections=periods.map(period=>{
   const items=periods.length===1?{...guide,decedent:period.docs}
-   :{decedent:period.docs,heirs:[],method:[],extra:[],foreignGroups:[],foreignMaterials:[]};
+   :{decedent:period.docs,heirs:[],method:[],extra:[],additionalPeople:[],foreignGroups:[],foreignMaterials:[]};
   const note=period.start>=2008?'2008년 이전 출생·혼인·입양 등 호적 이력이 있다면 제적등본과 전호적을 함께 확인하세요.'
    :'2008년 이전 사망자도 사망신고 시점에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
   return {label:period.label,groups:docGuideGroupsByIssuer(items),note};
@@ -2025,14 +2035,35 @@ function docGuideMetadata(guide){
  const country=guide.foreign?' ('+(countryName(docGuide.decedent)||'국가 미입력')+')':'';
  return '상속방법 · '+guide.methodText+' / 피상속인 국적 · '+docGuide.decedent.nationality+country;
 }
+document.addEventListener('click',e=>{if(!e.target.closest('[data-guide-reset-copies]'))return;if(docGuide.sourceCaseId===state.caseId&&docGuide.sourceCaseId){state.guideCopies={};save()}else docGuide.copies={};renderDocGuide()});
+function guideDefaultCopies(){try{return Math.max(1,Math.min(20,Number(localStorage.getItem('c7-guide-default-copies'))||1))}catch{return 1}}
+function guideCopyStore(){return docGuide.sourceCaseId===state.caseId&&docGuide.sourceCaseId?(state.guideCopies??={}):(docGuide.copies??={})}
+function guideCopyInfo(subject,name){
+ const key=JSON.stringify([subject,name]);const copies=guideCopyStore()[key]||guideDefaultCopies();
+ let people=null;
+ if(subject.startsWith('국내 상속인')){people=0;traverseNodes(state.heirs,n=>{if(!n.proxy&&!n.postDeath&&n.nationality!=='외국인')people++});if(!docGuide.sourceCaseId)people=null;}
+ if(subject==='피상속인'||subject.startsWith('피대습자 ·')||subject.startsWith('상속 중 사망 피상속인 ·'))people=1;
+ if(subject==='상속방법에 따른 준비'&&name.includes('인감증명서')&&docGuide.sourceCaseId){people=0;traverseNodes(state.heirs,n=>{if(!n.proxy&&!n.postDeath&&n.nationality!=='외국인')people++})}
+ const foreign=docGuideForeignGroups().find(g=>g.title===subject);if(foreign?.names?.length)people=foreign.names.length;
+ return {key,copies,people};
+}
+function guideCopyText(subject,name){const q=guideCopyInfo(subject,name);return (q.people===null?'대상자별 ':q.people+'명 × ')+q.copies+'통'+(q.people===null?'':' = 총 '+q.people*q.copies+'통')}
+function guideCountable(group,name){return !['참고사항','직접 지참할 것'].includes(group.title)&&!name.endsWith('특별대리인 검토')}
+function guideCopyMarkup(group,subject,name,expand){
+ if(!guideCountable(group,name))return '';
+ const q=guideCopyInfo(subject,name);
+ if(expand)return '<p>'+esc(guideCopyText(subject,name))+'</p>';
+ return '<div style="margin:6px 0"><label>대상자별 <select data-guide-copy="'+attr(q.key)+'" aria-label="'+attr(name+' 통수')+'" style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(q.copies===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <span>'+esc(guideCopyText(subject,name))+'</span></div>';
+}
+function guideCopySettings(){return '<div class="docguide-alert"><label>기본 통수 <select data-guide-default-copies style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(guideDefaultCopies()===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <button type="button" class="outline" data-guide-reset-copies>현재 안내에 기본 통수 적용</button><p class="note">기본 통수는 다음 안내에도 사용합니다. 개별 지정한 통수는 유지되며, 적용 버튼을 누르면 현재 안내의 통수를 초기화합니다. 통수는 대상자별·서류 종류별 준비 수량입니다. 전호적 등 여러 기록이 필요한 항목은 각 기록마다 준비하고, 서로 다른 서류를 ‘또는’으로 안내한 항목은 해당 서류를 선택해 준비합니다. 부동산 수에 따라 자동 배수하지 않습니다.</p></div>'}
 function docGuideOutputMarkup(expand=false){
  const guide=docGuideItems(),sections=docGuideSections(guide);
  const grouped=group=>'<section class="docguide-block"><h3>'+esc(group.title)+'</h3>'+[...group.subjects].map(([subject,items])=>
   '<p class="docguide-subject">'+esc(subject)+'</p><ul class="docguide-checklist">'+[...items].map(([name,detail])=>
-   '<li>'+esc(name)+(detail?'<br><span class="docguide-item-detail">'+esc(detail)+'</span>':'')+'</li>'
+   '<li>'+esc(name)+(detail?'<br><span class="docguide-item-detail">'+esc(detail)+'</span>':'')+guideCopyMarkup(group,subject,name,expand)+'</li>'
   ).join('')+'</ul>'
  ).join('')+(group.notes.size?'<p class="docguide-group-note">'+[...group.notes].map(esc).join('<br>')+'</p>':'')+'</section>';
- return '<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
+ return (expand?'':guideCopySettings())+'<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
   +'<div class="docguide-alert"><strong>중요 · '+(guide.foreign?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
   +sections.map((section,i)=>{
    const body=section.groups.map(grouped).join('')+(section.note?'<p class="note">'+esc(section.note)+'</p>':'');
@@ -2079,7 +2110,7 @@ function docGuideText(){
   for(const group of section.groups){
    text+='\n\n['+group.title+']';
    for(const [subject,items] of group.subjects){
-    text+='\n'+subject+'\n'+[...items].map(([name,detail])=>'• '+name+(detail?' · '+detail:'')).join('\n');
+    text+='\n'+subject+'\n'+[...items].map(([name,detail])=>'• '+name+(detail?' · '+detail:'')+(guideCountable(group,name)?' · '+guideCopyText(subject,name):'')).join('\n');
    }
    if(group.notes.size)text+='\n'+[...group.notes].join('\n');
   }
@@ -2938,6 +2969,9 @@ document.addEventListener('change',async e=>{
  }
 });
 document.addEventListener('change',e=>{let t=e.target;
+ if(t.matches('[data-guide-default-copies]')){try{localStorage.setItem('c7-guide-default-copies',t.value)}catch{}renderDocGuide();return;}
+ if(t.matches('[data-guide-copy]')){guideCopyStore()[t.dataset.guideCopy]=Math.max(1,Math.min(20,Number(t.value)||1));if(docGuide.sourceCaseId)save();renderDocGuide();return;}
+
  if(t.matches('[data-existing-person-address]')){
   const id=t.dataset.existingPersonAddress,address=t.value;
   if(!address||!existingPersonAddresses(id).some(x=>x.address===address))return;
