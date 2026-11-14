@@ -2401,7 +2401,7 @@ function existingPersonAddresses(currentId){
 }
 function existingPersonAddressMarkup(id){
  const choices=existingPersonAddresses(id);
- return '<label style="margin-top:10px">기입력 주소 선택</label><select class="cell-input" data-existing-person-address="'+attr(id)+'" aria-label="기입력 주소 선택" '+(!choices.length?'disabled':'')+'><option value="">'+(choices.length?'다른 사람의 주소 선택':'다른 사람의 주소를 입력하면 선택할 수 있습니다')+'</option>'+choices.map(x=>'<option value="'+attr(x.address)+'">'+esc(x.names[0]+(x.names.length>1?' 외 '+(x.names.length-1)+'인':'')+' · '+x.address)+'</option>').join('')+'</select>';
+ return '<label style="margin-top:10px">기입력 주소 선택</label><select class="cell-input" data-existing-person-address="'+attr(id)+'" aria-label="기입력 주소 선택" '+(!choices.length?'disabled':'')+'><option value="">'+(choices.length?'기입력 주소 선택':'선택할 주소가 없습니다')+'</option>'+choices.map(x=>'<option value="'+attr(x.address)+'">'+esc(x.address)+'</option>').join('')+'</select>';
 }
 function addressInputMarkup(id,label,value,binding){
  return '<label for="'+attr(id)+'">'+esc(label)+'</label><div class="address-entry">'
