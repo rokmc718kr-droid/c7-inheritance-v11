@@ -2047,13 +2047,26 @@ function guideCopyInfo(subject,name){
  const foreign=docGuideForeignGroups().find(g=>g.title===subject);if(foreign?.names?.length)people=foreign.names.length;
  return {key,copies,people};
 }
-function guideCopyText(subject,name){const q=guideCopyInfo(subject,name);return (q.people===null?'대상자별 ':q.people+'명 × ')+q.copies+'통'+(q.people===null?'':' = 총 '+q.people*q.copies+'통')}
+function guideCopyBasis(name){
+ if(/제적|전호적|호적 기록/.test(name))return {unit:'기록별',record:true,note:'필요한 호적 기록을 빠짐없이 확인하여 각 기록마다 선택한 통수만큼 준비합니다. 기록 수가 확정되지 않아 총 통수는 계산하지 않습니다.'};
+ if(/인감증명서/.test(name))return {unit:'대상자별',note:'협의에 참여하는 대상자 각자 명의로 준비할 통수입니다. 제출처와 사용 용도에 맞춰 추가 통수를 선택하세요.'};
+ if(/주민등록|주소증명|주소·거주/.test(name))return {unit:'대상자별',note:'주소 확인이 필요한 사람마다 준비할 통수입니다. 등본 또는 초본으로 안내한 경우 해당 서류를 선택해 준비하세요.'};
+ if(/가족관계증명서|기본증명서|혼인관계증명서|입양관계증명서/.test(name))return {unit:'대상자별',note:'안내된 대상자 각자 명의로, 표시된 증명서 종류마다 준비할 통수입니다. 조건이 붙은 서류는 해당하는 경우에 준비하세요.'};
+ if(/특별대리인|심판서/.test(name))return {unit:'해당 서류별',note:'해당 선임사건의 서류를 준비할 통수입니다. 미성년자 수와 선임사건 수가 다를 수 있어 총 통수는 별도 확인하세요.',record:true};
+ return {unit:'대상자별',note:'대상자마다 안내된 서류 종류별로 준비할 통수입니다. 대체 서류는 해당 서류를 선택하고 제출처별로 필요한 수량을 조정하세요.'};
+}
+function guideCopyText(subject,name){
+ const q=guideCopyInfo(subject,name),b=guideCopyBasis(name);
+ if(b.record)return b.unit+' 각 '+q.copies+'통 · 총 통수 별도 확인';
+ return (q.people===null?'대상자별 각 ':q.people+'명 × ')+q.copies+'통'+(q.people===null?'':' = 총 '+q.people*q.copies+'통')+( /및|또는/.test(name)?' (서류 종류별)':'');
+}
 function guideCountable(group,name){return !['참고사항','직접 지참할 것'].includes(group.title)&&!name.endsWith('특별대리인 검토')}
 function guideCopyMarkup(group,subject,name,expand){
  if(!guideCountable(group,name))return '';
- const q=guideCopyInfo(subject,name);
- if(expand)return '<p>'+esc(guideCopyText(subject,name))+'</p>';
- return '<div style="margin:6px 0"><label>대상자별 <select data-guide-copy="'+attr(q.key)+'" aria-label="'+attr(name+' 통수')+'" style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(q.copies===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <span>'+esc(guideCopyText(subject,name))+'</span></div>';
+ const q=guideCopyInfo(subject,name),b=guideCopyBasis(name);
+ const note='<p class="docguide-item-detail" style="margin:5px 0">'+esc(b.note)+'</p>';
+ if(expand)return note+'<p>'+esc(guideCopyText(subject,name))+'</p>';
+ return note+'<div style="margin:6px 0"><label>'+esc(b.unit)+' 각 <select data-guide-copy="'+attr(q.key)+'" aria-label="'+attr(name+' '+b.unit+' 통수')+'" style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(q.copies===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <span>'+esc(guideCopyText(subject,name))+'</span></div>';
 }
 function guideCopySettings(){return '<div class="docguide-alert"><label>기본 통수 <select data-guide-default-copies style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(guideDefaultCopies()===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <button type="button" class="outline" data-guide-reset-copies>현재 안내에 기본 통수 적용</button><p class="note">기본 통수는 다음 안내에도 사용합니다. 개별 지정한 통수는 유지되며, 적용 버튼을 누르면 현재 안내의 통수를 초기화합니다. 통수는 대상자별·서류 종류별 준비 수량입니다. 전호적 등 여러 기록이 필요한 항목은 각 기록마다 준비하고, 서로 다른 서류를 ‘또는’으로 안내한 항목은 해당 서류를 선택해 준비합니다. 부동산 수에 따라 자동 배수하지 않습니다.</p></div>'}
 function docGuideOutputMarkup(expand=false){
@@ -2110,7 +2123,7 @@ function docGuideText(){
   for(const group of section.groups){
    text+='\n\n['+group.title+']';
    for(const [subject,items] of group.subjects){
-    text+='\n'+subject+'\n'+[...items].map(([name,detail])=>'• '+name+(detail?' · '+detail:'')+(guideCountable(group,name)?' · '+guideCopyText(subject,name):'')).join('\n');
+    text+='\n'+subject+'\n'+[...items].map(([name,detail])=>'• '+name+(detail?' · '+detail:'')+(guideCountable(group,name)?' · '+guideCopyText(subject,name)+'\n  '+guideCopyBasis(name).note:'')).join('\n');
    }
    if(group.notes.size)text+='\n'+[...group.notes].join('\n');
   }
