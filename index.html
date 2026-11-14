@@ -2037,9 +2037,31 @@ function docGuideMetadata(guide){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('[data-guide-reset-copies]'))return;if(docGuide.sourceCaseId===state.caseId&&docGuide.sourceCaseId){state.guideCopies={};save()}else docGuide.copies={};renderDocGuide()});
 function guideDefaultCopies(){try{return Math.max(1,Math.min(20,Number(localStorage.getItem('c7-guide-default-copies'))||1))}catch{return 1}}
+let guideSettingsTab='guide';
+function guideDocumentKey(name){
+ if(/전호적|전적.*제적|제적.*전호적/.test(name))return '전호적 제적등본';
+ if(/제적|호적 기록/.test(name))return '제적등본·호적 기록';
+ if(name.includes('친양자입양관계증명서'))return '친양자입양관계증명서(상세)';
+ for(const kind of ['가족관계증명서','기본증명서','혼인관계증명서','입양관계증명서','인감증명서'])if(name.includes(kind))return kind;
+ if(/주민등록/.test(name))return /말소자/.test(name)?'말소자 주민등록표 초본':'상속인 주민등록표 등본·초본';
+ return name;
+}
+function guideDocumentDefaults(){try{const x=JSON.parse(localStorage.getItem('c7-guide-document-defaults')||'{}');return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch{return {}}}
+function guideDocumentDefault(name){const n=Number(guideDocumentDefaults()[guideDocumentKey(name)]);return Number.isInteger(n)&&n>=1&&n<=20?n:guideDefaultCopies()}
+function guideTabsMarkup(){return '<div role="tablist" aria-label="준비서류 메뉴" style="display:flex;gap:8px;margin:16px 0">'+[['guide','준비서류 안내'],['settings','서류별 기본 설정']].map(([key,label])=>'<button type="button" role="tab" aria-selected="'+(guideSettingsTab===key)+'" class="'+(guideSettingsTab===key?'primary':'outline')+'" data-guide-tab="'+key+'">'+label+'</button>').join('')+'</div>'}
+function guideDocumentSettingsMarkup(){
+ const catalog=new Map();
+ const add=name=>{if(!guideCountable(docGuideRoute(name),name))return;const key=guideDocumentKey(name);if(!catalog.has(key))catalog.set(key,name)};
+ for(const period of DOCS_BY_PERIOD)period.docs.forEach(add);
+ [...DOCS_HEIR,...DOCS_AGREEMENT,...DOCS_EXTRA].forEach(add);
+ for(const data of Object.values(FOREIGN_GUIDE_DATA))for(const rows of Object.values(data))if(Array.isArray(rows))for(const row of rows)if(Array.isArray(row))add(row[0]);
+ for(const section of docGuideSections(docGuideItems()))for(const group of section.groups)for(const items of group.subjects.values())for(const name of items.keys())if(guideCountable(group,name))add(name);
+ return '<section aria-label="서류별 기본 통수 설정"><h3>서류별 기본 설정</h3><p class="note">선택하면 자동 저장됩니다. 이 브라우저의 다음 안내와 아직 개별 통수를 지정하지 않은 서류에 적용합니다. 사건에서 개별 지정한 통수는 유지합니다.</p>'+guideCopySettings()+'<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">서류</th><th style="text-align:left">통수 기준</th><th>기본 통수</th></tr></thead><tbody>'+[...catalog].map(([key,name])=>'<tr><td style="padding:12px;border-bottom:1px solid #ddd">'+esc(key)+'</td><td style="padding:12px;border-bottom:1px solid #ddd">'+esc(guideCopyBasis(name).unit)+'<br><small>'+esc(guideCopyBasis(name).note)+'</small></td><td style="padding:12px;border-bottom:1px solid #ddd"><select data-guide-document-default="'+attr(key)+'" aria-label="'+attr(key+' 기본 통수')+'" style="width:90px">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(guideDocumentDefault(name)===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></td></tr>').join('')+'</tbody></table></div><p class="note">기본 통수는 준비 수량 설정입니다. 서로 다른 기록·서류가 묶인 항목은 표시된 기준에 따라 각각 준비합니다.</p></section>';
+}
+document.addEventListener('click',e=>{const tab=e.target.closest('[data-guide-tab]');if(!tab)return;guideSettingsTab=tab.dataset.guideTab==='settings'?'settings':'guide';renderDocGuide()});
 function guideCopyStore(){return docGuide.sourceCaseId===state.caseId&&docGuide.sourceCaseId?(state.guideCopies??={}):(docGuide.copies??={})}
 function guideCopyInfo(subject,name){
- const key=JSON.stringify([subject,name]);const copies=guideCopyStore()[key]||guideDefaultCopies();
+ const key=JSON.stringify([subject,name]);const copies=guideCopyStore()[key]||guideDocumentDefault(name);
  let people=null;
  if(subject.startsWith('국내 상속인')){people=0;traverseNodes(state.heirs,n=>{if(!n.proxy&&!n.postDeath&&n.nationality!=='외국인')people++});if(!docGuide.sourceCaseId)people=null;}
  if(subject==='피상속인'||subject.startsWith('피대습자 ·')||subject.startsWith('상속 중 사망 피상속인 ·'))people=1;
@@ -2068,15 +2090,16 @@ function guideCopyMarkup(group,subject,name,expand){
  if(expand)return note+'<p>'+esc(guideCopyText(subject,name))+'</p>';
  return note+'<div style="margin:6px 0"><label>'+esc(b.unit)+' 각 <select data-guide-copy="'+attr(q.key)+'" aria-label="'+attr(name+' '+b.unit+' 통수')+'" style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(q.copies===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <span>'+esc(guideCopyText(subject,name))+'</span></div>';
 }
-function guideCopySettings(){return '<div class="docguide-alert"><label>기본 통수 <select data-guide-default-copies style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(guideDefaultCopies()===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <button type="button" class="outline" data-guide-reset-copies>현재 안내에 기본 통수 적용</button><p class="note">기본 통수는 다음 안내에도 사용합니다. 개별 지정한 통수는 유지되며, 적용 버튼을 누르면 현재 안내의 통수를 초기화합니다. 통수는 대상자별·서류 종류별 준비 수량입니다. 전호적 등 여러 기록이 필요한 항목은 각 기록마다 준비하고, 서로 다른 서류를 ‘또는’으로 안내한 항목은 해당 서류를 선택해 준비합니다. 부동산 수에 따라 자동 배수하지 않습니다.</p></div>'}
+function guideCopySettings(){return '<div class="docguide-alert"><label>기본 통수 <select data-guide-default-copies style="width:auto">'+Array.from({length:20},(_,i)=>'<option value="'+(i+1)+'" '+(guideDefaultCopies()===i+1?'selected':'')+'>'+(i+1)+'통</option>').join('')+'</select></label> <button type="button" class="outline" data-guide-reset-copies>현재 안내에 서류별 기본값 적용</button><p class="note">공통 기본 통수는 별도로 설정하지 않은 서류에 사용합니다. 개별 지정한 통수는 유지되며, 적용 버튼을 누르면 현재 안내의 통수를 초기화합니다. 통수는 대상자별·서류 종류별 준비 수량입니다. 전호적 등 여러 기록이 필요한 항목은 각 기록마다 준비하고, 서로 다른 서류를 ‘또는’으로 안내한 항목은 해당 서류를 선택해 준비합니다. 부동산 수에 따라 자동 배수하지 않습니다.</p></div>'}
 function docGuideOutputMarkup(expand=false){
+ if(!expand&&guideSettingsTab==='settings')return guideTabsMarkup()+guideDocumentSettingsMarkup();
  const guide=docGuideItems(),sections=docGuideSections(guide);
  const grouped=group=>'<section class="docguide-block"><h3>'+esc(group.title)+'</h3>'+[...group.subjects].map(([subject,items])=>
   '<p class="docguide-subject">'+esc(subject)+'</p><ul class="docguide-checklist">'+[...items].map(([name,detail])=>
    '<li>'+esc(name)+(detail?'<br><span class="docguide-item-detail">'+esc(detail)+'</span>':'')+guideCopyMarkup(group,subject,name,expand)+'</li>'
   ).join('')+'</ul>'
  ).join('')+(group.notes.size?'<p class="docguide-group-note">'+[...group.notes].map(esc).join('<br>')+'</p>':'')+'</section>';
- return (expand?'':guideCopySettings())+'<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
+ return (expand?'':guideTabsMarkup())+'<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
   +'<div class="docguide-alert"><strong>중요 · '+(guide.foreign?'외국국적 망자의 상속법·전호적 존재 여부 검토':'망자의 전호적 반드시 확인')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
   +sections.map((section,i)=>{
    const body=section.groups.map(grouped).join('')+(section.note?'<p class="note">'+esc(section.note)+'</p>':'');
@@ -2982,6 +3005,7 @@ document.addEventListener('change',async e=>{
  }
 });
 document.addEventListener('change',e=>{let t=e.target;
+ if(t.matches('[data-guide-document-default]')){const defaults=guideDocumentDefaults();defaults[t.dataset.guideDocumentDefault]=Math.max(1,Math.min(20,Number(t.value)||1));try{localStorage.setItem('c7-guide-document-defaults',JSON.stringify(defaults))}catch{alert('설정을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.')}renderDocGuide();return;}
  if(t.matches('[data-guide-default-copies]')){try{localStorage.setItem('c7-guide-default-copies',t.value)}catch{}renderDocGuide();return;}
  if(t.matches('[data-guide-copy]')){guideCopyStore()[t.dataset.guideCopy]=Math.max(1,Math.min(20,Number(t.value)||1));if(docGuide.sourceCaseId)save();renderDocGuide();return;}
 
