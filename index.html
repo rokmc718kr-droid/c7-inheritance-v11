@@ -2390,7 +2390,18 @@ function personIdentityFieldsMarkup(person,ident,address,id,isDecedent=false){
  const nameBinding=isDecedent?'data-decedent-edit="name"':'data-node-id="'+attr(id)+'" data-node-prop="name"';
  const addressBinding=isDecedent?'data-decedent-edit="address"':'data-detail="'+attr(id)+'" data-key="address"';
  const nameId='person-name-'+attr(id),identId='person-ident-'+attr(id);
- return '<div class="person-name-ident-row wide"><div class="field"><label for="'+nameId+'">성명</label><input id="'+nameId+'" class="cell-input" '+nameBinding+' value="'+attr(person.name||'')+'" placeholder="성명" autocomplete="off"></div><div class="field"><label for="'+identId+'">주민등록번호 / 등록번호</label><input id="'+identId+'" class="cell-input" '+identBinding+' data-registration-number="'+(person.nationality==='내국인'?'partial':'full')+'" value="'+attr(ident||'')+'" placeholder="등록번호" autocomplete="off"></div></div><div class="field wide">'+addressInputMarkup(isDecedent?'decedent-address':'heir-address-'+id,'주소',address,addressBinding)+'</div>';
+ return '<div class="person-name-ident-row wide"><div class="field"><label for="'+nameId+'">성명</label><input id="'+nameId+'" class="cell-input" '+nameBinding+' value="'+attr(person.name||'')+'" placeholder="성명" autocomplete="off"></div><div class="field"><label for="'+identId+'">주민등록번호 / 등록번호</label><input id="'+identId+'" class="cell-input" '+identBinding+' data-registration-number="'+(person.nationality==='내국인'?'partial':'full')+'" value="'+attr(ident||'')+'" placeholder="등록번호" autocomplete="off"></div></div><div class="field wide">'+addressInputMarkup(isDecedent?'decedent-address':'heir-address-'+id,'주소',address,addressBinding)+existingPersonAddressMarkup(isDecedent?'decedent':id)+'</div>';
+}
+function existingPersonAddresses(currentId){
+ const choices=[];
+ const add=(id,name,address)=>{address=String(address||'').trim();if(id===currentId||!address)return;const key=address.replace(/\s+/g,' ');const found=choices.find(x=>x.key===key);if(found)found.names.push(name);else choices.push({key,address,names:[name]})};
+ add('decedent','피상속인 '+(state.decedent.name||'성명 미입력'),state.decedent.address);
+ traverseNodes(state.heirs,n=>add(n.id,n.name||'성명 미입력',state.details[n.id]?.address));
+ return choices;
+}
+function existingPersonAddressMarkup(id){
+ const choices=existingPersonAddresses(id);
+ return '<label style="margin-top:10px">기입력 주소 선택</label><select class="cell-input" data-existing-person-address="'+attr(id)+'" aria-label="기입력 주소 선택" '+(!choices.length?'disabled':'')+'><option value="">'+(choices.length?'다른 사람의 주소 선택':'다른 사람의 주소를 입력하면 선택할 수 있습니다')+'</option>'+choices.map(x=>'<option value="'+attr(x.address)+'">'+esc(x.names[0]+(x.names.length>1?' 외 '+(x.names.length-1)+'인':'')+' · '+x.address)+'</option>').join('')+'</select>';
 }
 function addressInputMarkup(id,label,value,binding){
  return '<label for="'+attr(id)+'">'+esc(label)+'</label><div class="address-entry">'
@@ -2927,6 +2938,14 @@ document.addEventListener('change',async e=>{
  }
 });
 document.addEventListener('change',e=>{let t=e.target;
+ if(t.matches('[data-existing-person-address]')){
+  const id=t.dataset.existingPersonAddress,address=t.value;
+  if(!address||!existingPersonAddresses(id).some(x=>x.address===address))return;
+  if(id==='decedent')state.decedent.address=address;
+  else {if(!findNode(id))return;state.details[id]??={};state.details[id].address=address;}
+  renderAll();save();return;
+ }
+
  if(t.matches('[data-case-select]')){
   t.checked?caseSelectedIds.add(t.dataset.caseSelect):caseSelectedIds.delete(t.dataset.caseSelect);
   renderCaseList();return;
