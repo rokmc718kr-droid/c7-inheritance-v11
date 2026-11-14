@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-77Z6y26DtuJjZzGO1jMlrUgg9BL2BIkycgvvIB7Nr+U=' 'sha256-PMCnBRhOVFZLgPFHSlqTKA1tUHPbm7FEnLET3WU/fjo='; frame-src https://postcode.map.kakao.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-77Z6y26DtuJjZzGO1jMlrUgg9BL2BIkycgvvIB7Nr+U=' 'sha256-2k87xaxkmd0KYvkvuERIH6T0zBgYbq9vIB6kSgl+CGM='; frame-src https://postcode.map.kakao.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>국내 주소검색</title>
 <style>html,body,#postcode{margin:0;width:100%;height:100%;background:#fff}#message{padding:12px;font:14px system-ui,sans-serif}
 #result{box-sizing:border-box;max-width:520px;margin:20px auto;padding:16px;font:16px system-ui,sans-serif}
@@ -30,6 +30,7 @@ const receiver=embedded?parent:window.opener;
 const addressField=document.getElementById('selectedAddress');
 const copyStatus=document.getElementById('copyStatus');
 const portalOrigin='https://rokmc718kr-droid.github.io';
+const initialQuery=(new URLSearchParams(location.hash.slice(1)).get('q')||'').trim().slice(0,300);
 let returnOrigin=null;
 const report=(type,address)=>{
  if(type==='selected'&&!returnOrigin)return;
@@ -69,7 +70,7 @@ try{
    }
    report('selected',address.trim());
   }
- }).embed(container);
+ }).embed(container,initialQuery?{q:initialQuery}:{});
 }catch{
  container.textContent='주소검색에 연결하지 못했습니다. 검색창을 닫고 직접 입력해 주세요.';
  report('unavailable');
