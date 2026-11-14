@@ -2018,17 +2018,15 @@ function docGuideItems(){
   foreignGroups:foreignGroups.filter(x=>x.role!=='망자'),foreignMaterials:foreignGroups.length||additionalPeople.some(p=>p.items.some(x=>typeof x!=='string'))?additionalForeignDocs():[]};
 }
 function docGuideSections(guide){
- if(guide.foreign)return [{label:'외국국적 피상속인 준비서류',groups:docGuideGroupsByIssuer(guide),
-  note:'사망 당시 적용 상속법과 본국 상속인 범위, 서류 발급·인증 요건을 사건별로 확인하세요.'}];
- const periods=DOCS_BY_PERIOD.filter(p=>!docGuide.periodStart||String(p.start)===docGuide.periodStart).reverse();
- const sections=periods.map(period=>{
-  const items=periods.length===1?{...guide,decedent:period.docs}
-   :{decedent:period.docs,heirs:[],method:[],extra:[],additionalPeople:[],foreignGroups:[],foreignMaterials:[]};
-  const note=period.start>=2008?'2008년 이전 출생·혼인·입양 등 호적 이력이 있다면 제적등본과 전호적을 함께 확인하세요.'
-   :'2008년 이전 사망자도 사망신고 시점에 따라 가족관계등록사항별 증명서가 존재할 수 있으므로 실제 등록 여부를 확인하세요.';
-  return {label:period.label,groups:docGuideGroupsByIssuer(items),note};
- });
- if(periods.length>1)sections.unshift({label:'모든 시기 공통 · 상속인 및 추가 준비서류',groups:docGuideGroupsByIssuer(guide),note:''});
+ const empty={decedent:[],heirs:[],method:[],extra:[],additionalPeople:[],foreignGroups:[],foreignMaterials:[]};
+ const sections=[];
+ if(guide.foreign)sections.push({label:'① 돌아가신 분(피상속인)의 준비서류',groups:docGuideGroupsByIssuer({...empty,decedent:guide.decedent}),note:''});
+ else {
+  const periods=DOCS_BY_PERIOD.filter(p=>!docGuide.periodStart||String(p.start)===docGuide.periodStart).reverse();
+  for(const period of periods)sections.push({label:'① 돌아가신 분(피상속인)의 준비서류 · '+period.label,groups:docGuideGroupsByIssuer({...empty,decedent:period.docs}),note:period.start>=2008?'이 목록은 돌아가신 분의 이름으로 발급받는 서류입니다. 2008년 이전의 가족관계가 적힌 호적이 있으면 이전 제적등본도 함께 준비해 주세요.':'이 목록은 돌아가신 분의 이름으로 발급받는 서류입니다. 오래된 서류가 발급되지 않으면 창구 직원에게 이유를 확인해 주세요.'});
+ }
+ sections.push({label:'② 상속받는 분(상속인)의 준비서류',groups:docGuideGroupsByIssuer({...empty,heirs:guide.heirs,method:guide.method,foreignGroups:guide.foreignGroups}),note:'상속받는 분이 여러 명이면 각자의 서류를 준비해 주세요. 돌아가신 분의 서류와 구분해 준비합니다.'});
+ if(guide.extra.length||(guide.additionalPeople||[]).length||guide.foreignMaterials.length)sections.push({label:'③ 먼저 또는 나중에 사망한 가족의 서류 및 추가 서류',groups:docGuideGroupsByIssuer({...empty,extra:guide.extra,additionalPeople:guide.additionalPeople,foreignMaterials:guide.foreignMaterials}),note:''});
  return sections;
 }
 function docGuideMetadata(guide){
@@ -2084,8 +2082,7 @@ function guideRoleExplanation(subject){
  return '';
 }
 const GUIDE_REGISTER_REQUEST='“상속등기를 준비하고 있습니다. 이 항목의 돌아가신 분에 대한 제적등본을 발급받고 싶습니다. 태어날 때부터 돌아가실 때까지 가족관계가 이어지도록, 본적을 옮기거나 호적을 나누기 전의 제적등본과 이전 호주의 제적등본도 확인해서 발급해 주세요. 제적초본이 아니라 가족 전체가 나오는 제적등본으로, 각 기록마다 안내된 통수씩 부탁드립니다.”';
-function guideRegisterRequestMarkup(group){
- if(![...group.subjects.values()].some(items=>[...items.keys()].some(n=>/제적|호적/.test(n))))return '';
+function guideRegisterRequestMarkup(){
  return '<div class="docguide-alert"><strong>제적등본 · 주민센터(동사무소) 창구에 이렇게 말씀해 주세요</strong><p>'+esc(GUIDE_REGISTER_REQUEST)+'</p><p class="note">이 안내문을 직원에게 보여주셔도 됩니다. 신분증을 지참하고, 발급 대상자의 성명·주민등록번호와 알고 있는 옛 본적·호주 정보를 알려주세요. 프로그램에 이름을 입력하지 않았더라도 실제 발급 시에는 누구의 서류인지 확인할 정보가 필요합니다. 이전 기록을 발급할 수 없으면 그 이유와 추가로 필요한 정보를 직원에게 물어 사무소에 전달해 주세요.</p></div>';
 }
 function guideClientDocumentName(name){
@@ -2121,13 +2118,14 @@ function docGuideOutputMarkup(expand=false){
   '<p class="docguide-subject">'+esc(guideClientSubject(subject))+'</p>'+(guideRoleExplanation(subject)?'<p class="note">'+esc(guideRoleExplanation(subject))+'</p>':'')+'<ul class="docguide-checklist">'+[...items].map(([name,detail])=>
    '<li>'+esc(guideClientDocumentName(name))+(detail?'<br><span class="docguide-item-detail">'+esc(detail)+'</span>':'')+guideCopyMarkup(group,subject,name,expand)+'</li>'
   ).join('')+'</ul>'
- ).join('')+guideRegisterRequestMarkup(group)+(group.notes.size?'<p class="docguide-group-note">'+[...group.notes].map(esc).join('<br>')+'</p>':'')+'</section>';
+ ).join('')+(group.notes.size?'<p class="docguide-group-note">'+[...group.notes].map(esc).join('<br>')+'</p>':'')+'</section>';
  return (expand?'':guideTabsMarkup())+'<div class="docguide-meta">'+esc(docGuideMetadata(guide))+'</div>'
-  +'<div class="docguide-alert"><strong>준비 방법</strong><br>아래에 적힌 발급기관별로 서류를 준비해 주세요. ‘각 1통’은 안내된 사람마다 한 장씩이라는 뜻입니다. ‘사무소에서 요청한 경우에만 준비’라고 적힌 서류는 먼저 사무소의 안내를 받으세요. 발급이 안 되거나 어떤 서류인지 모르시면 다른 서류로 대신하지 마시고 사무소에 문의해 주세요.</div>'
+  +'<div class="docguide-alert"><strong>준비 방법</strong><br>아래에 적힌 발급기관별로 서류를 준비해 주세요. ‘각 1통’은 안내된 사람마다 한 부씩이라는 뜻입니다. ‘사무소에서 요청한 경우에만 준비’라고 적힌 서류는 먼저 사무소의 안내를 받으세요. 발급이 안 되거나 어떤 서류인지 모르시면 다른 서류로 대신하지 마시고 사무소에 문의해 주세요.</div>'
   +'<div class="docguide-alert"><strong>중요 · '+(guide.foreign?'외국국적의 돌아가신 분 · 준비서류 확인':'돌아가신 분의 이전 호적까지 확인해 주세요')+'</strong><br>'+esc(guide.oldRegNote)+'</div>'
+  +(guide.foreign?'':guideRegisterRequestMarkup())
   +sections.map((section,i)=>{
    const body=section.groups.map(grouped).join('')+(section.note?'<p class="note">'+esc(section.note)+'</p>':'');
-   return '<details class="docguide-period"'+(expand||i===0?' open':'')+'><summary>'+esc(section.label)+'</summary>'+body+'</details>';
+   return '<details class="docguide-period" open><summary>'+esc(section.label)+'</summary>'+body+'</details>';
   }).join('')
   +(guide.foreignMaterials.length?'<div class="docguide-alert"><b>외국국적 사건 주의</b><br>문서의 적법한 발급기관·아포스티유 협약 발효일·영사확인·한국어 번역문, 사망 당시 적용 상속법과 반정 여부는 사건별로 확인해야 합니다. 예시는 모든 사건의 확정 제출서류 목록이 아닙니다.</div>':'');
 }
@@ -2164,7 +2162,8 @@ function renderDocGuide(){
 }
 function docGuideText(){
  const guide=docGuideItems();
- let text='상속등기 준비서류 안내\n'+docGuideMetadata(guide)+'\n\n준비 방법: 발급기관별로 준비해 주세요. 각 1통은 안내된 사람마다 한 장씩입니다. 사무소에서 요청한 경우에만 준비하라고 적힌 서류는 먼저 사무소의 안내를 받으세요. 발급이 안 되거나 서류를 모르시면 다른 서류로 대신하지 마시고 사무소에 문의해 주세요.\n\n[중요] '+guide.oldRegNote;
+ let text='상속등기 준비서류 안내\n'+docGuideMetadata(guide)+'\n\n준비 방법: 발급기관별로 준비해 주세요. 각 1통은 안내된 사람마다 한 부씩입니다. 사무소에서 요청한 경우에만 준비하라고 적힌 서류는 먼저 사무소의 안내를 받으세요. 발급이 안 되거나 서류를 모르시면 다른 서류로 대신하지 마시고 사무소에 문의해 주세요.\n\n[중요] '+guide.oldRegNote;
+ if(!guide.foreign)text+='\n\n주민센터(동사무소) 창구에 이렇게 말씀해 주세요\n'+GUIDE_REGISTER_REQUEST+'\n신분증과 발급 대상자를 확인할 정보를 준비해 주세요.';
  for(const section of docGuideSections(guide)){
   text+='\n\n■ '+section.label;
   for(const group of section.groups){
@@ -2172,7 +2171,6 @@ function docGuideText(){
    for(const [subject,items] of group.subjects){
     text+='\n'+guideClientSubject(subject)+'\n'+(guideRoleExplanation(subject)?guideRoleExplanation(subject)+'\n':'')+[...items].map(([name,detail])=>'• '+guideClientDocumentName(name)+(detail?' · '+detail:'')+(guideCountable(group,name)?' · '+guideCopyText(subject,name)+'\n  '+guideCopyBasis(name).note:'')).join('\n');
    }
-   if([...group.subjects.values()].some(items=>[...items.keys()].some(n=>/제적|호적/.test(n))))text+='\n주민센터(동사무소) 창구 발급 요청 문구: '+GUIDE_REGISTER_REQUEST+'\n신분증과 발급 대상자를 확인할 정보를 준비해 주세요.';
    if(group.notes.size)text+='\n'+[...group.notes].join('\n');
   }
   if(section.note)text+='\n\n안내: '+section.note;
